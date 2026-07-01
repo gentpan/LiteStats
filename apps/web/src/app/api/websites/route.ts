@@ -3,6 +3,8 @@ import { z } from "zod";
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { buildMonitorUrl } from "@/lib/monitor-check";
+import { executeMonitorCheck } from "@/lib/monitor";
 
 const createSchema = z.object({
   name: z.string().min(1).max(100),
@@ -23,6 +25,8 @@ export async function GET() {
       name: true,
       domain: true,
       trackingId: true,
+      monitorEnabled: true,
+      monitorUrl: true,
       createdAt: true,
     },
   });
@@ -40,20 +44,29 @@ export async function POST(request: Request) {
     const body = createSchema.parse(await request.json());
     const trackingId = randomBytes(12).toString("hex");
 
+    const monitorUrl = buildMonitorUrl(body.domain);
     const website = await prisma.website.create({
       data: {
         name: body.name,
         domain: body.domain,
         trackingId,
         userId: session.userId,
+        monitorEnabled: true,
+        monitorUrl,
       },
       select: {
         id: true,
         name: true,
         domain: true,
         trackingId: true,
+        monitorEnabled: true,
+        monitorUrl: true,
         createdAt: true,
       },
+    });
+
+    executeMonitorCheck(website.id).catch((error) => {
+      console.error("Initial monitor check failed:", error);
     });
 
     return NextResponse.json({ website }, { status: 201 });

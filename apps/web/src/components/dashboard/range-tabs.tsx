@@ -1,17 +1,18 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { StatsRange } from "@/lib/analytics";
 
-const ranges: Array<{ value: StatsRange; label: string }> = [
+export type TimeRange = "24h" | "7d" | "30d";
+
+const ranges: Array<{ value: TimeRange; label: string }> = [
   { value: "24h", label: "24 小时" },
   { value: "7d", label: "7 天" },
   { value: "30d", label: "30 天" },
 ];
 
 type RangeTabsProps = {
-  value: StatsRange;
-  onChange: (value: StatsRange) => void;
+  value: TimeRange;
+  onChange: (value: TimeRange) => void;
   className?: string;
 };
 

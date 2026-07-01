@@ -49,15 +49,18 @@ model WebAuthnChallenge {
 }
 
 model Website {
-  id         String    @id @default(cuid())
-  name       String
-  domain     String
-  trackingId String    @unique @map("tracking_id")
-  userId     String    @map("user_id")
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt  DateTime  @default(now()) @map("created_at")
-  sessions   Session[]
-  events     Event[]
+  id             String         @id @default(cuid())
+  name           String
+  domain         String
+  trackingId     String         @unique @map("tracking_id")
+  userId         String         @map("user_id")
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitorEnabled Boolean        @default(true) @map("monitor_enabled")
+  monitorUrl     String?        @map("monitor_url")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  sessions       Session[]
+  events         Event[]
+  monitorChecks  MonitorCheck[]
 
   @@map("websites")
 }
@@ -96,4 +99,22 @@ model Event {
   @@index([websiteId, createdAt])
   @@index([sessionId])
   @@map("events")
+}
+
+model MonitorCheck {
+  id           String   @id @default(cuid())
+  websiteId    String   @map("website_id")
+  website      Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  status       String
+  responseMs   Int?     @map("response_ms")
+  statusCode   Int?     @map("status_code")
+  sslValid     Boolean? @map("ssl_valid")
+  sslExpiresAt DateTime? @map("ssl_expires_at")
+  sslDaysLeft  Int?     @map("ssl_days_left")
+  sslIssuer    String?  @map("ssl_issuer")
+  error        String?
+  checkedAt    DateTime @default(now()) @map("checked_at")
+
+  @@index([websiteId, checkedAt])
+  @@map("monitor_checks")
 }

@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Globe2,
   LayoutDashboard,
+  Radar,
   Settings2,
   Sparkles,
 } from "lucide-react";
@@ -28,6 +29,7 @@ type AppSidebarProps = {
 
 const mainNav = [
   { href: "/dashboard", label: "总览", icon: LayoutDashboard, exact: true },
+  { href: "/dashboard/monitoring", label: "站点监控", icon: Radar },
   { href: "/dashboard/websites", label: "站点管理", icon: Globe2 },
   { href: "/dashboard/settings", label: "账户设置", icon: Settings2 },
 ];
@@ -130,6 +132,15 @@ export function MobileNav({ websites, activeWebsiteId }: Pick<AppSidebarProps, "
 
   return (
     <div className="flex gap-2 overflow-x-auto border-b border-border bg-white px-4 py-3 lg:hidden">
+      <Link
+        href="/dashboard/monitoring"
+        className={cn(
+          "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
+          pathname.startsWith("/dashboard/monitoring") ? "bg-slate-900 text-white" : "bg-muted text-muted-foreground",
+        )}
+      >
+        监控
+      </Link>
       <Link
         href="/dashboard"
         className={cn(

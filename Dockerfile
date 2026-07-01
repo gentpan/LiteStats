@@ -36,9 +36,12 @@ COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder /app/apps/web/prisma ./apps/web/prisma
+COPY --from=builder /app/apps/web/src ./apps/web/src
+COPY --from=builder /app/apps/web/tsconfig.json ./apps/web/tsconfig.json
 COPY deploy/docker-entrypoint.sh /entrypoint.sh
+COPY deploy/docker-worker-entrypoint.sh /worker-entrypoint.sh
 
-RUN chmod +x /entrypoint.sh && chown -R litestats:litestats /app
+RUN chmod +x /entrypoint.sh /worker-entrypoint.sh && chown -R litestats:litestats /app
 USER litestats
 
 EXPOSE 3000

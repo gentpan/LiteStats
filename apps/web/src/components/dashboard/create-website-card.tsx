@@ -41,7 +41,7 @@ export function CreateWebsiteCard() {
     <Card>
       <CardHeader>
         <CardTitle>添加新站点</CardTitle>
-        <CardDescription>为你的网站创建独立的追踪 ID 与统计面板</CardDescription>
+        <CardDescription>创建站点后自动启用 Uptime 与 SSL 监控，并生成独立追踪 ID</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">

@@ -12,6 +12,7 @@
 - **GeoIP** — 采集时通过 [cnip.io](https://cnip.io) API 解析国家，配合本地 / CDN 国旗 SVG
 - **站点 Favicon** — 通过 [favicon.la](https://favicon.la) 展示站点图标
 - **Passkey 登录** — WebAuthn 无密码登录，支持修改密码与多设备管理
+- **站点监控** — 自动 Uptime 检测 + SSL 证书到期监控（默认每 60 秒）
 - **Umami 迁移** — 附带导出 / 导入脚本，可迁移历史数据
 - **一键生产部署** — Docker Compose + Caddy 自动 HTTPS
 
@@ -100,8 +101,21 @@ chmod +x scripts/deploy-prod.sh
 | `GEOIP_API_URL` | GeoIP 接口，默认 `https://api.cnip.io/geoip` |
 | `NEXT_PUBLIC_FLAG_BASE_URL` | 国旗 CDN，默认 `/flags`（本地） |
 | `NEXT_PUBLIC_FAVICON_BASE_URL` | Favicon 服务，默认 `https://favicon.la` |
+| `MONITOR_INTERVAL_SEC` | 监控检测间隔（秒），默认 `60` |
 
-### 国旗资源
+## 站点监控
+
+所有在 LiteStats 中添加的站点会**自动启用**：
+
+- **Uptime** — HTTP 可达性、状态码、响应时间
+- **SSL** — 证书有效性、到期时间、剩余天数
+
+Dashboard → **站点监控** 查看总览；生产环境由 `worker` 容器后台定时检测。
+
+```bash
+# 本地手动运行监控 worker
+cd apps/web && bun run monitor:worker
+```
 
 项目已内置 `apps/web/public/flags/`（1x1 / 4x3 SVG）。若需重新解压：
 

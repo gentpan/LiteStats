@@ -11,6 +11,7 @@
     "db:push": "prisma db push",
     "db:seed": "bun prisma/seed.ts",
     "db:import-umami": "bun prisma/import-umami.ts",
+    "monitor:worker": "bun prisma/monitor-worker.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"
   },

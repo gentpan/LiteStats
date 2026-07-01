@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Eye, MousePointerClick, Radio, Users } from "lucide-react";
 import type { StatsRange } from "@/lib/analytics";
+import type { TimeRange } from "@/components/dashboard/range-tabs";
 import { BreakdownPanel } from "@/components/dashboard/breakdown-panel";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { RangeTabs } from "@/components/dashboard/range-tabs";

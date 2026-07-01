@@ -34,6 +34,26 @@ services:
     networks:
       - litestats
 
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-litestats}:${POSTGRES_PASSWORD:-litestats}@postgres:5432/${POSTGRES_DB:-litestats}
+      NODE_ENV: production
+      MONITOR_INTERVAL_SEC: ${MONITOR_INTERVAL_SEC:-60}
+    entrypoint: ["/worker-entrypoint.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_started
+    networks:
+      - litestats
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
