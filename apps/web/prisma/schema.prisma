@@ -13,6 +13,7 @@ model User {
   passwordHash String    @map("password_hash")
   createdAt    DateTime  @default(now()) @map("created_at")
   websites     Website[]
+  servers      Server[]
   passkeys     Passkey[]
 
   @@map("users")
@@ -117,4 +118,35 @@ model MonitorCheck {
 
   @@index([websiteId, checkedAt])
   @@map("monitor_checks")
+}
+
+model Server {
+  id         String         @id @default(cuid())
+  name       String
+  hostname   String
+  agentToken String         @unique @map("agent_token")
+  userId     String         @map("user_id")
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now()) @map("created_at")
+  metrics    ServerMetric[]
+
+  @@index([userId])
+  @@map("servers")
+}
+
+model ServerMetric {
+  id         String   @id @default(cuid())
+  serverId   String   @map("server_id")
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  cpuPercent Float?   @map("cpu_percent")
+  memUsed    BigInt?  @map("mem_used")
+  memTotal   BigInt?  @map("mem_total")
+  diskUsed   BigInt?  @map("disk_used")
+  diskTotal  BigInt?  @map("disk_total")
+  load1      Float?   @map("load_1")
+  uptimeSec  BigInt?  @map("uptime_sec")
+  reportedAt DateTime @default(now()) @map("reported_at")
+
+  @@index([serverId, reportedAt])
+  @@map("server_metrics")
 }

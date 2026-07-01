@@ -45,7 +45,10 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-litestats}:${POSTGRES_PASSWORD:-litestats}@postgres:5432/${POSTGRES_DB:-litestats}
       NODE_ENV: production
       MONITOR_INTERVAL_SEC: ${MONITOR_INTERVAL_SEC:-60}
+      MONITOR_CONCURRENCY: ${MONITOR_CONCURRENCY:-5}
     entrypoint: ["/worker-entrypoint.sh"]
+    healthcheck:
+      disable: true
     depends_on:
       postgres:
         condition: service_healthy

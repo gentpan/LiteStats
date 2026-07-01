@@ -1,4 +1,5 @@
 import { runAllMonitorChecks } from "@/lib/monitor";
+import { pruneOldServerMetrics } from "@/lib/server-monitor";
 import { prisma } from "@/lib/db";
 const INTERVAL_MS = Number(process.env.MONITOR_INTERVAL_SEC ?? 60) * 1000;
 
@@ -14,7 +15,7 @@ async function pruneOldChecks() {
 
 async function tick() {
   const started = Date.now();
-  const results = await runAllMonitorChecks();
+  const results = await runAllMonitorChecks(Number(process.env.MONITOR_CONCURRENCY ?? 5));
   const ok = results.filter((item) => item.ok).length;
   console.log(`[monitor] checked ${results.length} sites (${ok} ok) in ${Date.now() - started}ms`);
 }
@@ -32,6 +33,10 @@ async function main() {
       if (pruneCounter >= 60) {
         pruneCounter = 0;
         await pruneOldChecks();
+        const pruned = await pruneOldServerMetrics();
+        if (pruned.count > 0) {
+          console.log(`[monitor] pruned ${pruned.count} server metrics`);
+        }
       }
     } catch (error) {
       console.error("[monitor] tick error:", error);

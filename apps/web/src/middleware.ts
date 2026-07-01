@@ -14,6 +14,7 @@ function isPublicPath(pathname: string) {
   if (pathname === "/tracker.js") return true;
   if (pathname === "/api/collect") return true;
   if (pathname === "/api/health") return true;
+  if (pathname === "/api/agent/metrics") return true;
   if (PUBLIC_AUTH_ROUTES.has(pathname)) return true;
   if (pathname.startsWith("/_next") || pathname.startsWith("/favicon")) return true;
   return false;

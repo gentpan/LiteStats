@@ -52,21 +52,28 @@ export async function executeMonitorCheck(websiteId: string) {
   });
 }
 
-export async function runAllMonitorChecks() {
+export async function runAllMonitorChecks(concurrency = 5) {
   const websites = await prisma.website.findMany({
     where: { monitorEnabled: true },
     select: { id: true, name: true },
   });
 
-  const results = [];
-  for (const website of websites) {
-    try {
-      const check = await executeMonitorCheck(website.id);
-      results.push({ websiteId: website.id, name: website.name, ok: !!check });
-    } catch (error) {
-      console.error(`Monitor check failed for ${website.name}:`, error);
-      results.push({ websiteId: website.id, name: website.name, ok: false });
-    }
+  const results: Array<{ websiteId: string; name: string; ok: boolean }> = [];
+
+  for (let i = 0; i < websites.length; i += concurrency) {
+    const batch = websites.slice(i, i + concurrency);
+    const batchResults = await Promise.all(
+      batch.map(async (website) => {
+        try {
+          const check = await executeMonitorCheck(website.id);
+          return { websiteId: website.id, name: website.name, ok: !!check };
+        } catch (error) {
+          console.error(`Monitor check failed for ${website.name}:`, error);
+          return { websiteId: website.id, name: website.name, ok: false };
+        }
+      }),
+    );
+    results.push(...batchResults);
   }
 
   return results;

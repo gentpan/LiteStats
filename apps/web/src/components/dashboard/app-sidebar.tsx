@@ -9,6 +9,7 @@ import {
   Globe2,
   LayoutDashboard,
   Radar,
+  Server,
   Settings2,
   Sparkles,
 } from "lucide-react";
@@ -30,6 +31,7 @@ type AppSidebarProps = {
 const mainNav = [
   { href: "/dashboard", label: "总览", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/monitoring", label: "站点监控", icon: Radar },
+  { href: "/dashboard/servers", label: "服务器", icon: Server },
   { href: "/dashboard/websites", label: "站点管理", icon: Globe2 },
   { href: "/dashboard/settings", label: "账户设置", icon: Settings2 },
 ];
@@ -132,6 +134,15 @@ export function MobileNav({ websites, activeWebsiteId }: Pick<AppSidebarProps, "
 
   return (
     <div className="flex gap-2 overflow-x-auto border-b border-border bg-white px-4 py-3 lg:hidden">
+      <Link
+        href="/dashboard/servers"
+        className={cn(
+          "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
+          pathname.startsWith("/dashboard/servers") ? "bg-slate-900 text-white" : "bg-muted text-muted-foreground",
+        )}
+      >
+        服务器
+      </Link>
       <Link
         href="/dashboard/monitoring"
         className={cn(

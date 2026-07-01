@@ -3,6 +3,8 @@ import { ArrowUpRight, Globe2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { SiteFavicon } from "@/components/dashboard/site-favicon";
+import { DeleteWebsiteButton } from "@/components/dashboard/delete-website-button";
+import { MonitorStatusBadge } from "@/components/dashboard/monitor-status-badge";
 import { formatNumber } from "@/lib/utils";
 
 export type WebsiteListItem = {
@@ -12,6 +14,8 @@ export type WebsiteListItem = {
   trackingId: string;
   pageviews?: number;
   uniqueVisitors?: number;
+  monitorStatus?: "up" | "down" | "unknown";
+  monitorEnabled?: boolean;
 };
 
 export function WebsiteTable({ websites }: { websites: WebsiteListItem[] }) {
@@ -24,7 +28,7 @@ export function WebsiteTable({ websites }: { websites: WebsiteListItem[] }) {
           </div>
           <h3 className="mt-4 text-base font-semibold">还没有站点</h3>
           <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            创建第一个站点后，即可获取追踪代码并开始采集访问数据
+            创建第一个站点后，即可获取追踪代码、统计数据，并自动启用 Uptime / SSL 监控
           </p>
         </CardContent>
       </Card>
@@ -39,6 +43,7 @@ export function WebsiteTable({ websites }: { websites: WebsiteListItem[] }) {
             <tr>
               <th className="px-5 py-3 font-medium">站点</th>
               <th className="px-5 py-3 font-medium">域名</th>
+              <th className="px-5 py-3 font-medium">监控</th>
               <th className="px-5 py-3 font-medium">7 日 PV</th>
               <th className="px-5 py-3 font-medium">7 日 UV</th>
               <th className="px-5 py-3 font-medium">Tracking ID</th>
@@ -55,19 +60,35 @@ export function WebsiteTable({ websites }: { websites: WebsiteListItem[] }) {
                   </div>
                 </td>
                 <td className="px-5 py-4 text-muted-foreground">{website.domain}</td>
+                <td className="px-5 py-4">
+                  {website.monitorEnabled === false ? (
+                    <span className="text-xs text-muted-foreground">已暂停</span>
+                  ) : (
+                    <MonitorStatusBadge status={website.monitorStatus ?? "unknown"} />
+                  )}
+                </td>
                 <td className="px-5 py-4 tabular-nums">{formatNumber(website.pageviews ?? 0)}</td>
                 <td className="px-5 py-4 tabular-nums">{formatNumber(website.uniqueVisitors ?? 0)}</td>
                 <td className="px-5 py-4">
                   <Badge className="font-mono">{website.trackingId.slice(0, 10)}...</Badge>
                 </td>
                 <td className="px-5 py-4 text-right">
-                  <Link
-                    href={`/dashboard/${website.id}`}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:text-emerald-800"
-                  >
-                    查看统计
-                    <ArrowUpRight className="h-4 w-4" />
-                  </Link>
+                  <div className="flex items-center justify-end gap-2">
+                    <DeleteWebsiteButton websiteId={website.id} websiteName={website.name} />
+                    <Link
+                      href={`/dashboard/monitoring/${website.id}`}
+                      className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      监控
+                    </Link>
+                    <Link
+                      href={`/dashboard/${website.id}`}
+                      className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:text-emerald-800"
+                    >
+                      统计
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}

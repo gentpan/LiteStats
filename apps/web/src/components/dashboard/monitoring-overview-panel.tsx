@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Activity, AlertTriangle, RefreshCw, ShieldCheck } from "lucide-react";
+import { Activity, AlertTriangle, ExternalLink, RefreshCw, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { MonitorTable, type MonitorRow } from "@/components/dashboard/monitor-table";
@@ -57,16 +57,25 @@ export function MonitoringOverviewPanel() {
       <PageHeader
         eyebrow="Monitoring"
         title="站点监控"
-        description="对所有已添加站点进行 Uptime 与 SSL 证书监控，默认每 60 秒自动检测。"
+        description="与「站点管理」数据一致：每添加一个站点即自动启用 Uptime / SSL 监控。删除站点请前往站点管理。"
         actions={
-          <button
-            type="button"
-            onClick={() => load()}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-medium hover:bg-muted"
-          >
-            <RefreshCw className="h-4 w-4" />
-            刷新
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href="/dashboard/websites"
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-medium hover:bg-muted"
+            >
+              <ExternalLink className="h-4 w-4" />
+              站点管理
+            </a>
+            <button
+              type="button"
+              onClick={() => load()}
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-white px-4 text-sm font-medium hover:bg-muted"
+            >
+              <RefreshCw className="h-4 w-4" />
+              刷新
+            </button>
+          </div>
         }
       />
 
