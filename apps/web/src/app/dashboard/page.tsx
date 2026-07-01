@@ -23,7 +23,7 @@ export default async function DashboardOverviewPage() {
             href="/dashboard/websites"
             className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-emerald-700"
           >
-            管理站点
+            站点
           </Link>
         }
       />

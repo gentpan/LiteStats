@@ -8,7 +8,6 @@ import {
   ChevronRight,
   Globe2,
   LayoutDashboard,
-  Radar,
   Server,
   Settings2,
   Sparkles,
@@ -30,9 +29,8 @@ type AppSidebarProps = {
 
 const mainNav = [
   { href: "/dashboard", label: "总览", icon: LayoutDashboard, exact: true },
-  { href: "/dashboard/monitoring", label: "站点监控", icon: Radar },
+  { href: "/dashboard/websites", label: "站点", icon: Globe2 },
   { href: "/dashboard/servers", label: "服务器", icon: Server },
-  { href: "/dashboard/websites", label: "站点管理", icon: Globe2 },
   { href: "/dashboard/settings", label: "账户设置", icon: Settings2 },
 ];
 
@@ -85,7 +83,7 @@ export function AppSidebar({ username, websites, activeWebsiteId }: AppSidebarPr
         <nav className="space-y-1">
           {websites.length === 0 ? (
             <div className="rounded-lg border border-dashed border-sidebar-border px-3 py-4 text-xs text-sidebar-muted">
-              暂无站点，前往站点管理添加
+              暂无站点，前往站点页面添加
             </div>
           ) : (
             websites.map((website) => {
@@ -144,13 +142,13 @@ export function MobileNav({ websites, activeWebsiteId }: Pick<AppSidebarProps, "
         服务器
       </Link>
       <Link
-        href="/dashboard/monitoring"
+        href="/dashboard/websites"
         className={cn(
           "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium",
-          pathname.startsWith("/dashboard/monitoring") ? "bg-slate-900 text-white" : "bg-muted text-muted-foreground",
+          pathname.startsWith("/dashboard/websites") ? "bg-slate-900 text-white" : "bg-muted text-muted-foreground",
         )}
       >
-        监控
+        站点
       </Link>
       <Link
         href="/dashboard"

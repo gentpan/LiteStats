@@ -100,9 +100,9 @@ export function MonitorDetailPanel({ websiteId }: { websiteId: string }) {
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-3 text-sm text-muted-foreground">
-        <Link href="/dashboard/monitoring" className="inline-flex items-center gap-1 hover:text-foreground">
+        <Link href="/dashboard/websites" className="inline-flex items-center gap-1 hover:text-foreground">
           <ArrowLeft className="h-4 w-4" />
-          返回监控总览
+          返回站点列表
         </Link>
       </div>
 

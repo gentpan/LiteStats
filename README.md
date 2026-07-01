@@ -12,7 +12,7 @@
 - **GeoIP** — 采集时通过 [cnip.io](https://cnip.io) API 解析国家，配合本地 / CDN 国旗 SVG
 - **站点 Favicon** — 通过 [favicon.la](https://favicon.la) 展示站点图标
 - **Passkey 登录** — WebAuthn 无密码登录，支持修改密码与多设备管理
-- **站点监控** — 自动 Uptime 检测 + SSL 证书到期监控（默认每 60 秒）
+- **站点** — 统一管理：访问统计、Uptime 检测、SSL 证书监控（默认每 60 秒）
 - **Umami 迁移** — 附带导出 / 导入脚本，可迁移历史数据
 - **一键生产部署** — Docker Compose + Caddy 自动 HTTPS
 
@@ -103,14 +103,14 @@ chmod +x scripts/deploy-prod.sh
 | `NEXT_PUBLIC_FAVICON_BASE_URL` | Favicon 服务，默认 `https://favicon.la` |
 | `MONITOR_INTERVAL_SEC` | 监控检测间隔（秒），默认 `60` |
 
-## 站点监控
+## 站点（统计 + 监控）
 
-所有在 LiteStats 中添加的站点会**自动启用**：
+所有在 LiteStats 中添加的站点会**自动启用**可用性与 SSL 监控：
 
 - **Uptime** — HTTP 可达性、状态码、响应时间
 - **SSL** — 证书有效性、到期时间、剩余天数
 
-Dashboard → **站点监控** 查看总览；生产环境由 `worker` 容器后台定时检测。
+Dashboard → **站点** 查看列表（含 7 日 PV/UV 与监控状态）；点击「监控详情」查看单站历史。生产环境由 `worker` 容器后台定时检测。
 
 ```bash
 # 本地手动运行监控 worker

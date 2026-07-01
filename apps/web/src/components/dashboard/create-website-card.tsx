@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-export function CreateWebsiteCard() {
+type CreateWebsiteCardProps = {
+  onCreated?: () => void;
+};
+
+export function CreateWebsiteCard({ onCreated }: CreateWebsiteCardProps) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [domain, setDomain] = useState("");
@@ -34,6 +38,7 @@ export function CreateWebsiteCard() {
 
     setName("");
     setDomain("");
+    onCreated?.();
     router.refresh();
   }
 

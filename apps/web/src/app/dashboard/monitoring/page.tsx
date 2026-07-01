@@ -1,5 +1,5 @@
-import { MonitoringOverviewPanel } from "@/components/dashboard/monitoring-overview-panel";
+import { redirect } from "next/navigation";
 
-export default function MonitoringPage() {
-  return <MonitoringOverviewPanel />;
+export default function MonitoringRedirectPage() {
+  redirect("/dashboard/websites");
 }

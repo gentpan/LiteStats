@@ -1,39 +1,47 @@
-import { PageHeader } from "@/components/dashboard/page-header";
-import { CreateWebsiteCard } from "@/components/dashboard/create-website-card";
-import { WebsiteTable } from "@/components/dashboard/website-table";
+import { SitesPanel } from "@/components/dashboard/sites-panel";
 import { getSession } from "@/lib/auth";
 import { getOverviewStats } from "@/lib/analytics";
-import { getMonitorSummaries } from "@/lib/monitor";
+import { getMonitorOverview } from "@/lib/monitor";
 
 export default async function WebsitesPage() {
   const session = await getSession();
   if (!session) return null;
 
-  const [overview, monitors] = await Promise.all([
+  const [overview, monitorOverview] = await Promise.all([
     getOverviewStats(session.userId),
-    getMonitorSummaries(session.userId),
+    getMonitorOverview(session.userId),
   ]);
 
-  const monitorMap = new Map(monitors.map((item) => [item.websiteId, item]));
-  const websites = overview.websiteStats.map((website) => {
-    const monitor = monitorMap.get(website.id);
+  const statsMap = new Map(
+    overview.websiteStats.map((website) => [
+      website.id,
+      {
+        pageviews: website.pageviews,
+        uniqueVisitors: website.uniqueVisitors,
+        trackingId: website.trackingId,
+      },
+    ]),
+  );
+
+  const initialSites = monitorOverview.monitors.map((monitor) => {
+    const stats = statsMap.get(monitor.websiteId);
     return {
-      ...website,
-      monitorStatus: monitor?.status,
-      monitorEnabled: monitor?.monitorEnabled,
+      id: monitor.websiteId,
+      name: monitor.name,
+      domain: monitor.domain,
+      trackingId: stats?.trackingId ?? "",
+      pageviews: stats?.pageviews ?? 0,
+      uniqueVisitors: stats?.uniqueVisitors ?? 0,
+      monitorEnabled: monitor.monitorEnabled,
+      monitorUrl: monitor.monitorUrl,
+      status: monitor.status,
+      responseMs: monitor.responseMs,
+      uptime24h: monitor.uptime24h,
+      uptime7d: monitor.uptime7d,
+      sslHealth: monitor.sslHealth,
+      sslDaysLeft: monitor.sslDaysLeft,
     };
   });
 
-  return (
-    <div className="space-y-8">
-      <PageHeader
-        eyebrow="Websites"
-        title="站点管理"
-        description="在此添加、删除站点。站点与「站点监控」共用同一份数据，删除站点会同时清除统计与监控记录。"
-      />
-
-      <CreateWebsiteCard />
-      <WebsiteTable websites={websites} />
-    </div>
-  );
+  return <SitesPanel initialSites={initialSites} initialTotals={monitorOverview.totals} />;
 }

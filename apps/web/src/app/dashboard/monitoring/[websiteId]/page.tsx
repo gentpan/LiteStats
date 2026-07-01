@@ -1,10 +1,10 @@
-import { MonitorDetailPanel } from "@/components/dashboard/monitor-detail-panel";
+import { redirect } from "next/navigation";
 
-export default async function MonitorDetailPage({
+export default async function MonitoringDetailRedirectPage({
   params,
 }: {
   params: Promise<{ websiteId: string }>;
 }) {
   const { websiteId } = await params;
-  return <MonitorDetailPanel websiteId={websiteId} />;
+  redirect(`/dashboard/websites/${websiteId}/monitor`);
 }

@@ -18,7 +18,7 @@ export default async function ServersPage() {
       <PageHeader
         eyebrow="Infrastructure"
         title="服务器监控"
-        description="通过 Agent 探针采集目标服务器的 CPU、内存、磁盘与系统负载。与站点监控独立管理。"
+        description="通过 Agent 探针采集目标服务器的 CPU、内存、磁盘与系统负载。与站点（统计/可用性）独立管理。"
       />
 
       <div className="grid gap-4 md:grid-cols-3">
