@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 type PasskeyItem = {
@@ -20,6 +22,8 @@ type PasskeyItem = {
 };
 
 export function PasskeySettings() {
+  const { confirm } = useConfirm();
+  const toast = useToast();
   const [passkeys, setPasskeys] = useState<PasskeyItem[]>([]);
   const [supported, setSupported] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -95,13 +99,21 @@ export function PasskeySettings() {
   }
 
   async function deletePasskey(id: string, name: string) {
-    if (!window.confirm(`确定删除 Passkey「${name}」吗？`)) return;
+    const confirmed = await confirm({
+      title: "删除 Passkey",
+      description: `确定删除「${name}」？删除后将无法使用该设备通过生物识别登录。`,
+      confirmLabel: "删除",
+      destructive: true,
+    });
+    if (!confirmed) return;
 
     const response = await fetch(`/api/auth/passkey/${id}`, { method: "DELETE" });
     if (!response.ok) {
-      setError("删除失败");
+      toast.error("删除失败，请稍后重试");
       return;
     }
+
+    toast.success(`已删除 Passkey「${name}」`);
     await loadPasskeys();
   }
 

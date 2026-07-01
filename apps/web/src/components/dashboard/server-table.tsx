@@ -7,6 +7,8 @@ import { ArrowUpRight, Server, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MonitorStatusBadge } from "@/components/dashboard/monitor-status-badge";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import { formatNumber } from "@/lib/utils";
 
 export type ServerListItem = {
@@ -23,10 +25,17 @@ export type ServerListItem = {
 
 export function ServerTable({ servers }: { servers: ServerListItem[] }) {
   const router = useRouter();
+  const { confirm } = useConfirm();
+  const toast = useToast();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function handleDelete(server: ServerListItem) {
-    const confirmed = window.confirm(`确定删除服务器「${server.name}」？相关监控数据将一并删除。`);
+    const confirmed = await confirm({
+      title: "删除服务器",
+      description: `确定删除「${server.name}」？相关监控数据将一并删除，此操作不可恢复。`,
+      confirmLabel: "删除",
+      destructive: true,
+    });
     if (!confirmed) return;
 
     setDeletingId(server.id);
@@ -34,10 +43,11 @@ export function ServerTable({ servers }: { servers: ServerListItem[] }) {
     setDeletingId(null);
 
     if (!response.ok) {
-      window.alert("删除失败");
+      toast.error("删除失败，请稍后重试");
       return;
     }
 
+    toast.success(`已删除服务器「${server.name}」`);
     router.refresh();
   }
 

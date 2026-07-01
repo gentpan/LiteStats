@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 
 type DeleteWebsiteButtonProps = {
   websiteId: string;
@@ -12,12 +14,17 @@ type DeleteWebsiteButtonProps = {
 
 export function DeleteWebsiteButton({ websiteId, websiteName }: DeleteWebsiteButtonProps) {
   const router = useRouter();
+  const { confirm } = useConfirm();
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
 
   async function handleDelete() {
-    const confirmed = window.confirm(
-      `确定删除站点「${websiteName}」？\n\n将同时删除该站点的统计数据、监控记录和追踪配置，此操作不可恢复。`,
-    );
+    const confirmed = await confirm({
+      title: "删除站点",
+      description: `确定删除「${websiteName}」？将同时删除该站点的统计数据、监控记录和追踪配置，此操作不可恢复。`,
+      confirmLabel: "删除",
+      destructive: true,
+    });
     if (!confirmed) return;
 
     setLoading(true);
@@ -25,10 +32,11 @@ export function DeleteWebsiteButton({ websiteId, websiteName }: DeleteWebsiteBut
     setLoading(false);
 
     if (!response.ok) {
-      window.alert("删除失败，请稍后重试");
+      toast.error("删除失败，请稍后重试");
       return;
     }
 
+    toast.success(`已删除站点「${websiteName}」`);
     router.refresh();
   }
 
