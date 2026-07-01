@@ -17,6 +17,7 @@
     "db:seed": "bun run --filter web db:seed",
     "db:studio": "bun run --filter web db:studio",
     "prod:up": "bash deploy/prod-up.sh",
+    "prod:deploy": "bash scripts/deploy-prod.sh",
     "prod:down": "docker compose -f docker-compose.prod.yml --env-file .env.production down",
     "prod:logs": "docker compose -f docker-compose.prod.yml --env-file .env.production logs -f app"
   }

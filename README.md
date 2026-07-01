@@ -79,6 +79,13 @@ cp .env.production.example .env.production
 bun run prod:up
 ```
 
+从本机同步到已部署服务器（`scripts/deploy-prod.sh`）：
+
+```bash
+chmod +x scripts/deploy-prod.sh
+./scripts/deploy-prod.sh
+```
+
 架构：`Internet → Caddy (:443) → Next.js (:3000) → PostgreSQL`
 
 详细说明见 [deploy/README.md](./deploy/README.md)。
