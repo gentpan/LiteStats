@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { getAgentInstallCommand } from "@/lib/agent-install";
 
 export function CreateServerCard() {
   const router = useRouter();
@@ -68,10 +69,16 @@ export function CreateServerCard() {
               <code className="mt-1 block break-all rounded bg-white px-2 py-1 text-xs">{created.agentToken}</code>
             </div>
             <div>
-              <p className="text-emerald-800">安装探针（在目标服务器执行）：</p>
-              <pre className="mt-1 overflow-x-auto rounded bg-white p-2 text-xs text-slate-700">{`curl -fsSL ${typeof window !== "undefined" ? window.location.origin : ""}/scripts/litestats-agent.sh -o /usr/local/bin/litestats-agent
-chmod +x /usr/local/bin/litestats-agent
-echo '*/1 * * * * LITESTATS_AGENT_TOKEN=${created.agentToken} LITESTATS_AGENT_ENDPOINT=${typeof window !== "undefined" ? window.location.origin : "https://litestats.dev"}/api/agent/metrics /usr/local/bin/litestats-agent' | crontab -`}</pre>
+              <p className="text-emerald-800">一键安装（在目标 Linux 服务器以 root/sudo 执行）：</p>
+              <pre className="mt-1 overflow-x-auto rounded bg-white p-2 text-xs text-slate-700">
+                {getAgentInstallCommand(
+                  typeof window !== "undefined" ? window.location.origin : "https://litestats.dev",
+                  created.agentToken,
+                )}
+              </pre>
+              <p className="mt-2 text-xs text-emerald-700">
+                安装脚本会下载探针、写入 /etc/cron.d/litestats-agent（不覆盖现有 crontab），并立即执行首次上报。
+              </p>
             </div>
           </div>
         ) : null}

@@ -117,6 +117,23 @@ Dashboard → **站点** 查看列表（含 7 日 PV/UV 与监控状态）；点
 cd apps/web && bun run monitor:worker
 ```
 
+## 服务器监控（Agent）
+
+Dashboard → **服务器** 添加记录后，在目标 **Linux** 机器上一键安装探针：
+
+```bash
+# 在目标服务器执行（将 TOKEN 替换为控制台显示的 Agent Token）
+curl -fsSL https://litestats.dev/scripts/install-litestats-agent.sh | sudo bash -s -- --token TOKEN --base-url https://litestats.dev
+```
+
+从本机自动登记 + SSH 安装（需已配置 `SSH_KEY`，默认 `gentpan.pem`）：
+
+```bash
+./scripts/bootstrap-server-agent.sh root@167.233.97.16
+```
+
+安装脚本会写入 `/etc/cron.d/litestats-agent`（不覆盖现有 crontab），每分钟上报 CPU / 内存 / 磁盘 / 负载。
+
 项目已内置 `apps/web/public/flags/`（1x1 / 4x3 SVG）。若需重新解压：
 
 ```bash

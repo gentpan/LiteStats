@@ -10,6 +10,7 @@ import { RangeTabs } from "@/components/dashboard/range-tabs";
 import { ServerMetricsCharts } from "@/components/dashboard/server-metrics-chart";
 import type { TimeRange } from "@/components/dashboard/range-tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getAgentInstallCommand } from "@/lib/agent-install";
 
 type ServerDetailResponse = {
   server: { id: string; name: string; hostname: string; agentToken: string };
@@ -115,11 +116,17 @@ export function ServerDetailPanel({ serverId }: { serverId: string }) {
       <ServerMetricsCharts metrics={data.metrics} />
 
       <Card>
-        <CardHeader><CardTitle>Agent 安装命令</CardTitle></CardHeader>
-        <CardContent>
-          <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-xs">{`curl -fsSL ${typeof window !== "undefined" ? window.location.origin : ""}/scripts/litestats-agent.sh -o /usr/local/bin/litestats-agent
-chmod +x /usr/local/bin/litestats-agent
-echo '*/1 * * * * LITESTATS_AGENT_TOKEN=${data.server.agentToken} LITESTATS_AGENT_ENDPOINT=${typeof window !== "undefined" ? window.location.origin : ""}/api/agent/metrics /usr/local/bin/litestats-agent' | crontab -`}</pre>
+        <CardHeader><CardTitle>一键安装 Agent</CardTitle></CardHeader>
+        <CardContent className="space-y-2">
+          <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-xs">
+            {getAgentInstallCommand(
+              typeof window !== "undefined" ? window.location.origin : "https://litestats.dev",
+              data.server.agentToken,
+            )}
+          </pre>
+          <p className="text-xs text-muted-foreground">
+            在目标 Linux 服务器以 root/sudo 执行。使用 /etc/cron.d/litestats-agent，不会覆盖现有 crontab。
+          </p>
         </CardContent>
       </Card>
     </div>
