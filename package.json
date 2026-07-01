@@ -1,0 +1,23 @@
+{
+  "name": "litestats",
+  "private": false,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --filter web dev",
+    "build": "bun run build:tracker && bun run --filter web build",
+    "build:tracker": "bun run --filter @litestats/tracker build",
+    "start": "bun run --filter web start",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "bun run --filter web db:migrate",
+    "db:push": "bun run --filter web db:push",
+    "db:seed": "bun run --filter web db:seed",
+    "db:studio": "bun run --filter web db:studio",
+    "prod:up": "bash deploy/prod-up.sh",
+    "prod:down": "docker compose -f docker-compose.prod.yml --env-file .env.production down",
+    "prod:logs": "docker compose -f docker-compose.prod.yml --env-file .env.production logs -f app"
+  }
+}

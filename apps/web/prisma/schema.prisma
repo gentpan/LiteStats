@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  passwordHash String    @map("password_hash")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  websites     Website[]
+  passkeys     Passkey[]
+
+  @@map("users")
+}
+
+model Passkey {
+  id           String    @id @default(cuid())
+  userId       String    @map("user_id")
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialId String    @unique @map("credential_id")
+  publicKey    Bytes     @map("public_key")
+  counter      BigInt    @default(0)
+  deviceName   String    @map("device_name")
+  transports   String[]  @default([])
+  backedUp     Boolean   @default(false) @map("backed_up")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  lastUsedAt   DateTime? @map("last_used_at")
+
+  @@index([userId])
+  @@map("passkeys")
+}
+
+model WebAuthnChallenge {
+  id        String   @id @default(cuid())
+  challenge String   @unique
+  type      String
+  userId    String?  @map("user_id")
+  username  String?
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("webauthn_challenges")
+}
+
+model Website {
+  id         String    @id @default(cuid())
+  name       String
+  domain     String
+  trackingId String    @unique @map("tracking_id")
+  userId     String    @map("user_id")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  sessions   Session[]
+  events     Event[]
+
+  @@map("websites")
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  websiteId  String   @map("website_id")
+  website    Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  visitorId  String   @map("visitor_id")
+  browser    String?
+  os         String?
+  device     String?
+  country    String?
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  events     Event[]
+
+  @@unique([websiteId, visitorId])
+  @@index([websiteId, lastSeenAt])
+  @@map("sessions")
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  websiteId String   @map("website_id")
+  website   Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  sessionId String   @map("session_id")
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  type      String   @default("pageview")
+  url       String?
+  path      String?
+  referrer  String?
+  eventName String?  @map("event_name")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([websiteId, createdAt])
+  @@index([sessionId])
+  @@map("events")
+}

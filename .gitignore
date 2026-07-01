@@ -1,0 +1,12 @@
+node_modules
+.next
+dist
+.env
+.env.*
+!.env.example
+!.env.production.example
+*.log
+.DS_Store
+data/umami-export
+apps/web/.env
+.vercel

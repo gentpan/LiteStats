@@ -1,0 +1,9 @@
+{
+  "name": "@litestats/tracker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build src/index.ts --outfile ../../apps/web/public/tracker.js --minify --target browser"
+  }
+}

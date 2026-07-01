@@ -1,0 +1,29 @@
+# Caddy 自动 HTTPS 反向代理
+# 1. 将 stats.example.com 改为你的域名
+# 2. 设置 DNS A 记录指向服务器 IP
+# 3. 在 .env.production 中配置 WEBAUTHN_RP_ID 与 WEBAUTHN_ORIGIN
+
+{
+  email {$CADDY_EMAIL}
+}
+
+{$DOMAIN} {
+  encode gzip zstd
+
+  @api path /api/*
+  @tracker path /tracker.js
+
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "strict-origin-when-cross-origin"
+  }
+
+  reverse_proxy app:3000
+}
+
+# 本地无域名测试：可注释上方块，使用下方 HTTP 配置
+# :80 {
+#   reverse_proxy app:3000
+# }
