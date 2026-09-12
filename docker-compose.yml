@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: litestats
+      POSTGRES_PASSWORD: litestats
+      POSTGRES_DB: litestats
+    ports:
+      - "5432:5432"
+    volumes:
+      - litestats_pg:/var/lib/postgresql/data
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    ports:
+      - "8123:8123"
+    volumes:
+      - litestats_ch:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+volumes:
+  litestats_pg:
+  litestats_ch:
