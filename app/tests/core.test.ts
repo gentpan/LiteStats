@@ -24,7 +24,7 @@ test("tracker posts to its script host; failed Beacon falls back to fetch", () =
   const source = readFileSync(new URL('../src/lib/tracking-script.ts', import.meta.url),'utf8')
   const script = vm.runInNewContext('`'+source.match(/const trackingScript = `([\s\S]*?)`\n/)![1]+'`')
   const requests: string[] = []
-  const context = { document: {currentScript: {src:'https://stats.example.com/js/script.js', getAttribute:(key: string)=>key==='data-domain'?'shop.example.com':null}, title:'Test', referrer:'', documentElement:{}, addEventListener(){}}, location:{href:'https://shop.example.com/',host:'shop.example.com'}, innerWidth:1200, screen:{width:1200,height:800}, navigator:{language:'zh',sendBeacon:()=>false},fetch:(url:string)=>{requests.push(url)}, history:{pushState(){}}, window:{addEventListener(){}}, Blob, URL }
+  const context = { document: {currentScript: {src:'https://stats.example.com/js/script.js', getAttribute:(key: string)=>key==='data-domain'?'shop.example.com':null}, title:'Test', referrer:'', documentElement:{}, addEventListener(){}}, location:{href:'https://shop.example.com/',host:'shop.example.com'}, innerWidth:1200, screen:{width:1200,height:800}, navigator:{language:'zh',sendBeacon:()=>false},fetch:(url:string, options:RequestInit)=>{requests.push(url); expect(options.credentials).toBe("omit"); expect(options.headers).toEqual({"Content-Type":"text/plain;charset=UTF-8"}); return Promise.resolve()}, history:{pushState(){}}, window:{addEventListener(){}}, Blob, URL }
   vm.runInNewContext(script,context)
   expect(requests).toEqual(['https://stats.example.com/api/event'])
 })

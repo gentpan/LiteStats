@@ -11,7 +11,7 @@ export const trackingScript = `(() => {
         t: document.title || "", l: navigator.language || "",
         s: (screen.width && screen.height) ? (screen.width + "x" + screen.height) : ""
       }, payload || {}));
-      if (!navigator.sendBeacon || !navigator.sendBeacon(endpoint, new Blob([body], { type: "application/json" }))) fetch(endpoint, { method: "POST", body, headers: { "Content-Type": "application/json" }, keepalive: true });
+      if (!navigator.sendBeacon || !navigator.sendBeacon(endpoint, new Blob([body], { type: "text/plain;charset=UTF-8" }))) fetch(endpoint, { method: "POST", body, headers: { "Content-Type": "text/plain;charset=UTF-8" }, credentials: "omit", keepalive: true }).catch(function () {});
     } catch (e) {}
   }
   send();

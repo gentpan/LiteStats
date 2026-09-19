@@ -1,3 +1,4 @@
+import { eventCors } from "~/lib/event-cors"
 import { createHmac } from "node:crypto"
 import { SESSION_KEY } from "~/lib/env"
 import { eventSchema, readJson } from "~/lib/request-validation"
@@ -7,31 +8,23 @@ import { queueEvent } from "~/lib/ch"
 import { extractSearchQuery, parseAcceptLanguage } from "~/lib/languages"
 import { parseUa, screenSize } from "~/lib/ua"
 
-function cors() {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  }
-}
-
 export const Route = createFileRoute("/api/event")({
   server: {
     handlers: {
-      OPTIONS: async () => new Response(null, { status: 204, headers: cors() }),
+      OPTIONS: async ({ request }) => new Response(null, { status: 204, headers: eventCors(request) }),
       POST: async ({ request }) => {
         // Respect Do Not Track (DNT) and Global Privacy Control (GPC)
         const dnt = request.headers.get("dnt")
         const gpc = request.headers.get("sec-gpc")
         if (dnt === "1" || gpc === "1") {
-          return new Response("ok", { status: 202, headers: { ...cors(), "Content-Type": "text/plain; charset=utf-8" } })
+          return new Response("ok", { status: 202, headers: { ...eventCors(request), "Content-Type": "text/plain; charset=utf-8" } })
         }
 
         let body: Record<string, unknown> = {}
         try {
           body = eventSchema.parse(await readJson(request))
         } catch {
-          return new Response("bad request", { status: 400, headers: cors() })
+          return new Response("bad request", { status: 400, headers: eventCors(request) })
         }
         const domain = String(body.d || body.domain || "")
         const rawUrl = String(body.u || body.url || "")
@@ -54,7 +47,7 @@ export const Route = createFileRoute("/api/event")({
         }
         const siteDomain = domain || host.replace(/^www\./, "")
         const site = siteDomain ? await findSiteByDomain(siteDomain) : null
-        if (!site) return new Response("ok", { status: 202, headers: cors() })
+        if (!site) return new Response("ok", { status: 202, headers: eventCors(request) })
 
         const referrer = String(body.r || body.referrer || "")
         let source = "Direct"
@@ -112,7 +105,7 @@ export const Route = createFileRoute("/api/event")({
           utm,
           props,
         })
-        return new Response("ok", { status: 202, headers: { ...cors(), "Content-Type": "text/plain; charset=utf-8" } })
+        return new Response("ok", { status: 202, headers: { ...eventCors(request), "Content-Type": "text/plain; charset=utf-8" } })
       },
     },
   },
