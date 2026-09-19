@@ -120,7 +120,7 @@ function inferPeriod(s: { from?: string, to?: string, days?: number }): Period {
   if (s.days === 30) return "28d"
   if (s.days === 90 || s.days === 91) return "91d"
   if (s.from && s.to && s.from !== s.to) return "custom"
-  return "7d"
+  return "24h"
 }
 
 export type Interval = "minute" | "hour" | "day" | "week" | "month"
@@ -246,7 +246,7 @@ export function compactDashSearch<T extends Record<string, unknown>>(input: T): 
   const parsed = parseDashSearch(input)
   const result: Record<string, unknown> = {...input}
   delete result.days
-  if (parsed.period === "7d") delete result.period
+  if (parsed.period === "24h") delete result.period
   else result.period = parsed.period
   if (parsed.period !== "custom") { delete result.from; delete result.to }
   if (parsed.interval === defaultInterval(parsed.period, parsed)) delete result.interval
