@@ -50,7 +50,7 @@ function zipStore(files: Array<{ name: string, content: string }>) {
   ev.setUint16(10, files.length, true)
   ev.setUint32(12, centralSize, true)
   ev.setUint32(16, offset, true)
-  return new Blob([...locals, ...centrals, end], { type: "application/zip" })
+  return new Blob([...locals, ...centrals, end].map(chunk => new Uint8Array(chunk).buffer), { type: "application/zip" })
 }
 
 function csvEscape(value: string | number) {
@@ -102,7 +102,6 @@ export function downloadDashboardZip(input: {
   utm?: Row[]
   utmMediums?: Row[]
   campaigns?: Row[]
-  goals?: Array<{ display_name: string, visitors?: number }>
   overview?: Overview
 }) {
   const seriesBy = input.seriesBy || {
@@ -129,7 +128,6 @@ export function downloadDashboardZip(input: {
     { name: "utm_sources.csv", content: rowsCsv(input.utm || []) },
     { name: "utm_mediums.csv", content: rowsCsv(input.utmMediums || []) },
     { name: "utm_campaigns.csv", content: rowsCsv(input.campaigns || []) },
-    { name: "conversions.csv", content: csv(["name", "visitors"], (input.goals || []).map((g) => [g.display_name, g.visitors || 0])) },
   ]
   const blob = zipStore(files)
   const url = URL.createObjectURL(blob)

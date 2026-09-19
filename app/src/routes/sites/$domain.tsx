@@ -1,41 +1,52 @@
+import { Surface } from "~/components/Surface"
+import { TrafficHeatmap } from "~/components/TrafficHeatmap"
+import { PageState } from "~/components/PageState"
+import { useT } from "~/lib/i18n"
+import { Navigate, redirect } from "@tanstack/react-router"
+import type { SearchSchemaInput } from "@tanstack/react-router"
+import type { DashSearch } from "~/lib/range"
 import { Outlet, createFileRoute, useChildMatches, useRouter } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
-import { ActivityLog } from "~/components/ActivityLog"
 import { DashTopBar } from "~/components/DashTopBar"
 import { Shell } from "~/components/Shell"
 import { VisitorGraph } from "~/components/VisitorGraph"
 import { MapCard } from "~/components/WorldMap"
 import { List, ReportCard, ReportMenu } from "~/components/ui"
-import { percentShort } from "~/lib/format"
 import {
   dashboardFn,
-  exploreFn,
   meFn,
 } from "~/lib/actions"
 import { countryName } from "~/lib/countries"
 import { languageName } from "~/lib/languages"
 import type { MetricKey } from "~/lib/ch"
 import { downloadDashboardZip } from "~/lib/export"
-import { dashInput, isoDate, parseDashSearch, parseDate } from "~/lib/range"
+import { compactDashSearch, dashInput, isoDate, parseDashSearch, parseDate } from "~/lib/range"
 
 export const Route = createFileRoute("/sites/$domain")({
-  validateSearch: parseDashSearch,
+  validateSearch: (search: Partial<DashSearch> & SearchSchemaInput) => parseDashSearch(search),
+  search: { middlewares: [({search,next}) => compactDashSearch(next(search))] },
+  beforeLoad: ({params,location}) => {
+    if (location.pathname.endsWith("/settings") || location.pathname.endsWith("/activity")) return
+    const raw = location.search as Record<string, unknown>
+    const clean = compactDashSearch(raw)
+    if (Object.keys(raw).some(key => raw[key] !== clean[key])) {
+      throw redirect({to:"/sites/$domain",params:{domain:params.domain},search:clean,replace:true})
+    }
+  },
   loaderDeps: ({ search }) => search,
   loader: async ({ params, deps, location }) => {
     const me = await meFn()
-    if (location.pathname.includes("/settings")) return { me, data: null }
+    if ((location.pathname.endsWith("/settings") || location.pathname.endsWith("/activity"))) return { me, data: null }
     try {
       const data = await dashboardFn({ data: dashInput(params.domain, deps) })
       return { me, data }
-    } catch {
-      return { me, data: null }
+    } catch (error) {
+      throw error
     }
   },
   component: SitePage,
   errorComponent: ({ error }) => (
-    <Shell>
-      <p className="text-red-500">{error instanceof Error ? error.message : "页面出错"}</p>
-    </Shell>
+    <PageState title="页面出错" description={error instanceof Error ? error.message : undefined} />
   ),
 })
 
@@ -46,6 +57,7 @@ function SitePage() {
 }
 
 function Dashboard() {
+  const { t, locale } = useT()
   const { me, data } = Route.useLoaderData()
   const { domain } = Route.useParams()
   const search = Route.useSearch()
@@ -56,53 +68,40 @@ function Dashboard() {
   const [pageMode, setPageMode] = useState("path")
   const [locationTab, setLocationTab] = useState("countries")
   const [deviceTab, setDeviceTab] = useState("browser")
-  const [behaviourTab, setBehaviourTab] = useState(
-    ["goals", "props", "funnels", "explore"].includes(search.tab) ? search.tab : "goals",
-  )
-  const [journey, setJourney] = useState<Array<{ name: string, pathname: string }>>([])
-  const [exploreRows, setExploreRows] = useState(data?.explore || [])
-  const [explorePath, setExplorePath] = useState<Array<{ name: string, pathname: string, visitors: number, conversion_rate: number }>>([])
 
   useEffect(() => {
-    setExploreRows(data?.explore || [])
-    setJourney([])
-    setExplorePath([])
-  }, [data?.explore, search.from, search.to, search.source, search.page, search.country])
-
-  useEffect(() => {
-    const id = window.setInterval(() => { void router.invalidate() }, search.period === "realtime" ? 8000 : 20000)
+    const id = window.setInterval(() => { if (document.visibilityState === "visible") void router.invalidate() }, search.period === "realtime" ? 8000 : 20000)
     return () => window.clearInterval(id)
   }, [router, search.period])
 
   if (!me && !data?.site.public) {
-    void router.navigate({ to: "/login" })
-    return null
+    return <Navigate to="/login" />
   }
-  if (!data) return <Shell user={me}><p>无法读取站点</p></Shell>
+  if (!data) return <Shell user={me}><p>{t("无法读取站点")}</p></Shell>
 
   const readonly = !me
   const chips = [
-    search.source && { key: "source" as const, label: `来源 ${search.source}` },
-    search.page && { key: "page" as const, label: `页面 ${search.page}` },
-    search.country && { key: "country" as const, label: `地区 ${countryName(search.country)}` },
-    search.browser && { key: "browser" as const, label: `浏览器 ${search.browser}` },
-    search.os && { key: "os" as const, label: `系统 ${search.os}` },
-    search.device && { key: "device" as const, label: `设备 ${search.device}` },
-    search.goal && { key: "goal" as const, label: `目标 ${data.goals.find((g) => g.id === search.goal)?.display_name || search.goal}` },
-  ].filter(Boolean) as Array<{ key: "source" | "page" | "country" | "browser" | "os" | "device" | "goal", label: string }>
+    search.source && { key: "source" as const, label: t("来源 {0}", {0: search.source}) },
+    search.page && { key: "page" as const, label: t("页面 {0}", {0: search.page}) },
+    search.country && { key: "country" as const, label: t("地区 {0}", {0: countryName(search.country, locale)}) },
+    search.browser && { key: "browser" as const, label: t("浏览器 {0}", {0: search.browser}) },
+    search.os && { key: "os" as const, label: t("系统 {0}", {0: search.os}) },
+    search.device && { key: "device" as const, label: t("设备 {0}", {0: search.device}) },
+  ].filter(Boolean) as Array<{ key: "source" | "page" | "country" | "browser" | "os" | "device", label: string }>
 
   function go(next: Partial<typeof search>) {
     void router.navigate({ to: "/sites/$domain", params: { domain }, search: parseDashSearch({ ...search, ...next }) })
   }
 
-  const countries = data.countries.map((r) => ({ ...r, label: countryName(r.name) }))
+  const countries = data.countries.map((r) => ({ ...r, label: countryName(r.name, locale) }))
 
   return (
     <Shell user={me}>
-      <div className="mb-16 grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="mb-16 grid min-w-0 grid-cols-1 gap-5 md:grid-cols-2">
         <DashTopBar
           domain={domain}
           live={data.overview.live}
+          filterOptions={{page:data.pages,source:data.sources,country:data.countries.map(row=>({...row,label:countryName(row.name,locale)})),device:data.devices,browser:data.browsers,os:data.os}}
           search={search}
           onPeriod={go}
           readonly={readonly}
@@ -126,7 +125,6 @@ function Dashboard() {
             utm: data.utm,
             utmMediums: data.utmMediums,
             campaigns: data.campaigns,
-            goals: data.goals,
             overview: data.overview,
           })}
         />
@@ -134,12 +132,12 @@ function Dashboard() {
         {chips.length ? (
           <div className="col-span-full flex flex-wrap gap-2">
             {chips.map((c) => (
-              <button key={c.key} type="button" className="flex h-8 items-center rounded-md bg-white px-2.5 text-sm text-gray-700 shadow-sm hover:text-indigo-700" onClick={() => go({ [c.key]: c.key === "goal" ? 0 : "" })}>
-                {c.label}
+              <button key={c.key} type="button" className="flex h-8 items-center rounded-md bg-white px-2.5 text-sm text-gray-700 shadow-sm hover:text-indigo-700" onClick={() => go({ [c.key]: "" })}>
+                {t(c.label)}
                 <span className="ml-1.5 text-gray-400">×</span>
               </button>
             ))}
-            <button type="button" className="text-sm text-gray-500 hover:text-gray-900" onClick={() => go({ source: "", page: "", country: "", browser: "", os: "", device: "", goal: 0 })}>清除筛选</button>
+            <button type="button" className="text-sm text-gray-500 hover:text-gray-900" onClick={() => go({ source: "", page: "", country: "", browser: "", os: "", device: "" })}>{t("清除筛选")}</button>
           </div>
         ) : null}
 
@@ -167,15 +165,34 @@ function Dashboard() {
             />
 
             <MapCard
+              mapConfig={data.mapConfig}
               rows={countries}
               live={data.liveGeo || []}
               liveCount={data.overview.live}
-              heatmap={data.heatmap || []}
               onCountryClick={(code) => {
                 setLocationTab("regions")
                 go({ country: code })
               }}
             />
+
+            <ReportCard className="location-report col-span-full"
+              tabs={[{ id: "countries", label: "国家/地区" }, { id: "regions", label: "地区" }, { id: "cities", label: "城市" }]}
+              active={locationTab}
+              onChange={setLocationTab}
+              details={{
+                title: locationTab === "regions" ? t("地区") : locationTab === "cities" ? t("城市") : t("国家/地区"),
+                kind: locationTab === "regions" ? "region" : locationTab === "cities" ? "city" : "country",
+                rows: locationRows(data, locationTab, countries),
+                onPick: locationTab === "regions" || locationTab === "cities" ? undefined : (name) => go({ country: name }),
+              }}
+            >
+              <List compact
+                plain
+                kind={locationTab === "regions" ? "region" : locationTab === "cities" ? "city" : "country"}
+                rows={locationRows(data, locationTab, countries)}
+                onPick={locationTab === "regions" || locationTab === "cities" ? undefined : (name) => go({ country: name })}
+              />
+            </ReportCard>
 
             <ReportCard
               tabs={[
@@ -192,7 +209,7 @@ function Dashboard() {
                 },
                 {
                   id: "organic_kw",
-                  label: sourceTab === "google_kw" ? "Google 搜索词" : sourceTab === "bing_kw" ? "Bing 搜索词" : "搜索词",
+                  label: sourceTab === "google_kw" ? t("Google 搜索词") : sourceTab === "bing_kw" ? t("Bing 搜索词") : t("搜索词"),
                   dropdown: [
                     { id: "organic_kw", label: "引荐搜索词" },
                     { id: "google_kw", label: "Google 搜索词" },
@@ -203,13 +220,13 @@ function Dashboard() {
               active={sourceTab}
               onChange={setSourceTab}
               details={{
-                title: sourceTab === "channel" ? "渠道" : sourceTab === "utm_medium" ? "UTM 媒介" : sourceTab === "utm_source" ? "UTM 来源" : sourceTab === "utm_campaign" ? "UTM 活动" : sourceTab === "google_kw" ? "Google 搜索词" : sourceTab === "bing_kw" ? "Bing 搜索词" : sourceTab === "organic_kw" ? "引荐搜索词" : "来源",
+                title: sourceTab === "channel" ? t("渠道") : sourceTab === "utm_medium" ? t("UTM 媒介") : sourceTab === "utm_source" ? t("UTM 来源") : sourceTab === "utm_campaign" ? t("UTM 活动") : sourceTab === "google_kw" ? t("Google 搜索词") : sourceTab === "bing_kw" ? t("Bing 搜索词") : sourceTab === "organic_kw" ? t("引荐搜索词") : t("来源"),
                 kind: sourceTab === "source" ? "source" : sourceTab === "channel" ? "channel" : sourceTab.endsWith("_kw") ? "keyword" : "campaign",
                 rows: sourceRows(data, sourceTab),
                 onPick: sourceTab === "source" ? (name) => go({ source: name }) : undefined,
               }}
             >
-              {keywordEmpty(data, sourceTab, domain) || (
+              {keywordEmpty(data, sourceTab, domain, t) || (
                 <List
                   plain
                   kind={sourceTab === "source" ? "source" : sourceTab === "channel" ? "channel" : sourceTab.endsWith("_kw") ? "keyword" : "campaign"}
@@ -225,7 +242,7 @@ function Dashboard() {
               onChange={setPageTab}
               extra={<ReportMenu value={pageMode} onChange={setPageMode} options={[{ id: "path", label: "路径" }, { id: "hostname", label: "网址" }]} />}
               details={{
-                title: pageMode === "hostname" ? "主机名" : pageTab === "entry" ? "进入页" : pageTab === "exit" ? "退出页" : pageTab === "title" ? "标题" : pageTab === "query" ? "查询" : "热门页面",
+                title: pageMode === "hostname" ? t("主机名") : pageTab === "entry" ? t("进入页") : pageTab === "exit" ? t("退出页") : pageTab === "title" ? t("标题") : pageTab === "query" ? t("查询") : t("热门页面"),
                 kind: pageMode === "hostname" ? "hostname" : pageTab === "title" ? "title" : pageTab === "query" ? "query" : "page",
                 rows: pageRows(data, pageTab, pageMode, domain),
                 onPick: pageMode === "path" && pageTab === "pages" ? (name) => go({ page: name }) : undefined,
@@ -239,188 +256,26 @@ function Dashboard() {
               />
             </ReportCard>
 
-            <ReportCard
-              tabs={[{ id: "countries", label: "国家/地区" }, { id: "regions", label: "地区" }, { id: "cities", label: "城市" }]}
-              active={locationTab}
-              onChange={setLocationTab}
-              details={{
-                title: locationTab === "regions" ? "地区" : locationTab === "cities" ? "城市" : "国家/地区",
-                kind: locationTab === "regions" ? "region" : locationTab === "cities" ? "city" : "country",
-                rows: locationRows(data, locationTab, countries),
-                onPick: locationTab === "regions" || locationTab === "cities" ? undefined : (name) => go({ country: name }),
-              }}
-            >
-              <List
-                plain
-                kind={locationTab === "regions" ? "region" : locationTab === "cities" ? "city" : "country"}
-                rows={locationRows(data, locationTab, countries)}
-                onPick={locationTab === "regions" || locationTab === "cities" ? undefined : (name) => go({ country: name })}
-              />
-            </ReportCard>
+            <Surface className="analytics-panel traffic-report"><TrafficHeatmap cells={data.heatmap || []} /></Surface>
 
             <ReportCard
               tabs={[{ id: "browser", label: "浏览器" }, { id: "os", label: "操作系统" }, { id: "device", label: "设备" }, { id: "language", label: "语言" }, { id: "screen", label: "屏幕" }]}
               active={deviceTab}
               onChange={setDeviceTab}
               details={{
-                title: deviceTab === "os" ? "操作系统" : deviceTab === "device" ? "设备" : deviceTab === "language" ? "语言" : deviceTab === "screen" ? "屏幕" : "浏览器",
+                title: deviceTab === "os" ? t("操作系统") : deviceTab === "device" ? t("设备") : deviceTab === "language" ? t("语言") : deviceTab === "screen" ? t("屏幕") : t("浏览器"),
                 kind: deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : deviceTab === "language" ? "language" : deviceTab === "screen" ? "screen" : "browser",
-                rows: deviceRows(data, deviceTab),
+                rows: deviceRows(data, deviceTab, locale),
                 onPick: deviceTab === "language" || deviceTab === "screen" ? undefined : (name) => go({ [deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : "browser"]: name }),
               }}
             >
               <List
                 plain
                 kind={deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : deviceTab === "language" ? "language" : deviceTab === "screen" ? "screen" : "browser"}
-                rows={deviceRows(data, deviceTab)}
+                rows={deviceRows(data, deviceTab, locale)}
                 onPick={deviceTab === "language" || deviceTab === "screen" ? undefined : (name) => go({ [deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : "browser"]: name })}
               />
             </ReportCard>
-
-            <ReportCard
-              className="col-span-full"
-              tabs={[
-                { id: "goals", label: "目标" },
-                {
-                  id: "props",
-                  label: "属性",
-                  dropdown: data.propKeys.length
-                    ? data.propKeys.map((k) => ({
-                        id: k,
-                        label: k,
-                        selected: data.propKey === k,
-                        onSelect: () => { setBehaviourTab("props"); go({ prop: k }) },
-                      }))
-                    : undefined,
-                },
-                {
-                  id: "funnels",
-                  label: "漏斗",
-                  dropdown: data.funnels.length
-                    ? data.funnels.map((f) => ({
-                        id: String(f.id),
-                        label: f.name,
-                        selected: data.funnelId === f.id,
-                        onSelect: () => { setBehaviourTab("funnels"); go({ funnel: f.id }) },
-                      }))
-                    : undefined,
-                },
-                { id: "explore", label: "探索" },
-              ]}
-              active={behaviourTab}
-              onChange={setBehaviourTab}
-              details={behaviourTab === "goals" ? {
-                title: "目标转化",
-                kind: "goal",
-                columns: [
-                  { key: "visitors", label: "访客" },
-                  { key: "events", label: "转化" },
-                  { key: "cr", label: "转化率", format: (n) => percentShort(n) },
-                ],
-                rows: data.goals.map((g) => ({
-                  name: g.display_name,
-                  value: g.visitors,
-                  metrics: {
-                    visitors: g.visitors,
-                    events: g.events ?? g.visitors,
-                    cr: data.overview.visitors ? (g.visitors / data.overview.visitors) * 100 : 0,
-                  },
-                })),
-                onPick: (name) => {
-                  const g = data.goals.find((x) => x.display_name === name)
-                  if (g) go({ goal: g.id })
-                },
-              } : behaviourTab === "props" ? {
-                title: "自定义属性",
-                rows: data.props,
-              } : undefined}
-            >
-              {behaviourTab === "goals" ? (
-                <List
-                  plain
-                  kind="goal"
-                  columns={[
-                    { key: "visitors", label: "访客" },
-                    { key: "events", label: "转化" },
-                    { key: "cr", label: "转化率", format: (n) => percentShort(n) },
-                  ]}
-                  rows={data.goals.map((g) => ({
-                    name: g.display_name,
-                    value: g.visitors,
-                    metrics: {
-                      visitors: g.visitors,
-                      events: g.events ?? g.visitors,
-                      cr: data.overview.visitors ? (g.visitors / data.overview.visitors) * 100 : 0,
-                    },
-                  }))}
-                  onPick={(name) => {
-                    const g = data.goals.find((x) => x.display_name === name)
-                    if (g) go({ goal: g.id })
-                  }}
-                />
-              ) : null}
-              {behaviourTab === "props" ? (
-                data.propKeys.length === 0
-                  ? <div className="flex h-full items-center justify-center font-medium text-gray-500" style={{ minHeight: 220 }}>这段时间还没有自定义属性。</div>
-                  : <List plain rows={data.props} />
-              ) : null}
-              {behaviourTab === "funnels" ? (
-                data.funnel ? (
-                  <div className="mt-3 space-y-3">
-                    <p className="text-sm text-gray-500">进入漏斗 {data.funnel.entering_visitors} / 全部访客 {data.funnel.all_visitors}</p>
-                    {data.funnel.steps.map((s, i) => (
-                      <div key={`${s.label}-${i}`}>
-                        <div className="mb-1 flex justify-between text-sm">
-                          <span>{i + 1}. {s.label}</span>
-                          <span className="font-medium">{s.visitors} · {s.conversion_rate}%</span>
-                        </div>
-                        <div className="h-3 overflow-hidden rounded-sm bg-gray-100">
-                          <div className="h-full bg-indigo-500" style={{ width: `${Math.max(4, s.conversion_rate)}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : <div className="flex h-full items-center justify-center font-medium text-gray-500" style={{ minHeight: 220 }}>还没有漏斗。</div>
-              ) : null}
-              {behaviourTab === "explore" ? (
-                <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-sm text-gray-500">{journey.length === 0 ? "从最常见的页面/事件开始" : ""}</span>
-                    <button className="text-sm text-indigo-600 hover:text-indigo-500" type="button" onClick={() => { setJourney([]); setExploreRows(data.explore); setExplorePath([]) }}>重新开始</button>
-                  </div>
-                  <div className="mb-3 flex flex-wrap gap-2 text-sm">
-                    {journey.map((s, i) => (
-                      <span key={`${s.name}-${s.pathname}-${i}`} className="flex h-8 items-center rounded-md bg-white px-2.5 text-gray-700 shadow-sm">
-                        {s.name === "pageview" ? s.pathname : s.name}
-                        {explorePath[i] ? ` · ${explorePath[i].visitors} · ${explorePath[i].conversion_rate}%` : ""}
-                      </span>
-                    ))}
-                  </div>
-                  <ul>
-                    {exploreRows.map((r) => (
-                      <li key={`${r.name}-${r.pathname}`} className="mt-1">
-                        <button
-                          type="button"
-                          className="group/row relative flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-sm hover:bg-gray-100/60"
-                          onClick={async () => {
-                            const nextJourney = [...journey, r]
-                            setJourney(nextJourney)
-                            const fresh = await exploreFn({ data: { ...dashInput(domain, search), journey: nextJourney } })
-                            setExploreRows(fresh.next)
-                            setExplorePath(fresh.path)
-                          }}
-                        >
-                          <span>{r.name === "pageview" ? r.pathname : `${r.name} ${r.pathname}`}</span>
-                          <span className="font-medium tabular-nums">{r.visitors}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </ReportCard>
-
-            <ActivityLog rows={data.recent} />
         </>
 
       </div>
@@ -441,20 +296,20 @@ function sourceRows(data: Dash, tab: string) {
   return data.sources
 }
 
-function keywordEmpty(data: Dash, tab: string, domain: string) {
+function keywordEmpty(data: Dash, tab: string, domain: string, t: (key: string) => string) {
   if (tab === "google_kw" && !data.searchTerms?.google.configured && !(data.searchTerms?.google.rows || []).length) {
     return (
       <div className="flex h-full min-h-64 flex-col items-center justify-center px-6 text-center text-sm text-gray-500">
-        <p>还没连接 Google Search Console，所以看不到谷歌搜索词。</p>
-        <a href={`/sites/${encodeURIComponent(domain)}/settings?tab=integrations`} className="mt-3 text-indigo-600 hover:text-indigo-500">去集成里连接</a>
+        <p>{t("还没连接 Google Search Console，所以看不到谷歌搜索词。")}</p>
+        <a href={`/sites/${encodeURIComponent(domain)}/settings?tab=integrations`} className="analytics-config-link mt-3">{t("去集成里连接")} ↗</a>
       </div>
     )
   }
   if (tab === "bing_kw" && !data.searchTerms?.bing.configured && !(data.searchTerms?.bing.rows || []).length) {
     return (
       <div className="flex h-full min-h-64 flex-col items-center justify-center px-6 text-center text-sm text-gray-500">
-        <p>还没连接 Bing Webmaster，所以看不到必应搜索词。</p>
-        <a href={`/sites/${encodeURIComponent(domain)}/settings?tab=integrations`} className="mt-3 text-indigo-600 hover:text-indigo-500">去集成里连接</a>
+        <p>{t("还没连接 Bing Webmaster，所以看不到必应搜索词。")}</p>
+        <a href={`/sites/${encodeURIComponent(domain)}/settings?tab=integrations`} className="analytics-config-link mt-3">{t("去集成里连接")} ↗</a>
       </div>
     )
   }
@@ -478,10 +333,10 @@ function locationRows(data: Dash, tab: string, countries: Array<{ name: string, 
   return countries
 }
 
-function deviceRows(data: Dash, tab: string) {
+function deviceRows(data: Dash, tab: string, locale: string) {
   if (tab === "os") return data.os
   if (tab === "device") return data.devices
-  if (tab === "language") return (data.languages || []).map((r) => ({ ...r, label: languageName(r.name) }))
+  if (tab === "language") return (data.languages || []).map((r) => ({ ...r, label: languageName(r.name, locale) }))
   if (tab === "screen") return data.screens || []
   return data.browsers
 }

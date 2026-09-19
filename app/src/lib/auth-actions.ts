@@ -1,3 +1,5 @@
+import { z } from "zod"
+import { text } from "./validation"
 import { createServerFn } from "@tanstack/react-start"
 import {
   generateAuthenticationOptions,
@@ -15,7 +17,6 @@ import {
   getTotpState,
   insertPasskey,
   listPasskeyRecords,
-  listPasskeys,
   replaceRecoveryCodes,
   saveTotpSecret,
   bumpTotpLastUsed,
@@ -66,7 +67,7 @@ export const initiate2faFn = createServerFn({ method: "POST" }).handler(async ()
 })
 
 export const confirm2faFn = createServerFn({ method: "POST" })
-  .validator((d: { code: string }) => d)
+  .validator((input: unknown) => z.object({code: text}).parse(input))
   .handler(async ({ data }) => {
     const user = await requireUser()
     const state = await getTotpState(user.id)
@@ -82,7 +83,7 @@ export const confirm2faFn = createServerFn({ method: "POST" })
   })
 
 export const disable2faFn = createServerFn({ method: "POST" })
-  .validator((d: { password: string, code: string }) => d)
+  .validator((input: unknown) => z.object({password: text, code: text}).parse(input))
   .handler(async ({ data }) => {
     const user = await requireUser()
     if (!(await verifyPassword(user.id, data.password))) throw new Error("密码不正确")
@@ -96,7 +97,7 @@ export const disable2faFn = createServerFn({ method: "POST" })
   })
 
 export const regenRecoveryFn = createServerFn({ method: "POST" })
-  .validator((d: { password: string, code: string }) => d)
+  .validator((input: unknown) => z.object({password: text, code: text}).parse(input))
   .handler(async ({ data }) => {
     const user = await requireUser()
     if (!(await verifyPassword(user.id, data.password))) throw new Error("密码不正确")
@@ -112,7 +113,7 @@ export const regenRecoveryFn = createServerFn({ method: "POST" })
   })
 
 export const verifyLogin2faFn = createServerFn({ method: "POST" })
-  .validator((d: { code: string }) => d)
+  .validator((input: unknown) => z.object({code: text}).parse(input))
   .handler(async ({ data }) => {
     const user = await pending2faUser()
     if (!user) throw new Error("验证已过期，请重新登录")
@@ -125,14 +126,9 @@ export const verifyLogin2faFn = createServerFn({ method: "POST" })
       throw new Error("验证码不正确")
     }
     clear2faPending()
-    writeSession(user.id)
+    await writeSession(user.id)
     return { ok: true }
   })
-
-export const passkeysFn = createServerFn({ method: "GET" }).handler(async () => {
-  const user = await requireUser()
-  return listPasskeys(user.id)
-})
 
 export const passkeyRegisterOptionsFn = createServerFn({ method: "POST" }).handler(async () => {
   const user = await requireUser()
@@ -148,11 +144,12 @@ export const passkeyRegisterOptionsFn = createServerFn({ method: "POST" }).handl
     authenticatorSelection: { residentKey: "preferred", userVerification: "preferred" },
   })
   writeWebauthnChallenge({ type: "reg", challenge: options.challenge, userId: user.id })
-  return options
+  const { extensions: _extensions, ...serializableOptions } = options
+  return serializableOptions
 })
 
 export const passkeyRegisterFn = createServerFn({ method: "POST" })
-  .validator((d: { name?: string, response: Record<string, unknown> }) => d)
+  .validator((input: unknown) => z.object({name: text.optional(), response: z.record(z.string().max(300), z.unknown())}).parse(input))
   .handler(async ({ data }) => {
     const user = await requireUser()
     const pending = readWebauthnChallenge()
@@ -180,7 +177,7 @@ export const passkeyRegisterFn = createServerFn({ method: "POST" })
   })
 
 export const removePasskeyFn = createServerFn({ method: "POST" })
-  .validator((d: { id: number }) => d)
+  .validator((input: unknown) => z.object({id: z.number().finite()}).parse(input))
   .handler(async ({ data }) => {
     const user = await requireUser()
     await deletePasskey(user.id, data.id)
@@ -194,11 +191,12 @@ export const passkeyAuthOptionsFn = createServerFn({ method: "POST" }).handler(a
     userVerification: "preferred",
   })
   writeWebauthnChallenge({ type: "auth", challenge: options.challenge })
-  return options
+  const { extensions: _extensions, ...serializableOptions } = options
+  return serializableOptions
 })
 
 export const passkeyAuthFn = createServerFn({ method: "POST" })
-  .validator((d: { response: Record<string, unknown> }) => d)
+  .validator((input: unknown) => z.object({response: z.record(z.string().max(300), z.unknown())}).parse(input))
   .handler(async ({ data }) => {
     const pending = readWebauthnChallenge()
     if (!pending || pending.type !== "auth") throw new Error("Passkey 挑战已过期")
@@ -221,7 +219,7 @@ export const passkeyAuthFn = createServerFn({ method: "POST" })
     if (!verification.verified) throw new Error("无法验证 Passkey")
     await updatePasskeyCounter(row.id, verification.authenticationInfo.newCounter)
     clearWebauthnChallenge()
-    writeSession(row.user_id)
+    await writeSession(row.user_id)
     return { ok: true }
   })
 

@@ -9,7 +9,11 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "paths": {
-      "~/*": ["./src/*"]
-    }
+      "~/*": [
+        "./src/*"
+      ]
+    },
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   }
 }

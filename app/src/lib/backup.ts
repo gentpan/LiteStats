@@ -1,12 +1,11 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto"
 import { gzipSync, gunzipSync } from "node:zlib"
-import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3"
 import { db } from "./db"
 import { ch } from "./ch"
 import { SESSION_KEY } from "./env"
 
-export type BackupProvider = "r2" | "s3"
-export type BackupSchedule = "off" | "hourly" | "daily" | "weekly"
+type BackupProvider = "r2" | "s3"
+type BackupSchedule = "off" | "hourly" | "daily" | "weekly"
 
 export type BackupSettings = {
   provider: BackupProvider
@@ -27,7 +26,7 @@ export type BackupSettings = {
   last_backup_id: string | null
 }
 
-export type BackupManifest = {
+type BackupManifest = {
   app: "litestats"
   version: 1
   id: string
@@ -115,8 +114,17 @@ export async function saveBackupSettings(patch: Partial<BackupSettings>) {
   )
 }
 
-function clientOf(s: BackupSettings) {
+async function s3Sdk() {
+  try {
+    return await import("@aws-sdk/client-s3")
+  } catch {
+    throw new Error("Missing @aws-sdk/client-s3 module. Run `bun add @aws-sdk/client-s3` to enable S3/R2 backup.")
+  }
+}
+
+async function clientOf(s: BackupSettings) {
   if (!s.bucket || !s.access_key || !s.secret_key) throw new Error("请先填写存储桶和密钥")
+  const { S3Client } = await s3Sdk()
   return new S3Client({
     region: s.region || "auto",
     endpoint: s.endpoint || undefined,
@@ -130,7 +138,9 @@ function prefixOf(s: BackupSettings) {
 }
 
 async function put(s: BackupSettings, keyPath: string, body: Buffer, contentType: string) {
-  await clientOf(s).send(new PutObjectCommand({
+  const { PutObjectCommand } = await s3Sdk()
+  const client = await clientOf(s)
+  await client.send(new PutObjectCommand({
     Bucket: s.bucket,
     Key: keyPath,
     Body: body,
@@ -139,23 +149,30 @@ async function put(s: BackupSettings, keyPath: string, body: Buffer, contentType
 }
 
 async function getBuf(s: BackupSettings, keyPath: string) {
-  const res = await clientOf(s).send(new GetObjectCommand({ Bucket: s.bucket, Key: keyPath }))
+  const { GetObjectCommand } = await s3Sdk()
+  const client = await clientOf(s)
+  const res = await client.send(new GetObjectCommand({ Bucket: s.bucket, Key: keyPath }))
   const bytes = await res.Body?.transformToByteArray()
   if (!bytes) throw new Error("备份文件为空")
   return Buffer.from(bytes)
 }
 
 async function dumpPostgres() {
-  const client = await db()
-  const tables = await client.query<{ tablename: string }>(
-    `SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`,
-  )
-  const out: Record<string, unknown[]> = {}
-  for (const { tablename } of tables.rows) {
-    const rows = await client.query(`SELECT * FROM ${quoteIdent(tablename)}`)
-    out[tablename] = rows.rows.map(serializeRow)
-  }
-  return { tables: Object.keys(out), json: JSON.stringify(out) }
+  const client = await (await db()).connect()
+  try {
+    await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY")
+    const tables = await client.query<{ tablename: string }>(`SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`)
+    const out: Record<string, unknown[]> = {}
+    for (const { tablename } of tables.rows) {
+      const rows = await client.query(`SELECT * FROM ${quoteIdent(tablename)}`)
+      out[tablename] = rows.rows.map(serializeRow)
+    }
+    await client.query("COMMIT")
+    return { tables: Object.keys(out), json: JSON.stringify(out) }
+  } catch (error) {
+    await client.query("ROLLBACK")
+    throw error
+  } finally { client.release() }
 }
 
 function quoteIdent(name: string) {
@@ -175,29 +192,23 @@ function serializeRow(row: Record<string, unknown>) {
 
 async function dumpClickhouse() {
   const parts: Array<{ name: string, body: Buffer, rows: number }> = []
-  const page = 20000
-  let offset = 0
-  let index = 0
+  let batch: string[] = []
   let total = 0
-  while (true) {
-    const res = await ch().query({
-      query: `SELECT * FROM events_v2 ORDER BY timestamp LIMIT ${page} OFFSET ${offset} FORMAT JSONEachRow`,
-      format: "JSONEachRow",
-    })
-    const rows = await res.json<Record<string, unknown>>()
-    if (!rows.length) break
-    const text = rows.map((r) => JSON.stringify(r)).join("\n")
-    parts.push({
-      name: `clickhouse/events_v2.${String(index).padStart(4, "0")}.jsonl.gz`,
-      body: gzipSync(Buffer.from(text)),
-      rows: rows.length,
-    })
-    total += rows.length
-    offset += page
-    index += 1
-    if (rows.length < page) break
-    if (index > 200) break
+  const pack = () => {
+    if (!batch.length) return
+    parts.push({ name: `clickhouse/events_v2.${String(parts.length).padStart(4, "0")}.jsonl.gz`, body: gzipSync(Buffer.from(batch.join("\n"))), rows: batch.length })
+    batch = []
   }
+  // A single query reads one ClickHouse snapshot; OFFSET pagination can skip concurrent rows.
+  const result = await ch().query({ query: "SELECT * FROM events_v2", format: "JSONEachRow" })
+  for await (const rows of result.stream()) {
+    for (const row of rows) {
+      batch.push(row.text)
+      total++
+      if (batch.length === 20000) pack()
+    }
+  }
+  pack()
   return { parts, rows: total }
 }
 
@@ -230,7 +241,9 @@ export async function runBackup(reason = "manual") {
 
 export async function scanBackups(override?: Partial<BackupSettings>) {
   const s = override ? { ...await getBackupSettings(), ...override } : await getBackupSettings()
-  const listed = await clientOf(s).send(new ListObjectsV2Command({
+  const { ListObjectsV2Command } = await s3Sdk()
+  const client = await clientOf(s)
+  const listed = await client.send(new ListObjectsV2Command({
     Bucket: s.bucket,
     Prefix: `${prefixOf(s)}/backups/`,
   }))
@@ -250,49 +263,59 @@ export async function scanBackups(override?: Partial<BackupSettings>) {
 }
 
 export async function restoreBackup(id: string) {
+  if (!/^[a-zA-Z0-9_-]+$/.test(id)) throw new Error("非法备份 ID")
   const s = await getBackupSettings()
   const base = `${prefixOf(s)}/backups/${id}`
   const manifest = JSON.parse((await getBuf(s, `${base}/manifest.json`)).toString("utf8")) as BackupManifest
-  const pgBuf = gunzipSync(await getBuf(s, `${base}/postgres.json.gz`))
-  const tables = JSON.parse(pgBuf.toString("utf8")) as Record<string, Array<Record<string, unknown>>>
-  const client = await db()
-  await client.query("BEGIN")
+  if (manifest.app !== "litestats" || manifest.version !== 1 || !manifest.clickhouse?.tables?.includes("events_v2")) throw new Error("不支持的备份格式")
+  const tables = JSON.parse(gunzipSync(await getBuf(s, `${base}/postgres.json.gz`)).toString("utf8")) as Record<string, Array<Record<string, unknown>>>
+  const stage = `events_restore_${randomBytes(8).toString("hex")}`
+  await ch().command({query: `CREATE TABLE ${stage} AS events_v2`})
+  let exchanged = false
+  let committed = false
   try {
-    await client.query("SET LOCAL session_replication_role = replica")
-    for (const [table, rows] of Object.entries(tables)) {
-      if (SKIP_RESTORE.has(table) || !/^[a-z_][a-z0-9_]*$/i.test(table)) continue
-      await client.query(`DELETE FROM ${quoteIdent(table)}`)
-      if (!rows.length) continue
-      const cols = Object.keys(rows[0])
-      for (const row of rows) {
-        const values = cols.map((c) => revive(row[c]))
-        const ph = cols.map((_, i) => `$${i + 1}`).join(", ")
-        await client.query(
-          `INSERT INTO ${quoteIdent(table)} (${cols.map(quoteIdent).join(", ")}) VALUES (${ph})`,
-          values,
-        )
-      }
+    // Validate and stage all event parts before changing either live database.
+    let count = 0
+    for (const part of manifest.clickhouse.parts) {
+      if (!/^clickhouse\/events_v2\.\d+\.jsonl\.gz$/.test(part)) throw new Error("非法备份分片")
+      const rows = gunzipSync(await getBuf(s, `${base}/${part}`)).toString("utf8").split("\n").filter(Boolean).map(line => JSON.parse(line))
+      count += rows.length
+      if (rows.length) await ch().insert({table: stage, format: "JSONEachRow", values: rows})
     }
-    await client.query("COMMIT")
-  } catch (err) {
-    await client.query("ROLLBACK")
-    throw err
-  }
-
-  const parts = manifest.clickhouse?.parts || []
-  if (parts.length) {
-    await ch().command({ query: "TRUNCATE TABLE IF EXISTS events_v2" }).catch(async () => {
-      await ch().command({ query: "ALTER TABLE events_v2 DELETE WHERE 1" })
-    })
-    for (const part of parts) {
-      const text = gunzipSync(await getBuf(s, `${base}/${part}`)).toString("utf8")
-      const rows = text.split("\n").filter(Boolean).map((line) => JSON.parse(line))
-      if (rows.length) {
-        await ch().insert({ table: "events_v2", format: "JSONEachRow", values: rows })
+    if (count !== manifest.clickhouse.rows) throw new Error("备份事件数量校验失败")
+    const client = await (await db()).connect()
+    try {
+      await client.query("BEGIN")
+      await client.query("SELECT pg_advisory_xact_lock(817325)")
+      await client.query("SET LOCAL session_replication_role = replica")
+      for (const [table, rows] of Object.entries(tables)) {
+        if (SKIP_RESTORE.has(table)) continue
+        if (!Array.isArray(rows)) throw new Error("非法备份表数据")
+        await client.query(`DELETE FROM ${quoteIdent(table)}`)
+        for (const row of rows) {
+          const cols = Object.keys(row)
+          await client.query(`INSERT INTO ${quoteIdent(table)} (${cols.map(quoteIdent).join(", ")}) VALUES (${cols.map((_,i)=>`$${i+1}`).join(", ")})`, cols.map(col => revive(row[col])))
+        }
       }
-    }
+      const sequences = await client.query<{table_name:string,column_name:string,sequence:string}>(`SELECT table_name, column_name, pg_get_serial_sequence(quote_ident(table_name), column_name) AS sequence FROM information_schema.columns WHERE table_schema='public' AND column_default LIKE 'nextval(%'`)
+      for (const row of sequences.rows) {
+        if (!row.sequence || SKIP_RESTORE.has(row.table_name)) continue
+        await client.query(`SELECT setval($1, COALESCE((SELECT max(${quoteIdent(row.column_name)}) FROM ${quoteIdent(row.table_name)}),1), EXISTS(SELECT 1 FROM ${quoteIdent(row.table_name)}))`, [row.sequence])
+      }
+      await ch().command({query:`EXCHANGE TABLES events_v2 AND ${stage}`})
+      exchanged = true
+      await client.query("COMMIT")
+      committed = true
+    } catch (error) {
+      await client.query("ROLLBACK")
+      if (exchanged) { await ch().command({query:`EXCHANGE TABLES events_v2 AND ${stage}`}); exchanged = false }
+      throw error
+    } finally { client.release() }
+    return manifest
+  } finally {
+    // Retain the old table if an exchange rollback failed, for manual recovery.
+    if (!exchanged || committed) await ch().command({query:`DROP TABLE IF EXISTS ${stage}`})
   }
-  return manifest
 }
 
 function revive(v: unknown) {

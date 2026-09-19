@@ -1,3 +1,6 @@
+import { UIIcon, BrandIcon, type BrandName } from "./UIIcon"
+import { Surface } from "~/components/Surface"
+import { useT } from "~/lib/i18n"
 import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { CountryFlag, RowIcon, type RowIconKind } from "~/components/icons"
@@ -23,7 +26,7 @@ const BAR: Record<string, string> = {
   goal: "bg-red-50 group-hover/row:bg-red-100",
 }
 
-export { formatDuration, numberShort } from "~/lib/format"
+export { formatDuration } from "~/lib/format"
 
 export function Card({
   label,
@@ -35,6 +38,7 @@ export function Card({
   text,
   index = 0,
   invertChange = false,
+  icon,
 }: {
   label: string
   value: number
@@ -45,21 +49,25 @@ export function Card({
   text?: string
   index?: number
   invertChange?: boolean
+  icon?: string
 }) {
+  const { t } = useT()
   const d = delta(value, prev)
   const up = invertChange ? (d ? d.diff < 0 : false) : (d ? d.diff > 0 : false)
   const down = invertChange ? (d ? d.diff > 0 : false) : (d ? d.diff < 0 : false)
   return (
-    <div className={`group my-2 w-1/2 select-none px-4 lg:w-auto lg:flex-1 ${index > 0 ? "lg:border-l border-gray-200" : ""} ${index % 2 === 0 ? "border-r lg:border-r-0" : ""}`}>
+    <div className={`metric-item group my-2 w-1/2 select-none px-4 lg:w-auto lg:flex-1 ${index > 0 ? "lg:border-l border-gray-200" : ""} ${index % 2 === 0 ? "border-r lg:border-r-0" : ""}`}>
       <button
         type="button"
+        aria-pressed={selected}
         disabled={!onSelect}
         onClick={onSelect}
         className={`-mx-2 flex w-full flex-col gap-y-1 rounded-md p-2 text-left ${onSelect ? "cursor-pointer hover:bg-gray-100/80" : "cursor-default"} ${selected ? "bg-gray-100/70" : ""}`}
       >
         <div className={`flex w-fit text-xs uppercase whitespace-nowrap ${selected ? "font-bold tracking-[-.01em] text-gray-900" : "font-semibold text-gray-500 group-hover:text-gray-900"}`}>
-          {label}
+          {t(label || "")}
         </div>
+        {icon ? <UIIcon name={icon} className="metric-watermark" /> : null}
         <span className="flex items-baseline whitespace-nowrap">
           <p className="text-[1.2rem] font-semibold text-gray-900">
             {text ?? `${numberShort(value)}${suffix}`}
@@ -132,6 +140,8 @@ export function List({
   plain,
   columns,
   maxItems = MAX_ITEMS,
+  compact = false,
+  paginate = false,
 }: {
   title?: string
   rows: ListRow[]
@@ -140,9 +150,17 @@ export function List({
   plain?: boolean
   columns?: ListColumn[]
   maxItems?: number
+  compact?: boolean
+  paginate?: boolean
 }) {
-  const shown = maxItems > 0 ? rows.slice(0, maxItems) : rows
-  const max = Math.max(1, ...shown.map((r) => r.value))
+  const { t } = useT()
+  const [page, setPage] = useState(1)
+  const pages = Math.max(1, Math.ceil(rows.length / 10))
+  const currentPage = Math.min(page, pages)
+  const rowIdentity = rows.map(row=>row.name).join("\u0000")
+  useEffect(()=>setPage(1),[rowIdentity])
+  const shown = paginate ? rows.slice((currentPage - 1) * 10, currentPage * 10) : maxItems > 0 ? rows.slice(0, maxItems) : rows
+  const max = Math.max(1, ...(paginate ? rows : shown).map((r) => r.value))
   const total = rows.reduce((n, r) => n + r.value, 0) || 1
   const bar = BAR[kind || ""] || "bg-indigo-50 group-hover/row:bg-indigo-100"
   const iconKind = kind === "source" || kind === "country" || kind === "browser" || kind === "os" || kind === "device" ? kind : undefined
@@ -150,24 +168,24 @@ export function List({
   const extraCols = columns || []
   const bundlePct = extraCols.length === 0
 
-  const emptyMin = maxItems > 0 ? LIST_MIN_HEIGHT : 160
+  const emptyMin = maxItems > 0 && !compact ? LIST_MIN_HEIGHT : 160
   const body = shown.length === 0 ? (
     <div className="flex h-full w-full flex-col justify-center" style={{ minHeight: emptyMin }}>
-      <div className="mx-auto font-medium text-gray-500">暂无数据</div>
+      <div className="mx-auto font-medium text-gray-500">{t("暂无数据")}</div>
     </div>
   ) : (
     <div className="flex h-full flex-col">
       <div className="flex w-full items-center pt-3 text-xs font-medium text-gray-500" style={{ height: ROW_HEIGHT }}>
-        <div className="w-full min-w-0 grow truncate">{DIM_LABEL[kind || ""] || title || ""}</div>
+        <div className="w-full min-w-0 grow truncate">{t(DIM_LABEL[kind || ""] || title || "")}</div>
         {bundlePct ? (
-          <div className="w-32 min-w-32 shrink-0 text-right">访客</div>
+          <div className="w-32 min-w-32 shrink-0 text-right">{t("访客")}</div>
         ) : extraCols.map((col) => (
           <div key={col.key} className={`${col.width || "w-16 min-w-16 md:w-[5.5rem] md:min-w-[5.5rem]"} shrink-0 text-right`}>
-            {col.label}
+            {t(col.label)}
           </div>
         ))}
       </div>
-      <div className="group/report" style={maxItems > 0 ? { minHeight: DATA_HEIGHT } : undefined}>
+      <div className="group/report" style={maxItems > 0 && !compact ? { minHeight: DATA_HEIGHT } : undefined}>
         {shown.map((r) => {
           const width = Math.max(2, (r.value / max) * 100)
           const pct = (r.value / total) * 100
@@ -193,7 +211,7 @@ export function List({
                             href={r.href}
                             target="_blank"
                             rel="noreferrer"
-                            aria-label="在新标签打开"
+                            aria-label={t("在新标签打开")}
                             className="invisible md:group-hover/row:visible"
                             onClick={(e) => e.stopPropagation()}
                           >
@@ -229,12 +247,12 @@ export function List({
       </div>
     </div>
   )
-  if (plain) return body
+  if (plain) return <>{body}{paginate && rows.length > 10 ? <nav className="report-list-pagination" aria-label={t("分页")}><span>{t("每页 10 条")} · {rows.length}</span><div><button type="button" disabled={currentPage <= 1} onClick={()=>setPage(currentPage-1)}>{t("上一页")}</button><span>{currentPage} / {pages}</span><button type="button" disabled={currentPage >= pages} onClick={()=>setPage(currentPage+1)}>{t("下一页")}</button></div></nav> : null}</>
   return (
-    <section className="relative flex min-h-[430px] w-full flex-col overflow-x-hidden rounded-md bg-white p-5 shadow-sm md:h-[27.25rem] md:min-h-[initial]">
-      {title ? <h2 className="mb-3 text-xs font-bold uppercase tracking-[-.01em] text-gray-900">{title}</h2> : null}
+    <Surface as="section" className="relative flex min-h-[430px] w-full flex-col overflow-x-hidden bg-white p-5 shadow-sm md:h-[27.25rem] md:min-h-[initial]">
+      {title ? <h2 className="mb-3 text-xs font-bold uppercase tracking-[-.01em] text-gray-900">{t(title || "")}</h2> : null}
       {body}
-    </section>
+    </Surface>
   )
 }
 
@@ -267,6 +285,7 @@ function DetailsModal({
   spec: DetailsSpec
   onClose: () => void
 }) {
+  const { t } = useT()
   const [q, setQ] = useState("")
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()
@@ -293,8 +312,8 @@ function DetailsModal({
         <div className="flex min-h-full w-full items-start justify-center p-4 sm:p-8 md:p-12">
           <div className="flex max-h-[calc(100dvh-4rem)] w-full max-w-[880px] flex-col overflow-hidden rounded-lg bg-white p-3 shadow-2xl md:px-6 md:py-4" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h1 className="text-xl font-bold text-gray-900">{spec.title}</h1>
-              <button type="button" className="text-gray-400 hover:text-gray-600" aria-label="关闭" onClick={onClose}>
+              <h1 className="text-xl font-bold text-gray-900">{t(spec.title)}</h1>
+              <button type="button" className="text-gray-400 hover:text-gray-600" aria-label={t("关闭")} onClick={onClose}>
                 <svg className="size-[1.125rem]" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
                 </svg>
@@ -304,7 +323,7 @@ function DetailsModal({
               type="search"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="搜索"
+              placeholder={t("搜索")}
               className="mb-2 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400"
             />
             <div className="min-h-0 flex-1 overflow-y-auto">
@@ -339,6 +358,7 @@ export function ReportCard({
   children: ReactNode
   className?: string
 }) {
+  const { t } = useT()
   const [open, setOpen] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const showMore = more && !!details?.rows.length
@@ -352,36 +372,36 @@ export function ReportCard({
   }, [])
 
   return (
-    <section className={`relative flex min-h-[430px] w-full flex-col rounded-md bg-white p-5 shadow-sm md:h-[27.25rem] md:min-h-[initial] ${className.includes("overflow") ? "" : "overflow-x-hidden"} ${className}`}>
+    <Surface as="section" className={`relative flex min-h-[430px] w-full flex-col bg-white p-5 shadow-sm md:h-[27.25rem] md:min-h-[initial] ${className.includes("overflow") ? "" : "overflow-x-hidden"} ${className}`}>
       <div className="flex w-full justify-between border-b border-gray-200">
-        {title ? <h3 className="pb-3 text-sm font-bold text-gray-900">{title}</h3> : null}
+        {title ? <h3 className="pb-3 text-sm font-bold text-gray-900">{t(title || "")}</h3> : null}
         {tabs.length ? (
           <div className="flex items-baseline gap-x-3.5 text-xs font-medium text-gray-500">
-            {tabs.map((t) => {
-              const selected = t.dropdown
-                ? t.id === active || t.dropdown.some((d) => d.id === active)
-                : t.id === active
-              const label = t.dropdown?.find((d) => d.id === active)?.label || t.label
-              if (t.dropdown) {
+            {tabs.map((reportTab) => {
+              const selected = reportTab.dropdown
+                ? reportTab.id === active || reportTab.dropdown.some((d) => d.id === active)
+                : reportTab.id === active
+              const label = reportTab.dropdown?.find((d) => d.id === active)?.label || reportTab.label
+              if (reportTab.dropdown) {
                 return (
-                  <div key={t.id} className="relative" data-report-dropdown>
+                  <div key={reportTab.id} className="relative" data-report-dropdown>
                     <div className={`-mb-px pb-4 ${selected ? "border-b-2 border-gray-900" : ""}`}>
                       <button
                         type="button"
                         className="group/tab relative inline-flex items-center rounded-sm"
-                        onClick={() => setOpen(open === t.id ? null : t.id)}
+                        onClick={() => setOpen(open === reportTab.id ? null : reportTab.id)}
                       >
                         <span className={`truncate text-left text-xs uppercase ${selected ? "font-bold tracking-[-.01em] text-gray-900" : "font-semibold text-gray-500 group-hover/tab:text-gray-800"}`}>
-                          {label}
+                          {t(label || "")}
                         </span>
                         <svg className={`-mr-1 ml-0.5 size-4 ${selected ? "text-gray-900" : "text-gray-500 group-hover/tab:text-gray-800"}`} viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
                         </svg>
                       </button>
                     </div>
-                    {open === t.id ? (
+                    {open === reportTab.id ? (
                       <div className="absolute top-full left-0 z-20 mt-2 min-w-56 origin-top-left rounded-md bg-white p-1 font-medium text-gray-800 shadow-lg ring-1 ring-black/5">
-                        {t.dropdown.map((d) => (
+                        {reportTab.dropdown.map((d) => (
                           <button
                             key={d.id}
                             type="button"
@@ -393,7 +413,7 @@ export function ReportCard({
                               setOpen(null)
                             }}
                           >
-                            {d.label}
+                            {t(d.label)}
                             {d.selected || d.id === active ? <span className="text-indigo-600">✓</span> : null}
                           </button>
                         ))}
@@ -403,14 +423,14 @@ export function ReportCard({
                 )
               }
               return (
-                <div key={t.id} className={`-mb-px pb-4 ${selected ? "border-b-2 border-gray-900" : ""}`}>
+                <div key={reportTab.id} className={`-mb-px pb-4 ${selected ? "border-b-2 border-gray-900" : ""}`}>
                   <button
                     type="button"
                     className="group/tab relative rounded-sm"
-                    onClick={() => onChange?.(t.id)}
+                    onClick={() => onChange?.(reportTab.id)}
                   >
                     <span className={`truncate text-left text-xs uppercase ${selected ? "font-bold tracking-[-.01em] text-gray-900" : "font-semibold text-gray-500 group-hover/tab:text-gray-800"}`}>
-                      {t.label}
+                      {t(reportTab.label)}
                     </span>
                   </button>
                 </div>
@@ -423,8 +443,8 @@ export function ReportCard({
             <button
               type="button"
               className="relative mt-px flex rounded text-gray-500 transition-colors duration-150 hover:text-gray-600 before:absolute before:inset-[-8px] before:content-['']"
-              title="查看详情"
-              aria-label="查看详情"
+              title={t("查看详情")}
+              aria-label={t("查看详情")}
               onClick={() => { if (details) setDetailsOpen(true) }}
             >
               <MoreLinkIcon />
@@ -435,7 +455,7 @@ export function ReportCard({
       </div>
       <div className="min-h-0 flex-1">{children}</div>
       {detailsOpen && details ? <DetailsModal spec={details} onClose={() => setDetailsOpen(false)} /> : null}
-    </section>
+    </Surface>
   )
 }
 
@@ -450,6 +470,7 @@ export function ReportMenu({
   value: string
   onChange: (id: string) => void
 }) {
+  const { t } = useT()
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -465,7 +486,7 @@ export function ReportMenu({
       <button
         type="button"
         className="relative flex rounded text-gray-500 transition-colors duration-150 hover:text-gray-600"
-        aria-label="拆分选项"
+        aria-label={t("拆分选项")}
         onClick={() => setOpen(!open)}
       >
         <svg className="size-[1.125rem]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
@@ -474,7 +495,7 @@ export function ReportMenu({
       </button>
       {open ? (
         <div className="absolute top-full right-0 z-20 mt-2 min-w-48 origin-top-right rounded-md bg-white p-1 font-medium text-gray-800 shadow-lg ring-1 ring-black/5">
-          <p className="whitespace-nowrap px-4 py-2.5 text-xs font-medium text-gray-500 uppercase">{title}</p>
+          <p className="whitespace-nowrap px-4 py-2.5 text-xs font-medium text-gray-500 uppercase">{t(title || "")}</p>
           {options.map((o) => (
             <button
               key={o.id}
@@ -483,7 +504,7 @@ export function ReportMenu({
               className="flex w-full items-center justify-between rounded-md px-4 py-2.5 text-left text-sm hover:bg-gray-100 data-[selected=true]:bg-gray-100"
               onClick={() => { onChange(o.id); setOpen(false) }}
             >
-              {o.label}
+              {t(o.label)}
               {o.id === value ? <span className="text-indigo-600">✓</span> : null}
             </button>
           ))}
@@ -493,83 +514,31 @@ export function ReportMenu({
   )
 }
 
-export function Notice({
-  title,
-  theme = "red",
-  children,
-}: {
-  title: string
-  theme?: "red" | "gray"
-  children: React.ReactNode
-}) {
-  const bg = theme === "red" ? "bg-red-100" : "bg-gray-100"
-  const icon = theme === "red" ? "text-red-600" : "text-gray-600"
-  return (
-    <div className={`relative rounded-md p-5 ${bg}`}>
-      <div className="flex flex-1 gap-x-3">
-        <div className={`mt-px shrink-0 ${icon}`}>
-            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-          </svg>
-        </div>
-        <div className="flex flex-1 flex-col gap-y-1.5">
-          <h3 className="text-sm font-medium text-gray-900">{title}</h3>
-          <div className="text-sm leading-5 text-pretty text-gray-600">{children}</div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export function Tile({
+  icon = "settings",
+  brand,
+  id,
   title,
   subtitle,
   children,
 }: {
+  icon?: string
+  brand?: BrandName
+  id?: string
   title: string
   subtitle?: string
   children: React.ReactNode
 }) {
+  const { t } = useT()
   return (
-    <div className="mb-6 rounded-md bg-white shadow-sm">
-      <header className="relative px-6 py-4">
-        <h2 className="text-lg leading-7 font-medium text-gray-900">{title}</h2>
-        {subtitle ? <div className="mt-px text-sm leading-5 text-gray-500">{subtitle}</div> : null}
+    <Surface id={id} className="settings-card scroll-mt-24 bg-white shadow-sm">
+      <header className="settings-card-heading">
+        <span className="settings-card-icon">{brand ? <BrandIcon name={brand}/> : <UIIcon name={icon}/>}</span>
+        <div className="settings-heading-copy min-w-0"><h2 className="text-lg leading-7 font-medium text-gray-900">{t(title || "")}</h2>
+        {subtitle ? <div className="mt-px text-sm leading-5 text-gray-500">{t(subtitle || "")}</div> : null}</div>
       </header>
       <div className="mx-6 border-b border-gray-200" />
       <div className="relative p-4 sm:p-6">{children}</div>
-    </div>
-  )
-}
-
-export function SettingsRows({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-col gap-6">{children}</div>
-}
-
-export function SettingsRow({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="flex flex-col items-stretch gap-3 text-sm sm:flex-row sm:items-center sm:gap-4">
-      <span className="text-sm font-medium text-gray-900">{label}</span>
-      <div className="flex items-center gap-2.5 sm:ml-auto">{children}</div>
-    </div>
-  )
-}
-
-export function SettingsDivider() {
-  return <hr className="border-gray-200" />
-}
-
-export function Panel({ title, children }: { title?: string, children: React.ReactNode }) {
-  return (
-    <section className="rounded-md bg-white p-5 shadow-sm">
-      {title ? <h2 className="mb-4 text-xs font-bold uppercase tracking-[-.01em] text-gray-900">{title}</h2> : null}
-      {children}
-    </section>
+    </Surface>
   )
 }

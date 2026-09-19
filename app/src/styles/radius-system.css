@@ -1,0 +1,17 @@
+/* Shared geometry: small 4, medium 8, large 12, xlarge 20.
+   Explicit pills and circular avatars retain their semantic shape. */
+.ui-surface[data-radius="xlarge"] { border-radius:var(--ui-radius-xlarge); }
+.management-shell .site-settings-workspace { border-radius:var(--ui-radius-large); }
+.management-shell .site-settings-workspace > .management-heading { border-radius:var(--ui-radius-large) var(--ui-radius-large) 0 0; }
+.management-shell .site-settings-workspace > .settings-layout { border-radius:0 0 var(--ui-radius-large) var(--ui-radius-large); }
+.management-shell .settings-layout:not(.site-settings-workspace > .settings-layout) { border-radius:var(--ui-radius-large); }
+.management-shell .input, .management-shell .ui-action, .management-shell .btn,
+.monitor-history-ranges button, .monitor-history-pagination button,
+.management-shell .settings-provider-option { border-radius:var(--ui-radius-medium); }
+.management-shell .settings-content .snippet-copy,
+.integration-status { border-radius:var(--ui-radius-small); }
+.settings-danger-notice, .tracking-snippet, .monitor-history-scroll { border-radius:var(--ui-radius-large); }
+.tracking-snippet-toolbar { border-radius:calc(var(--ui-radius-large) - 1px) calc(var(--ui-radius-large) - 1px) 0 0; }
+.tracking-snippet pre { border-radius:0 0 calc(var(--ui-radius-large) - 1px) calc(var(--ui-radius-large) - 1px); }
+.monitor-history-table thead th:first-child { border-top-left-radius:calc(var(--ui-radius-large) - 1px); }
+.monitor-history-table thead th:last-child { border-top-right-radius:calc(var(--ui-radius-large) - 1px); }

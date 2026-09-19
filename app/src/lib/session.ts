@@ -1,18 +1,21 @@
 import { createHmac, timingSafeEqual } from "node:crypto"
 import { getCookie, setCookie, deleteCookie } from "@tanstack/react-start/server"
-import { SESSION_KEY } from "./env"
+import { SESSION_KEY, ADMIN_EMAILS } from "./env"
 import { findUserById, type User } from "./db"
 
 const COOKIE = "litestats_session"
 
-function sign(payload: string) {
-  return createHmac("sha256", SESSION_KEY).update(payload).digest("base64url")
+function sign(payload: string, purpose: string) {
+  return createHmac("sha256", SESSION_KEY).update(`${purpose}:${payload}`).digest("base64url")
 }
 
-export function writeSession(userId: number) {
-  const payload = Buffer.from(JSON.stringify({ uid: userId, exp: Date.now() + 14 * 86400_000 })).toString("base64url")
-  setCookie(COOKIE, `${payload}.${sign(payload)}`, {
+export async function writeSession(userId: number) {
+  const user = await findUserById(userId)
+  if (!user) throw new Error("UNAUTH")
+  const payload = Buffer.from(JSON.stringify({ uid: userId, ver: user.session_version, exp: Date.now() + 14 * 86400_000 })).toString("base64url")
+  setCookie(COOKIE, `${payload}.${sign(payload, COOKIE)}`, {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
     path: "/",
     sameSite: "lax",
     maxAge: 14 * 86400,
@@ -29,8 +32,9 @@ const WEBAUTHN = "litestats_webauthn"
 
 export function write2faPending(userId: number) {
   const payload = Buffer.from(JSON.stringify({ uid: userId, exp: Date.now() + 5 * 60_000 })).toString("base64url")
-  setCookie(PENDING_2FA, `${payload}.${sign(payload)}`, {
+  setCookie(PENDING_2FA, `${payload}.${sign(payload, PENDING_2FA)}`, {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
     path: "/",
     sameSite: "lax",
     maxAge: 5 * 60,
@@ -46,11 +50,11 @@ export async function pending2faUser(): Promise<User | null> {
   if (!token) return null
   const [payload, mac] = token.split(".")
   if (!payload || !mac) return null
-  const expected = sign(payload)
+  const expected = sign(payload, PENDING_2FA)
   if (Buffer.from(mac).length !== Buffer.from(expected).length || !timingSafeEqual(Buffer.from(mac), Buffer.from(expected))) return null
   try {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString())
-    if (!data.uid || data.exp < Date.now()) return null
+    if (!data.uid || !Number.isFinite(data.exp) || data.exp < Date.now()) return null
     return await findUserById(Number(data.uid))
   } catch {
     return null
@@ -71,8 +75,9 @@ export function readLocaleCookie() {
 
 export function writeWebauthnChallenge(data: { type: "reg" | "auth", challenge: string, userId?: number }) {
   const payload = Buffer.from(JSON.stringify({ ...data, exp: Date.now() + 5 * 60_000 })).toString("base64url")
-  setCookie(WEBAUTHN, `${payload}.${sign(payload)}`, {
+  setCookie(WEBAUTHN, `${payload}.${sign(payload, WEBAUTHN)}`, {
     httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
     path: "/",
     sameSite: "lax",
     maxAge: 5 * 60,
@@ -84,11 +89,11 @@ export function readWebauthnChallenge(): { type: "reg" | "auth", challenge: stri
   if (!token) return null
   const [payload, mac] = token.split(".")
   if (!payload || !mac) return null
-  const expected = sign(payload)
+  const expected = sign(payload, WEBAUTHN)
   if (Buffer.from(mac).length !== Buffer.from(expected).length || !timingSafeEqual(Buffer.from(mac), Buffer.from(expected))) return null
   try {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString())
-    if (!data.challenge || data.exp < Date.now()) return null
+    if (!data.challenge || !Number.isFinite(data.exp) || data.exp < Date.now()) return null
     return data
   } catch {
     return null
@@ -104,14 +109,15 @@ export async function currentUser(): Promise<User | null> {
   if (!token) return null
   const [payload, mac] = token.split(".")
   if (!payload || !mac) return null
-  const expected = sign(payload)
+  const expected = sign(payload, COOKIE)
   const a = Buffer.from(mac)
   const b = Buffer.from(expected)
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null
   try {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString())
-    if (!data.uid || data.exp < Date.now()) return null
-    return await findUserById(Number(data.uid))
+    if (!data.uid || !Number.isFinite(data.exp) || data.exp < Date.now()) return null
+    const user = await findUserById(Number(data.uid))
+    return user && user.session_version === data.ver ? user : null
   } catch {
     return null
   }
@@ -120,5 +126,15 @@ export async function currentUser(): Promise<User | null> {
 export async function requireUser() {
   const user = await currentUser()
   if (!user) throw new Error("UNAUTH")
+  return user
+}
+
+export function isInstanceAdmin(user: User) {
+  return user.email_verified === true && ADMIN_EMAILS.includes(user.email.toLowerCase())
+}
+
+export async function requireAdmin() {
+  const user = await requireUser()
+  if (!isInstanceAdmin(user)) throw new Error("只有实例管理员可以管理服务器和备份")
   return user
 }

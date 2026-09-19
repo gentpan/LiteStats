@@ -1,12 +1,11 @@
+import { getCookie, setCookie, deleteCookie } from "@tanstack/react-start/server"
 import { db } from "./db"
 import { SESSION_KEY } from "./env"
-import { createHmac } from "node:crypto"
+import { randomBytes, createHmac } from "node:crypto"
 import type { Range } from "./range"
 import type { Row } from "./ch"
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ""
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ""
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || ""
+import { getGoogleOAuthConfig } from "./google-oauth-settings"
 
 export type KeywordPack = {
   configured: boolean
@@ -20,23 +19,25 @@ export type SearchTerms = {
   organic: Row[]
 }
 
-export function googleOAuthEnabled() {
-  return !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET && GOOGLE_REDIRECT_URI)
-}
-
-export function googleAuthorizeUrl(siteId: number) {
-  const state = createHmac("sha256", SESSION_KEY).update(`gsc:${siteId}`).digest("hex") + `.${siteId}`
+export async function googleAuthorizeUrl(siteId: number) {
+  const {clientId, clientSecret, redirectUri} = await getGoogleOAuthConfig(siteId)
+  if (!clientId || !clientSecret || !redirectUri) return ""
+  const payload = Buffer.from(JSON.stringify({ siteId, nonce: randomBytes(24).toString("hex"), exp: Date.now() + 600_000 })).toString("base64url")
+  const state = payload + "." + createHmac("sha256", SESSION_KEY).update(`gsc:${payload}`).digest("hex")
+  setCookie("litestats_gsc_state", state, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 600 })
   const scope = encodeURIComponent("email https://www.googleapis.com/auth/webmasters.readonly")
-  return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&redirect_uri=${encodeURIComponent(GOOGLE_REDIRECT_URI)}&prompt=consent&response_type=code&access_type=offline&scope=${scope}&state=${state}`
+  return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&prompt=consent&response_type=code&access_type=offline&scope=${scope}&state=${state}`
 }
 
 export function verifyGoogleState(state: string) {
-  const [sig, id] = String(state || "").split(".")
-  const siteId = Number(id)
-  if (!sig || !siteId) return null
-  const expect = createHmac("sha256", SESSION_KEY).update(`gsc:${siteId}`).digest("hex")
-  if (sig !== expect) return null
-  return siteId
+  if (!state || getCookie("litestats_gsc_state") !== state) return null
+  deleteCookie("litestats_gsc_state", { path: "/" })
+  try {
+    const [payload, sig] = state.split(".")
+    if (createHmac("sha256", SESSION_KEY).update(`gsc:${payload}`).digest("hex") !== sig) return null
+    const data = JSON.parse(Buffer.from(payload, "base64url").toString())
+    return Number.isFinite(data.exp) && data.exp > Date.now() ? Number(data.siteId) : null
+  } catch { return null }
 }
 
 export async function getGoogleAuth(siteId: number) {
@@ -96,16 +97,17 @@ export async function deleteGoogleAuth(siteId: number) {
   await (await db()).query(`DELETE FROM google_auth WHERE site_id = $1`, [siteId])
 }
 
-export async function exchangeGoogleCode(code: string) {
+export async function exchangeGoogleCode(code: string, siteId: number) {
+  const {clientId, clientSecret, redirectUri} = await getGoogleOAuthConfig(siteId)
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
+      client_id: clientId,
+      client_secret: clientSecret,
       code,
       grant_type: "authorization_code",
-      redirect_uri: GOOGLE_REDIRECT_URI,
+      redirect_uri: redirectUri,
     }),
   })
   if (!res.ok) throw new Error("Google 授权失败")
@@ -127,12 +129,13 @@ async function googleAccessToken(siteId: number) {
   if (!auth) return null
   if (new Date(auth.expires).getTime() > Date.now() + 60_000) return auth
   if (!auth.refresh_token) return auth
+  const {clientId, clientSecret} = await getGoogleOAuthConfig(siteId)
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
+      client_id: clientId,
+      client_secret: clientSecret,
       refresh_token: auth.refresh_token,
       grant_type: "refresh_token",
     }),
@@ -159,7 +162,7 @@ export async function listGoogleProperties(siteId: number) {
   return (body.siteEntry || []).filter((s) => ok.has(s.permissionLevel)).map((s) => s.siteUrl.replace(/\/$/, ""))
 }
 
-export async function fetchGoogleKeywords(siteId: number, range: Range): Promise<KeywordPack> {
+async function fetchGoogleKeywords(siteId: number, range: Range): Promise<KeywordPack> {
   const auth = await googleAccessToken(siteId)
   if (!auth?.property) return { configured: false, rows: [] }
   if (!range.from.startsWith("20") || !range.to.startsWith("20")) {
@@ -187,7 +190,7 @@ export async function fetchGoogleKeywords(siteId: number, range: Range): Promise
   }
 }
 
-export async function fetchBingKeywords(siteId: number): Promise<KeywordPack> {
+async function fetchBingKeywords(siteId: number): Promise<KeywordPack> {
   const auth = await getBingAuth(siteId)
   if (!auth?.api_key || !auth.site_url) return { configured: false, rows: [] }
   const url = `https://ssl.bing.com/webmaster/api.svc/json/GetQueryStats?apikey=${encodeURIComponent(auth.api_key)}&siteUrl=${encodeURIComponent(auth.site_url)}`

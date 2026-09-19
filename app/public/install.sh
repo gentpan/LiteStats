@@ -6,7 +6,7 @@ URL=""
 ID=""
 SECRET=""
 INTERVAL=15
-PING=0
+PING=1
 ACTION=install
 
 usage() {
@@ -31,6 +31,7 @@ while [ $# -gt 0 ]; do
     --interval|-interval) INTERVAL="$2"; shift 2 ;;
     --interval=*|-interval=*) INTERVAL="${1#*=}"; shift ;;
     --ping|-ping) PING=1; shift ;;
+    --no-ping) PING=0; shift ;;
     -h|--help) usage ;;
     *) echo "未知参数: $1" >&2; usage ;;
   esac

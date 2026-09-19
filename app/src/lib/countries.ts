@@ -12,8 +12,9 @@ const zh: Record<string, string> = {
   KZ: "哈萨克斯坦", UZ: "乌兹别克斯坦", MO: "中国澳门",
 }
 
-export function countryName(code: string) {
+export function countryName(code: string, locale = "zh-CN") {
   const key = (code || "").trim().toUpperCase()
-  if (!key || key === "(NONE)") return "未知"
+  if (!key || key === "(NONE)") return locale === "en" ? "Unknown" : "未知"
+  if (locale === "en" && /^[A-Z]{2}$/.test(key)) return new Intl.DisplayNames(["en"], { type: "region" }).of(key) || key
   return zh[key] || key
 }

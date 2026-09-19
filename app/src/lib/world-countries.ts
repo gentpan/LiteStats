@@ -11,7 +11,7 @@ export function parseWorldTopoJsonToGeoJsonFeatures(): Array<WorldJsonCountryDat
   return (collection as unknown as { features: WorldJsonCountryData[] }).features
 }
 
-export type CountryEntry = {
+type CountryEntry = {
   alpha_3: string | null
   flag: string
 }

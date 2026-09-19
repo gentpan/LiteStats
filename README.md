@@ -20,7 +20,7 @@
 
 ## 特性
 
-- **轻量脚本** — `/js/script.js` 自动报 pageview，兼容 SPA；可跟自定义事件、外链和文件下载
+- **轻量脚本** — `/script.js` 自动报 pageview，兼容 SPA；可跟自定义事件、外链和文件下载
 - **单页看板** — 访客、访问、浏览、来源、页面、地区、设备、实时
 - **转化** — 目标、自定义属性、漏斗
 - **分享** — 公开站点或分享链接
@@ -38,7 +38,7 @@
 | 事件库 | ClickHouse |
 | 探针 | POSIX shell + 可选 Go |
 
-首次启动会自动建表，不依赖旧项目的 schema。
+首次启动会自动建表并补齐必要字段。正式升级前应备份已有数据库。
 
 ## 快速开始
 
@@ -54,7 +54,11 @@ bun install
 bun run dev
 ```
 
-默认开发地址是 [http://127.0.0.1:3100](http://127.0.0.1:3100)。本地会准备账号 `demo@litestats.dev` / `12345678`，上线后立刻改掉。
+默认开发地址是 [http://127.0.0.1:3100](http://127.0.0.1:3100)。只有显式设置 `SEED_DEMO=true` 且不是生产环境才创建演示账号 `demo@litestats.dev` / `12345678`；已有账号密码不会被重置。
+
+生产需要设置至少 32 位随机 `SESSION_KEY`。`ADMIN_EMAILS` 指定已验证邮箱的实例管理员，服务器和全局备份只允许实例管理员访问。普通注册不会自动验证邮箱。团队创建、邀请和成员管理已移除；现有站点归属记录仅用于兼容历史数据和访问权限。尚未配置邮件验证服务的生产管理员，应通过受信任的数据库管理流程确认其邮箱所有权。
+
+本次隔离预览及功能完整性说明见 [本地测试说明](./LOCAL-TEST.md)。开发用 compose 只提供数据库，不包含应用部署。
 
 如果本机已经有 Postgres / ClickHouse，改 `DATABASE_URL` 和 `CLICKHOUSE_URL` 即可，不必起 compose。
 
@@ -63,7 +67,7 @@ bun run dev
 站点创建后，把下面这段放到网站 `</head>` 前：
 
 ```html
-<script defer data-domain="example.com" src="https://你的域名/js/script.js"></script>
+<script defer data-domain="example.com" src="https://你的域名/script.js"></script>
 ```
 
 自定义事件：
@@ -129,3 +133,30 @@ LiteStats/
 ## 许可证
 
 MIT，见 [LICENSE](./LICENSE)。
+
+### 三网监控
+
+服务器详情页提供电信、联通、移动的独立延迟、丢包率及历史趋势，沿用系统历史范围（最长 7 天）。探测方向为服务器到代表节点，不是国内三网探测点对服务器的反向拨测。
+
+- 本机每分钟执行一轮，每个节点发送 3 个 ICMP 包；远程探针随采集周期执行。各节点显示具体目标 IP。
+- `ping_ct` / `ping_cu` / `ping_cm` 为成功回包的平均延迟（毫秒）；对应 `_loss` 为丢包百分比，`_status` 区分正常、超时、探测不可用；`ping_checked_at` 为探测时间。
+- 新安装默认启用；旧探针需从服务器列表打开“安装命令”，重新执行以更新。Shell 安装和探针支持 `--no-ping`，Go 探针支持 `--ping=false`。
+- 运行环境需提供 `ping` 命令和 ICMP 权限。无命令或权限时显示“探测不可用”，不填入假延迟。超时表示该目标未返回 ICMP，不等同于整个运营商不可用。
+- `cd app && bun --env-file=.env.local scripts/carrier-test.ts` 可验证远程探针到历史查询的完整链路（仅允许隔离测试数据库，使用受控回包样本并清理测试服务器）。
+
+
+### 统一设置入口
+
+页头“设置”进入 `/account`，左侧按权限分组：
+
+- 账号设置：个人资料、安全、个人 API 密钥、账号删除。
+- 系统设置（实例管理员）：服务与 API 配置索引、SMTP 邮件、Telegram、备份与恢复。旧 `/backup` 自动进入 `/account?tab=system/backup`。
+- 站点设置：地图 Key/Token、Google/Bing 搜索集成等按站点保存；系统服务索引提供直达链接。
+
+SMTP 填写服务器、端口、TLS/STARTTLS、用户名、密码或授权码、发件地址与名称。常用 587 + STARTTLS、465 + TLS，遵循服务商说明。检查连接只验证连接/认证，不验证发件地址投递权限。当前支持公网 SMTP 服务器。
+
+Telegram 填写 BotFather 提供的 Bot Token 和目标 Chat ID。连接检查使用 `getMe`、`getChat`，不会调用 `sendMessage`。私聊需先向机器人发送 `/start`，群组需先加入机器人。参考 [Telegram 官方说明](https://core.telegram.org/bots/tutorial) 和 [SMTP 说明](https://nodemailer.com/smtp)。
+
+新通道配置以 AES-256-GCM 加密保存，不向浏览器回显原始密码/Token；留空保留、清除按钮显式删除。备份恢复到另一实例时必须保留同一 `SESSION_KEY` 才能解密。保存和连接检查不会启用自动告警或定时邮件报告，这些投递任务尚未接入。个人 API 密钥管理仍不代表业务 API 已接入。
+
+验证：`cd app && bun --env-file=.env.local scripts/channels-test.ts` 在本地隔离 PostgreSQL 上创建临时数据库，检查存储/加密/掩码/保留/清除，最后删除临时数据库，不触碰当前配置或发送消息。

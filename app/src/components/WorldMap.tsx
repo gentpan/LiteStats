@@ -1,7 +1,12 @@
+import { UIIcon, BrandIcon } from "~/components/UIIcon"
+import { Surface } from "~/components/Surface"
+import { ExternalVisitorMap } from "./ExternalVisitorMap"
+import { MAPBOX_STYLES, type MapboxStyle } from "~/lib/map-options"
+import type { MapSettings } from "~/lib/map-options"
+import { useT } from "~/lib/i18n"
 import { useEffect, useMemo, useRef, useState } from "react"
 import * as d3 from "d3"
 import { CountryFlag } from "~/components/icons"
-import { TrafficHeatmap, type HeatCell } from "~/components/TrafficHeatmap"
 import { countryName } from "~/lib/countries"
 import { numberShort } from "~/lib/format"
 import {
@@ -10,13 +15,13 @@ import {
   type WorldJsonCountryData,
 } from "~/lib/world-countries"
 
-const MAP_ROTATE: [number, number] = [-160, 0]
+const MAP_ROTATE: [number, number] = [-150, 0]
 const WIDE_WIDTH = 960
 const WIDE_HEIGHT = 420
-const OCEAN = "#eef3f8"
-const EMPTY_FILL = "#d5dde7"
-const BORDER = "#f8fafc"
-const COLOR_STOPS = ["#c7d2fe", "#818cf8", "#4f46e5", "#1e1b4b"]
+const OCEAN = "var(--map-ocean)"
+const EMPTY_FILL = "var(--map-empty)"
+const BORDER = "var(--map-border)"
+const COLOR_STOPS = ["#e0e7ff", "#b8c4f5", "#8b9ae8", "#6575d4"]
 
 type CountryData = {
   alpha_3: string
@@ -49,7 +54,7 @@ function countryCentroids() {
   return out
 }
 
-export function WorldMap({
+function WorldMap({
   rows,
   live = [],
   onCountryClick,
@@ -58,6 +63,7 @@ export function WorldMap({
   live?: Array<{ country: string }>
   onCountryClick?: (code: string) => void
 }) {
+  const { t, locale } = useT()
   const svgRef = useRef<SVGSVGElement | null>(null)
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
   const [tooltip, setTooltip] = useState<{ x: number, y: number, hovered: string | null }>({
@@ -79,12 +85,12 @@ export function WorldMap({
       dataByAlpha3Code.set(entry.alpha_3, {
         alpha_3: entry.alpha_3,
         visitors,
-        name: row.label || countryName(code),
+        name: row.label || countryName(code, locale),
         code,
       })
     }
     return { maxValue, dataByAlpha3Code }
-  }, [rows])
+  }, [rows, locale])
 
   const liveByAlpha3 = useMemo(() => {
     const counts = new Map<string, number>()
@@ -163,6 +169,18 @@ export function WorldMap({
         if (row?.code) onCountryClick?.(row.code)
       })
 
+    const flags = root.append("g").attr("class", "country-flags")
+    for (const row of dataByAlpha3Code.values()) {
+      if (!row.visitors) continue
+      const center = countryCentroids().get(row.alpha_3)
+      const xy = center ? projection(center) : null
+      if (!xy) continue
+      const marker = flags.append("g").attr("transform", `translate(${xy[0]},${xy[1]})`).attr("cursor", "pointer")
+      marker.append("image").attr("href", `/flags/${row.code.toLowerCase()}.svg`).attr("x", -14).attr("y", -11).attr("width", 28).attr("height", 21)
+      marker.append("title").text(`${row.name} · ${row.visitors}`)
+      marker.on("click", () => onCountryClick?.(row.code))
+    }
+
     const dots = root.append("g").attr("class", "live-dots").attr("pointer-events", "none")
     const centroids = countryCentroids()
     for (const [a3, count] of liveByAlpha3) {
@@ -211,12 +229,12 @@ export function WorldMap({
   const hoveredLive = tooltip.hovered ? liveByAlpha3.get(tooltip.hovered) || 0 : 0
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative w-full">
       <div className="map-stage relative overflow-hidden">
-        <div className="absolute top-2.5 right-2.5 z-10 flex overflow-hidden rounded-md border border-white/70 bg-white/90 shadow-sm backdrop-blur-sm">
-          <button type="button" className="px-2.5 py-1 text-sm text-gray-700 hover:bg-gray-50" onClick={() => zoomBy(1.35)} aria-label="放大">+</button>
-          <button type="button" className="border-l border-gray-200 px-2.5 py-1 text-sm text-gray-700 hover:bg-gray-50" onClick={() => zoomBy(1 / 1.35)} aria-label="缩小">−</button>
-          <button type="button" className="border-l border-gray-200 px-2 py-1 text-xs text-gray-500 hover:bg-gray-50" onClick={resetZoom}>重置</button>
+        <div className="absolute top-2.5 right-2.5 z-10 flex overflow-hidden rounded-sm border border-white/70 bg-white/90 shadow-sm backdrop-blur-sm">
+          <button type="button" className="px-2.5 py-1 text-sm text-gray-700 hover:bg-gray-50" onClick={() => zoomBy(1.35)} aria-label={t("放大")}>+</button>
+          <button type="button" className="border-l border-gray-200 px-2.5 py-1 text-sm text-gray-700 hover:bg-gray-50" onClick={() => zoomBy(1 / 1.35)} aria-label={t("缩小")}>−</button>
+          <button type="button" className="border-l border-gray-200 px-2 py-1 text-xs text-gray-500 hover:bg-gray-50" onClick={resetZoom}>{t("重置")}</button>
         </div>
         <svg
           ref={svgRef}
@@ -225,14 +243,10 @@ export function WorldMap({
         />
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-400">
-        <span>滚轮缩放 · 拖动移动</span>
-        <span className="inline-flex items-center gap-1">
-          少
-          {COLOR_STOPS.map((c) => (
+        <span>{t("滚轮缩放 · 拖动移动")}</span>
+        <span className="inline-flex items-center gap-1">{t("少")}{COLOR_STOPS.map((c) => (
             <span key={c} className="inline-block h-2 w-3.5 rounded-sm" style={{ background: c }} />
-          ))}
-          多
-        </span>
+          ))}{t("多")}</span>
       </div>
       {hovered ? (
         <div
@@ -244,14 +258,10 @@ export function WorldMap({
             {hovered.name}
           </div>
           <div className="flex items-center gap-x-1 text-sm">
-            <strong>{numberShort(hovered.visitors)}</strong>
-            访客
-          </div>
+            <strong>{numberShort(hovered.visitors)}</strong>{t("访客")}</div>
           {hoveredLive ? (
             <div className="mt-0.5 flex items-center gap-x-1 text-sm text-green-600">
-              <strong>{hoveredLive}</strong>
-              当前在线
-            </div>
+              <strong>{hoveredLive}</strong>{t("当前在线")}</div>
           ) : null}
         </div>
       ) : null}
@@ -263,31 +273,51 @@ export function MapCard({
   rows,
   live = [],
   liveCount = 0,
-  heatmap = [],
+  mapConfig,
   onCountryClick,
 }: {
   rows: Array<{ name: string, value: number, label?: string }>
   live?: Array<{ country: string }>
   liveCount?: number
-  heatmap?: HeatCell[]
+  mapConfig?: MapSettings | null
   onCountryClick?: (code: string) => void
 }) {
+  const { t, locale } = useT()
+  const [provider, setProvider] = useState(mapConfig?.provider || "default")
+  const [mapboxStyle, setMapboxStyle] = useState<MapboxStyle>(mapConfig?.mapboxStyle || "auto")
+  const [failed, setFailed] = useState(false)
+  useEffect(() => { setProvider(mapConfig?.provider || "default"); setFailed(false); setMapboxStyle(mapConfig?.mapboxStyle || "auto") }, [mapConfig?.provider, mapConfig?.apiKey, mapConfig?.mapboxToken, mapConfig?.mapboxStyle, mapConfig?.mapboxCustomStyle])
+  const total = rows.reduce((sum, row) => sum + row.value, 0)
+  const points = useMemo(() => rows.flatMap(row => {
+    const code = iso2(row.name)
+    const country = COUNTRIES_BY_TWO_LETTER_CODE[code]
+    const center = country?.alpha_3 ? countryCentroids().get(country.alpha_3) : undefined
+    return center ? [{code, name: row.label || countryName(code, locale), count: row.value, percent: total ? (row.value / total * 100).toFixed(1) : "0", lng: center[0], lat: center[1]}] : []
+  }), [rows, total, locale])
+  const external = !failed && ((provider === "google" && !!mapConfig?.apiKey) || (provider === "mapbox" && !!mapConfig?.mapboxToken))
+
   return (
-    <section className="relative col-span-full w-full overflow-hidden rounded-md bg-white p-5 shadow-sm">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-10">
-        <div className="lg:col-span-7">
-          <div className="mb-2 flex w-full items-center justify-between border-b border-gray-200 pb-3">
-            <h3 className="text-sm font-bold text-gray-900">地图</h3>
+    <section className="geography-section col-span-full">
+      <div className="geography-grid geography-with-ranking">
+        <Surface className="geography-map analytics-panel">
+          <div className="analytics-heading">
+            <h3 className="text-sm font-bold text-gray-900">{t("访客分布")}</h3>
             <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
               <span className="inline-block size-2 rounded-full bg-green-500" />
-              {liveCount} 当前访客
-            </div>
+              {liveCount} {t("当前访客")}</div>
           </div>
-          <WorldMap rows={rows} live={live} onCountryClick={onCountryClick} />
-        </div>
-        <div className="lg:col-span-3 lg:border-l lg:border-gray-100 lg:pl-6">
-          <TrafficHeatmap cells={heatmap} />
-        </div>
+          <p className="analytics-description">{t("查看访客来自哪里，点击国家可筛选报表。")}</p>
+          <div className="map-provider-switch" role="group" aria-label={t("地图服务")}>
+            <button type="button" aria-pressed={!external} onClick={() => { setProvider("default"); setFailed(false) }}><UIIcon name="map" />{t("默认地图")}</button>
+            <button type="button" aria-pressed={external && provider === "google"} disabled={!mapConfig?.apiKey} title={!mapConfig?.apiKey ? t("请先在站点设置的地图页面填写 Key") : undefined} onClick={() => { setProvider("google"); setFailed(false) }}><BrandIcon name="google-maps" />Google Maps</button>
+            <button type="button" aria-pressed={external && provider === "mapbox"} disabled={!mapConfig?.mapboxToken} title={!mapConfig?.mapboxToken ? t("请先在站点设置中填写 Mapbox Token") : undefined} onClick={() => {setProvider("mapbox");setFailed(false)}}><BrandIcon name="mapbox" />Mapbox</button>
+          </div>
+          {provider === "mapbox" && mapConfig?.mapboxToken ? <label className="map-style-switch">{t("地图主题")}<select className="input" value={mapboxStyle} onChange={event => {setMapboxStyle(event.target.value as MapboxStyle);setFailed(false)}}>{MAPBOX_STYLES.filter(style => style.id !== "custom" || mapConfig.mapboxCustomStyle).map(style => <option key={style.id} value={style.id}>{t(style.label)}</option>)}</select></label> : null}
+          {failed ? <p className="map-provider-note" role="status">{t("地图服务加载失败，已切回默认地图。请检查网络、凭据、域名限制、样式权限和服务配额。")}</p> : null}
+          {external && mapConfig ? <ExternalVisitorMap settings={{...mapConfig, mapboxStyle}} provider={provider} points={points} onCountryClick={onCountryClick} onFailure={() => setFailed(true)} /> : <WorldMap rows={rows} live={live} onCountryClick={onCountryClick} />}
+          <p className="map-provider-note">{t("按国家/地区汇总，标记不是访客的精确位置。占比按已记录的地区访客数计算。")}</p>
+
+        </Surface>
       </div>
     </section>
   )

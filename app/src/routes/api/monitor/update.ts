@@ -1,3 +1,4 @@
+import { monitorSchema, readJson } from "~/lib/request-validation"
 import { createFileRoute } from "@tanstack/react-router"
 import { ingestMonitor } from "~/lib/monitor"
 
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/api/monitor/update")({
       POST: async ({ request }) => {
         let body: Record<string, unknown> = {}
         try {
-          body = await request.json() as Record<string, unknown>
+          body = monitorSchema.parse(await readJson(request))
         } catch {
           return Response.json({ error: "Bad request", code: 400 }, { status: 400, headers: cors() })
         }

@@ -1,4 +1,4 @@
-export type Range = { from: string, to: string }
+export type Range = { from: string, to: string, timezone?: string }
 
 export type Period =
   | "realtime"
@@ -28,15 +28,14 @@ export function parseDate(s: string) {
   return new Date(y, (m || 1) - 1, d || 1)
 }
 
-export function presetRange(days: number): Range {
-  const to = new Date()
-  const from = new Date()
+function presetRange(days: number, now = new Date()): Range {
+  const to = new Date(now)
+  const from = new Date(now)
   from.setDate(from.getDate() - (Math.max(1, days) - 1))
   return { from: isoDate(from), to: isoDate(to) }
 }
 
-export function rangeFromPeriod(period: Period, from?: string, to?: string): Range {
-  const now = new Date()
+function rangeFromPeriod(period: Period, from?: string, to?: string, now = new Date()): Range {
   if (period === "realtime") return { from: "realtime", to: "realtime" }
   if (period === "24h") return { from: "last24h", to: "last24h" }
   if (period === "today") return { from: isoDate(now), to: isoDate(now) }
@@ -45,9 +44,9 @@ export function rangeFromPeriod(period: Period, from?: string, to?: string): Ran
     y.setDate(y.getDate() - 1)
     return { from: isoDate(y), to: isoDate(y) }
   }
-  if (period === "7d") return presetRange(7)
-  if (period === "28d") return presetRange(28)
-  if (period === "91d") return presetRange(91)
+  if (period === "7d") return presetRange(7, now)
+  if (period === "28d") return presetRange(28, now)
+  if (period === "91d") return presetRange(91, now)
   if (period === "month") return { from: isoDate(new Date(now.getFullYear(), now.getMonth(), 1)), to: isoDate(now) }
   if (period === "last_month") {
     const start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -65,7 +64,7 @@ export function rangeFromPeriod(period: Period, from?: string, to?: string): Ran
   if (from && to && /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to) && from <= to) {
     return { from, to }
   }
-  return presetRange(7)
+  return presetRange(7, now)
 }
 
 export const PERIOD_LABEL: Record<Period, string> = {
@@ -90,6 +89,10 @@ export function periodLabel(period: Period, range: Range) {
 }
 
 export function compareRange(range: Range): Range {
+  return { ...previousRange(range), timezone: range.timezone }
+}
+
+function previousRange(range: Range): Range {
   if (range.from === "realtime") return { from: "realtime-prev", to: "realtime-prev" }
   if (range.from === "last24h") return { from: "last24h-prev", to: "last24h-prev" }
   const from = parseDate(range.from)
@@ -102,9 +105,10 @@ export function compareRange(range: Range): Range {
   return { from: isoDate(prevFrom), to: isoDate(prevTo) }
 }
 
-export function rangeFromSearch(s: { period?: string, from?: string, to?: string, days?: number }): Range {
+export function rangeFromSearch(s: { period?: string, from?: string, to?: string, days?: number }, timezone?: string): Range {
   const period = (s.period as Period) || inferPeriod(s)
-  return rangeFromPeriod(period, s.from, s.to)
+  const now = timezone ? parseDate(new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())) : new Date()
+  return { ...rangeFromPeriod(period, s.from, s.to, now), timezone }
 }
 
 function inferPeriod(s: { from?: string, to?: string, days?: number }): Period {
@@ -167,7 +171,7 @@ export function availableIntervals(period: Period, range: Range): Interval[] {
   return VALID_INTERVALS[period]
 }
 
-export function defaultInterval(period: Period, range: Range): Interval {
+function defaultInterval(period: Period, range: Range): Interval {
   const available = availableIntervals(period, range)
   if (period === "today" || period === "yesterday" || period === "24h") return "hour"
   if (period === "7d") return "day"
@@ -185,15 +189,6 @@ export function defaultInterval(period: Period, range: Range): Interval {
 
 export function intervalStorageKey(domain: string, period: Period) {
   return `interval__${period}__${domain}`
-}
-
-const INTERVAL_ORDER: Interval[] = ["minute", "hour", "day", "week", "month"]
-
-export function stepInterval(current: Interval, available: Interval[], direction: -1 | 1) {
-  const options = INTERVAL_ORDER.filter((id) => available.includes(id))
-  const index = options.indexOf(current)
-  if (index < 0) return available[0] || current
-  return options[index + direction] || current
 }
 
 export type DashSearch = {
@@ -244,6 +239,22 @@ export function parseDashSearch(s: Record<string, unknown>): DashSearch {
     utm: String(s.utm || ""),
     goal: Number(s.goal || 0),
   }
+}
+
+/** URL representation only; loaders still receive the complete validated defaults. */
+export function compactDashSearch<T extends Record<string, unknown>>(input: T): T {
+  const parsed = parseDashSearch(input)
+  const result: Record<string, unknown> = {...input}
+  delete result.days
+  if (parsed.period === "7d") delete result.period
+  else result.period = parsed.period
+  if (parsed.period !== "custom") { delete result.from; delete result.to }
+  if (parsed.interval === defaultInterval(parsed.period, parsed)) delete result.interval
+  if (result.tab === "overview") delete result.tab
+  for (const key of ["prop","funnel","source","page","hostname","country","browser","os","device","utm","goal"]) {
+    if (result[key] === "" || result[key] === 0 || result[key] == null) delete result[key]
+  }
+  return result as T
 }
 
 export function dashInput(domain: string, s: DashSearch) {

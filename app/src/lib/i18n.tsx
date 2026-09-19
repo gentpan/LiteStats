@@ -1,4 +1,5 @@
-import { createContext, useContext, type ReactNode } from "react"
+import UI_EN from "./ui-en.json"
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
 
 export type Locale = "zh-CN" | "en"
 
@@ -151,7 +152,17 @@ const ZH: Record<string, string> = {
   "monitor.check_now": "立即检测",
   "monitor.checking": "检测中…",
   "monitor.history": "检测记录",
-  "monitor.history_sub": "保留最近 7 天。",
+  "monitor.history_sub": "保留最近 30 天，按检测时间倒序。",
+  "monitor.range": "记录时间范围",
+  "monitor.days7": "近 7 天",
+  "monitor.days30": "近 30 天",
+  "monitor.loading": "加载中…",
+  "monitor.total": "共",
+  "monitor.records": "条记录",
+  "monitor.pagination": "检测记录分页",
+  "monitor.per_page": "每页 10 条",
+  "monitor.previous": "上一页",
+  "monitor.next": "下一页",
   "monitor.empty": "还没有检测记录。",
   "monitor.when": "时间",
   "monitor.uptime": "可用性",
@@ -310,7 +321,17 @@ const EN: Record<string, string> = {
   "monitor.check_now": "Check now",
   "monitor.checking": "Checking…",
   "monitor.history": "Check history",
-  "monitor.history_sub": "Kept for 7 days.",
+  "monitor.history_sub": "Last 30 days, newest checks first.",
+  "monitor.range": "History date range",
+  "monitor.days7": "Last 7 days",
+  "monitor.days30": "Last 30 days",
+  "monitor.loading": "Loading…",
+  "monitor.total": "Total",
+  "monitor.records": "records",
+  "monitor.pagination": "Check history pagination",
+  "monitor.per_page": "10 per page",
+  "monitor.previous": "Previous",
+  "monitor.next": "Next",
   "monitor.empty": "No checks yet.",
   "monitor.when": "When",
   "monitor.uptime": "Uptime",
@@ -322,15 +343,28 @@ const EN: Record<string, string> = {
 
 const DICT: Record<Locale, Record<string, string>> = { "zh-CN": ZH, en: EN }
 
-const I18nContext = createContext<{ locale: Locale, t: (key: string) => string }>({
-  locale: "zh-CN",
-  t: (key) => ZH[key] || key,
+type Params = Record<string, string | number>
+export type Translator = (key: string, params?: Params) => string
+const translatedText: Record<string, string> = { ...Object.fromEntries(Object.entries(ZH).map(([key, value]) => [value, EN[key] || value])), ...UI_EN }
+
+export function translate(locale: Locale, key: string, params?: Params) {
+  const catalog = DICT[locale]
+  const own = (map: Record<string, string>) => Object.hasOwn(map, key) ? map[key] : undefined
+  let value = own(catalog) || (locale === "en" ? own(translatedText) : undefined) || own(ZH) || key
+  if (params) value = value.replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(params, name) ? String(params[name]) : match)
+  return value
+}
+
+const I18nContext = createContext<{ locale: Locale, setLocale: (locale: Locale) => void, t: Translator }>({
+  locale: "zh-CN", setLocale: () => {}, t: (key, params) => translate("zh-CN", key, params),
 })
 
-export function I18nProvider({ locale, children }: { locale: Locale, children: ReactNode }) {
-  const catalog = DICT[locale] || ZH
-  const t = (key: string) => catalog[key] || ZH[key] || key
-  return <I18nContext.Provider value={{ locale, t }}>{children}</I18nContext.Provider>
+export function I18nProvider({ locale: initialLocale, children }: { locale: Locale, children: ReactNode }) {
+  const [locale, setLocale] = useState(initialLocale)
+  useEffect(() => { setLocale(initialLocale) }, [initialLocale])
+  useEffect(() => { document.documentElement.lang = locale === "en" ? "en" : "zh-CN" }, [locale])
+  const t = useCallback<Translator>((key, params) => translate(locale, key, params), [locale])
+  return <I18nContext.Provider value={{ locale, setLocale, t }}>{children}</I18nContext.Provider>
 }
 
 export function useT() {

@@ -1,3 +1,4 @@
+import { UserAvatar } from "./UserAvatar"
 import { Link, useRouter, useRouterState } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import { BrandMark, LogoMark } from "./BrandMark"
@@ -6,12 +7,13 @@ import { numberShort } from "~/lib/format"
 import { useT } from "~/lib/i18n"
 
 type ShellUser = {
+  isAdmin?: boolean
   name: string
   email: string
   avatar?: string | null
+  gravatarUrl?: string
   theme?: string
   locale?: string
-  team?: { setup_complete: boolean } | null
 } | null | undefined
 
 type StatusPulse = {
@@ -105,16 +107,16 @@ export function SiteFooter({ user }: { user?: ShellUser }) {
 export function Shell({
   user,
   children,
-  wide,
 }: {
   user?: ShellUser
   children: React.ReactNode
-  wide?: boolean
 }) {
+  const path = useRouterState({select: state=>state.location.pathname})
+  const management = !/^\/sites\/[^/]+\/?$/.test(path) && !path.startsWith("/share/")
   return (
-    <div className="flex min-h-full flex-col">
+    <div className={`flex min-h-full flex-col${management ? " management-shell" : ""}`}>
       <SiteHeader user={user} />
-      <main className={`${wide ? "mx-auto w-full max-w-[88rem] px-4" : "container-ls"} flex-1 pb-10`}>{children}</main>
+      <main className="container-ls flex-1 pb-10">{children}</main>
       <SiteFooter user={user} />
     </div>
   )
@@ -124,29 +126,22 @@ function headerNav(user: NonNullable<ShellUser>, t: (key: string) => string): He
   const items: HeaderNavItem[] = [
     { key: "sites", to: "/", label: t("nav.sites") },
     { key: "servers", to: "/servers", label: t("nav.servers") },
-    { key: "account", to: "/account", search: { tab: "preferences" }, label: t("nav.account") },
-    { key: "backup", to: "/backup", label: t("nav.backup") },
+    { key: "account", to: "/account", search: { tab: "preferences" }, label: t("settings.title") },
   ]
-  if (user.team && !user.team.setup_complete) {
-    items.push({ key: "team", to: "/team/setup", label: t("nav.team_create") })
-  } else if (user.team?.setup_complete) {
-    items.push({ key: "team", to: "/account", search: { tab: "team/general" }, label: t("nav.team_settings") })
-  }
-  return items
+  return items.filter(item => user.isAdmin || !["servers", "backup"].includes(item.key))
 }
 
-function navActive(key: string, pathname: string, tab: string) {
+function navActive(key: string, pathname: string) {
   if (key === "sites") return pathname === "/" || pathname.startsWith("/sites") || pathname.startsWith("/share")
   if (key === "servers") return pathname === "/servers" || pathname.startsWith("/servers/")
-  if (key === "account") return pathname === "/account" && !tab.startsWith("team/")
+  if (key === "account") return pathname === "/account"
   if (key === "backup") return pathname === "/backup"
-  if (key === "team") return pathname.startsWith("/team") || (pathname === "/account" && tab.startsWith("team/"))
   return false
 }
 
 type HeaderNavItem = {
   key: string
-  to: "/" | "/servers" | "/account" | "/backup" | "/team/setup"
+  to: "/" | "/servers" | "/account" | "/backup"
   search?: { tab: string }
   label: string
 }
@@ -154,98 +149,28 @@ type HeaderNavItem = {
 function HeaderNav({
   items,
   pathname,
-  tab,
 }: {
   items: HeaderNavItem[]
   pathname: string
-  tab: string
 }) {
+  const { t } = useT()
   return (
-    <nav className="site-header-nav" aria-label="主导航">
+    <nav className="site-header-nav" aria-label={t("主导航")}>
       {items.map((item) => (
         <Link
           key={item.key}
           to={item.to}
           search={item.search}
-          className={`site-header-nav-link${navActive(item.key, pathname, tab) ? " is-active" : ""}`}
+          className={`site-header-nav-link${navActive(item.key, pathname) ? " is-active" : ""}`}
         >
-          {item.label}
+          {t(item.label)}
         </Link>
       ))}
     </nav>
   )
 }
 
-const LOCALES = [
-  { id: "zh-CN", flag: "/flags/cn.svg", language: "中文", country: "中国" },
-  { id: "en", flag: "/flags/us.svg", language: "English", country: "United States" },
-] as const
-
-function LanguageSwitch({ locale, onChange }: { locale: string, onChange: (next: string) => void }) {
-  const { t } = useT()
-  const [open, setOpen] = useState(false)
-  const box = useRef<HTMLDivElement>(null)
-  const current = LOCALES.find((item) => item.id === locale) || LOCALES[0]
-
-  useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (!box.current?.contains(e.target as Node)) setOpen(false)
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false)
-    }
-    window.addEventListener("mousedown", onClick)
-    window.addEventListener("keydown", onKey)
-    return () => {
-      window.removeEventListener("mousedown", onClick)
-      window.removeEventListener("keydown", onKey)
-    }
-  }, [])
-
-  return (
-    <div className="site-lang" ref={box}>
-      <button
-        type="button"
-        className="site-lang-btn"
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        aria-label={t("profile.language")}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <img src={current.flag} alt="" className="site-lang-flag" />
-        <span className="site-lang-name">{current.language}</span>
-        <svg className="site-lang-caret" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
-        </svg>
-      </button>
-      {open ? (
-        <div className="site-lang-menu" role="listbox">
-          {LOCALES.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="option"
-              aria-selected={item.id === current.id}
-              className={`site-lang-option${item.id === current.id ? " is-on" : ""}`}
-              onClick={() => {
-                setOpen(false)
-                if (item.id !== current.id) onChange(item.id)
-              }}
-            >
-              <img src={item.flag} alt="" className="site-lang-flag" />
-              <span className="site-lang-copy">
-                <strong>{item.language}</strong>
-                <em>{item.country}</em>
-              </span>
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-function ThemeSwitch({ theme, onChange }: { theme: string, onChange: (next: string) => void }) {
+function ThemeSwitch({ theme, onChange, disabled }: { theme: string, disabled?: boolean, onChange: (next: string) => void }) {
   const { t } = useT()
   const [systemDark, setSystemDark] = useState(false)
 
@@ -259,62 +184,39 @@ function ThemeSwitch({ theme, onChange }: { theme: string, onChange: (next: stri
 
   const resolved = theme === "dark" || (theme !== "light" && systemDark) ? "dark" : "light"
 
-  return (
-    <div className="site-theme" role="group" aria-label={t("profile.appearance")}>
-      <button
-        type="button"
-        className={`site-theme-btn${resolved === "light" ? " is-on" : ""}`}
-        aria-pressed={resolved === "light"}
-        aria-label={t("profile.theme_light")}
-        onClick={() => onChange("light")}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-          <circle cx="12" cy="12" r="4" />
-          <path strokeLinecap="round" d="M12 3v1.6M12 19.4V21M4.6 4.6l1.1 1.1M18.3 18.3l1.1 1.1M3 12h1.6M19.4 12H21M4.6 19.4l1.1-1.1M18.3 5.7l1.1-1.1" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        className={`site-theme-btn${resolved === "dark" ? " is-on" : ""}`}
-        aria-pressed={resolved === "dark"}
-        aria-label={t("profile.theme_dark")}
-        onClick={() => onChange("dark")}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M20.5 15.2A8.2 8.2 0 0 1 8.8 3.5 7.4 7.4 0 1 0 20.5 15.2Z" />
-        </svg>
-      </button>
-    </div>
-  )
+  const dark = resolved === "dark"
+  return <button type="button" className={`theme-toggle${dark ? " is-dark" : ""}`} disabled={disabled}
+    aria-label={t(dark ? "切换到浅色模式" : "切换到深色模式")}
+    title={t(dark ? "切换到浅色模式" : "切换到深色模式")}
+    onClick={() => onChange(dark ? "light" : "dark")}>
+    <svg className="theme-toggle-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg>
+    <svg className="theme-toggle-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 14.1A9 9 0 0 1 9.9 3.2 9 9 0 1 0 20.8 14.1Z"/></svg>
+  </button>
 }
 
 function HeaderTools({ user }: { user: NonNullable<ShellUser> }) {
-  const { locale: currentLocale } = useT()
-  const [locale, setLocale] = useState(user.locale === "en" || currentLocale === "en" ? "en" : "zh-CN")
+  const { t } = useT()
   const [theme, setTheme] = useState(user.theme || "system")
-
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState("")
+  useEffect(() => { setTheme(user.theme || "system") }, [user.theme])
   useEffect(() => {
-    setLocale(user.locale === "en" || currentLocale === "en" ? "en" : "zh-CN")
-    setTheme(user.theme || "system")
-  }, [user.locale, user.theme, currentLocale])
-
+    const query = window.matchMedia("(prefers-color-scheme: dark)")
+    const apply = () => { document.documentElement.dataset.theme = theme === "system" ? (query.matches ? "dark" : "light") : theme }
+    apply()
+    query.addEventListener("change", apply)
+    return () => query.removeEventListener("change", apply)
+  }, [theme])
   return (
     <div className="site-header-tools">
-      <LanguageSwitch
-        locale={locale}
-        onChange={async (next) => {
-          setLocale(next)
-          await updateProfileFn({ data: { locale: next } })
-          window.location.reload()
-        }}
-      />
-      <ThemeSwitch
-        theme={theme}
-        onChange={async (next) => {
-          setTheme(next)
-          await updateProfileFn({ data: { theme: next } })
-        }}
-      />
+      <ThemeSwitch theme={theme} disabled={pending} onChange={async next => {
+        const previous = theme
+        setTheme(next); setError(""); setPending(true)
+        try { await updateProfileFn({ data: { theme: next } }) }
+        catch { setTheme(previous); setError(t("外观保存失败，请重试")) }
+        finally { setPending(false) }
+      }} />
+      {error ? <span className="header-feedback" role="alert">{error}</span> : null}
     </div>
   )
 }
@@ -323,7 +225,6 @@ function SiteHeader({ user }: { user?: ShellUser }) {
   const { t } = useT()
   const location = useRouterState({ select: (s) => s.location })
   const pathname = location.pathname
-  const tab = String((location.search as { tab?: string }).tab || "")
   const items = user ? headerNav(user, t) : []
 
   return (
@@ -333,12 +234,12 @@ function SiteHeader({ user }: { user?: ShellUser }) {
           <Link to={user ? "/" : "/login"} className="site-header-brand">
             <BrandMark />
           </Link>
-          {user ? <HeaderNav items={items} pathname={pathname} tab={tab} /> : <span />}
+          {user ? <HeaderNav items={items} pathname={pathname} /> : <span className="hidden md:block" />}
           <div className="site-header-actions">
             {user ? (
               <>
                 <HeaderTools user={user} />
-                <UserMenu user={user} items={items} pathname={pathname} tab={tab} />
+                <UserMenu user={user} items={items} pathname={pathname} />
               </>
             ) : (
               <>
@@ -357,18 +258,15 @@ function UserMenu({
   user,
   items,
   pathname,
-  tab,
 }: {
   user: NonNullable<ShellUser>
   items: HeaderNavItem[]
   pathname: string
-  tab: string
 }) {
   const router = useRouter()
   const { t } = useT()
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-  const initial = (user.name || user.email).slice(0, 1).toUpperCase()
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -395,11 +293,7 @@ function UserMenu({
         onClick={() => setOpen((v) => !v)}
       >
         <span className="hidden truncate text-sm font-medium text-gray-800 md:block">{user.name || user.email}</span>
-        {user.avatar ? (
-          <img className="site-header-avatar" src={user.avatar} alt="" />
-        ) : (
-          <span className="site-header-avatar">{initial}</span>
-        )}
+        <UserAvatar avatar={user.avatar} gravatarUrl={user.gravatarUrl} name={user.name || user.email} className="site-header-avatar" />
       </button>
       {open ? (
         <div className="site-header-menu" role="menu">
@@ -414,10 +308,10 @@ function UserMenu({
                 key={item.key}
                 to={item.to}
                 search={item.search}
-                className={`site-header-menu-item${navActive(item.key, pathname, tab) ? " is-active" : ""}`}
+                className={`site-header-menu-item${navActive(item.key, pathname) ? " is-active" : ""}`}
                 onClick={() => setOpen(false)}
               >
-                {item.label}
+                {t(item.label)}
               </Link>
             ))}
           </div>

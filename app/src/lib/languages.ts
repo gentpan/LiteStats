@@ -23,11 +23,14 @@ const NAMES: Record<string, string> = {
   uk: "乌克兰语", "he": "希伯来语", "fa": "波斯语",
 }
 
-export function languageName(code: string) {
+export function languageName(code: string, locale = "zh-CN") {
   const raw = (code || "").replace(/\0/g, "").trim()
-  if (!raw || raw === "(none)" || raw === "(NONE)") return "未知"
+  if (!raw || raw === "(none)" || raw === "(NONE)") return locale === "en" ? "Unknown" : "未知"
   const key = raw.replace("_", "-")
   const short = key.split("-")[0]
+  if (locale === "en") {
+    try { return new Intl.DisplayNames(["en"], { type: "language" }).of(key) || key } catch { return key }
+  }
   return NAMES[key] || NAMES[short] || key
 }
 

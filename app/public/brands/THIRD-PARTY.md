@@ -1,0 +1,1 @@
+Brand SVGs sourced from https://github.com/glincker/thesvg (public/icons), downloaded 2026-09-13. Original brand marks are retained. See https://github.com/glincker/thesvg/blob/main/LICENSING.md for licensing and trademark information.

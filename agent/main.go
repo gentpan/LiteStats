@@ -2,17 +2,19 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -31,7 +33,7 @@ func main() {
 	id := flag.String("id", env("LITESTATS_ID", ""), "服务器 ID")
 	secret := flag.String("secret", env("LITESTATS_SECRET", ""), "服务器密钥")
 	interval := flag.Int("interval", 15, "上报间隔（秒）")
-	ping := flag.Bool("ping", false, "额外探测电信/联通/移动/BGP 延迟")
+	ping := flag.Bool("ping", env("LITESTATS_PING", "1") != "0", "探测电信/联通/移动延迟与丢包率")
 	once := flag.Bool("once", false, "只采集上报一次后退出")
 	printOnly := flag.Bool("print", false, "只打印采集结果，不上报")
 	flag.Parse()
@@ -211,6 +213,9 @@ func memoryMB() (total, used int64) {
 		info := readFile("/proc/meminfo")
 		totalKB := meminfo(info, "MemTotal")
 		availKB := meminfo(info, "MemAvailable")
+		if availKB == 0 {
+			availKB = meminfo(info, "MemFree") + meminfo(info, "Buffers") + meminfo(info, "Cached")
+		}
 		if totalKB > 0 {
 			return totalKB / 1024, max64(totalKB-availKB, 0) / 1024
 		}
@@ -218,13 +223,26 @@ func memoryMB() (total, used int64) {
 	if out, err := exec.Command("sysctl", "-n", "hw.memsize").Output(); err == nil {
 		total = i64(strings.TrimSpace(string(out))) / 1024 / 1024
 		page := int64(4096)
-		if p, err := exec.Command("pagesize").Output(); err == nil {
+		vm := string(run("vm_stat"))
+		if m := regexp.MustCompile(`page size of (\d+) bytes`).FindStringSubmatch(vm); len(m) > 1 {
+			if n, err := strconv.ParseInt(m[1], 10, 64); err == nil && n > 0 {
+				page = n
+			}
+		} else if p, err := exec.Command("pagesize").Output(); err == nil {
 			if n, err := strconv.ParseInt(strings.TrimSpace(string(p)), 10, 64); err == nil && n > 0 {
 				page = n
 			}
 		}
-		vm := string(run("vm_stat"))
-		usedPages := vmPages(vm, "Pages active") + vmPages(vm, "Pages wired down") + vmPages(vm, "Pages occupied by compressor")
+		anon := vmPages(vm, "Anonymous pages")
+		purgeable := vmPages(vm, "Pages purgeable")
+		wired := vmPages(vm, "Pages wired down")
+		compressed := vmPages(vm, "Pages occupied by compressor")
+		if anon > 0 {
+			usedPages := max64(anon-purgeable, 0) + wired + compressed
+			used = min64(usedPages*page/1024/1024, total)
+			return total, used
+		}
+		usedPages := vmPages(vm, "Pages active") + wired + compressed
 		used = min64(usedPages*page/1024/1024, total)
 		return total, used
 	}
@@ -237,6 +255,31 @@ func swapMB() (total, used int64) {
 		totalKB := meminfo(info, "SwapTotal")
 		freeKB := meminfo(info, "SwapFree")
 		return totalKB / 1024, max64(totalKB-freeKB, 0) / 1024
+	}
+	if out, err := exec.Command("sysctl", "-n", "vm.swapusage").Output(); err == nil {
+		text := string(out)
+		toMB := func(num, unit string) int64 {
+			v, _ := strconv.ParseFloat(num, 64)
+			switch strings.ToUpper(unit) {
+			case "K":
+				return int64(v / 1024)
+			case "M":
+				return int64(v)
+			case "G":
+				return int64(v * 1024)
+			case "T":
+				return int64(v * 1024 * 1024)
+			}
+			return int64(v)
+		}
+		var tot, usd int64
+		if m := regexp.MustCompile(`total\s*=\s*([\d.]+)([KMGT])`).FindStringSubmatch(text); len(m) > 2 {
+			tot = toMB(m[1], m[2])
+		}
+		if m := regexp.MustCompile(`used\s*=\s*([\d.]+)([KMGT])`).FindStringSubmatch(text); len(m) > 2 {
+			usd = toMB(m[1], m[2])
+		}
+		return tot, usd
 	}
 	return 0, 0
 }
@@ -420,52 +463,60 @@ func connCount(kind string) int64 {
 	return n
 }
 
-func addPings(body metrics) {
-	targets := []struct {
-		key  string
-		host string
-	}{
-		{"ping_ct", "202.96.128.86"},
-		{"ping_cu", "210.22.84.3"},
-		{"ping_cm", "211.136.17.107"},
-		{"ping_bd", "223.5.5.5"},
+func parsePing(output string) (float64, float64, bool) {
+	lossMatch := regexp.MustCompile(`([\d.]+)%\s+packet loss`).FindStringSubmatch(output)
+	if len(lossMatch) < 2 {
+		return 0, 0, false
 	}
-	for _, target := range targets {
-		if ms, ok := pingMS(target.host); ok {
-			body[target.key] = ms
-		}
+	loss, err := strconv.ParseFloat(lossMatch[1], 64)
+	if err != nil || loss < 0 || loss > 100 {
+		return 0, 0, false
 	}
+	latency := -1.0
+	avg := regexp.MustCompile(`(?:round-trip|rtt)[^=]*=\s*[\d.]+/([\d.]+)/`).FindStringSubmatch(output)
+	if len(avg) > 1 {
+		latency, _ = strconv.ParseFloat(avg[1], 64)
+	}
+	return latency, loss, true
 }
 
-func pingMS(host string) (int64, bool) {
-	start := time.Now()
-	conn, err := net.DialTimeout("ip4:icmp", host, time.Second)
-	if err == nil {
-		_ = conn.Close()
-		return time.Since(start).Milliseconds(), true
+func addPings(body metrics) {
+	targets := map[string]string{"ping_ct": "202.96.128.86", "ping_cu": "210.22.84.3", "ping_cm": "211.136.17.107"}
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	for key, host := range targets {
+		wg.Add(1)
+		go func(key, host string) {
+			defer wg.Done()
+			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			defer cancel()
+			wait := "1"
+			if runtime.GOOS == "darwin" {
+				wait = "1000"
+			}
+			cmd := exec.CommandContext(ctx, "ping", "-n", "-c", "3", "-W", wait, host)
+			cmd.Env = append(os.Environ(), "LC_ALL=C")
+			output, _ := cmd.Output()
+			latency, loss, valid := parsePing(string(output))
+			mu.Lock()
+			defer mu.Unlock()
+			body[key] = false
+			body[key+"_target"] = host
+			body[key+"_status"] = "unavailable"
+			if valid {
+				body[key+"_loss"] = loss
+				body[key+"_status"] = "ok"
+				if loss == 100 {
+					body[key+"_status"] = "timeout"
+				}
+				if latency >= 0 {
+					body[key] = latency
+				}
+			}
+		}(key, host)
 	}
-	args := []string{"-c", "1", "-W", "1", host}
-	if runtime.GOOS == "darwin" {
-		args = []string{"-c", "1", "-W", "1000", host}
-	}
-	out, err := exec.Command("ping", args...).Output()
-	if err != nil {
-		return 0, false
-	}
-	for _, part := range strings.Split(string(out), "time=") {
-		if part == string(out) {
-			continue
-		}
-		field := strings.Fields(part)
-		if len(field) == 0 {
-			continue
-		}
-		ms := strings.TrimSuffix(field[0], "ms")
-		if n, err := strconv.ParseFloat(ms, 64); err == nil {
-			return int64(n), true
-		}
-	}
-	return 0, false
+	wg.Wait()
+	body["ping_checked_at"] = time.Now().UTC().Format(time.RFC3339)
 }
 
 func meminfo(contents, key string) int64 {
@@ -484,8 +535,8 @@ func vmPages(contents, key string) int64 {
 	for _, line := range strings.Split(contents, "\n") {
 		if strings.HasPrefix(line, key+":") {
 			fields := strings.Fields(line)
-			if len(fields) >= 3 {
-				return i64(strings.TrimSuffix(fields[2], "."))
+			if len(fields) > 0 {
+				return i64(strings.TrimSuffix(fields[len(fields)-1], "."))
 			}
 		}
 	}

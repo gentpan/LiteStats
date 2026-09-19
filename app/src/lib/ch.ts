@@ -1,6 +1,5 @@
 import { createClient, type ClickHouseClient } from "@clickhouse/client"
 import { CLICKHOUSE_URL } from "./env"
-import type { Goal } from "./db"
 import { compareRange, isoDate, parseDate, type Interval, type Range } from "./range"
 
 let client: ClickHouseClient | null = null
@@ -24,13 +23,14 @@ function esc(s: string) {
 }
 
 export type Filter = {
+  hostname?: string
+  utm?: string
   source?: string
   page?: string
   country?: string
   browser?: string
   os?: string
   device?: string
-  goal?: Goal | null
 }
 
 function where(siteId: number, range: Range, filter: Filter = {}, extra = "") {
@@ -46,9 +46,11 @@ function where(siteId: number, range: Range, filter: Filter = {}, extra = "") {
     parts.push("timestamp >= now() - INTERVAL 48 HOUR")
     parts.push("timestamp < now() - INTERVAL 24 HOUR")
   } else {
-    parts.push(`timestamp >= toDateTime('${esc(range.from)} 00:00:00')`)
-    parts.push(`timestamp < toDateTime('${esc(range.to)} 00:00:00') + INTERVAL 1 DAY`)
+    parts.push(`timestamp >= toDateTime('${esc(range.from)} 00:00:00', '${esc(range.timezone || 'UTC')}')`)
+    parts.push(`timestamp < toDateTime('${esc(range.to)} 00:00:00', '${esc(range.timezone || 'UTC')}') + INTERVAL 1 DAY`)
   }
+  if (filter.hostname) parts.push(`hostname = '${esc(filter.hostname)}'`)
+  if (filter.utm) parts.push(`utm_source = '${esc(filter.utm)}'`)
   if (filter.source) {
     parts.push(filter.source === "Direct"
       ? `(referrer_source = '' OR referrer_source = 'Direct')`
@@ -57,11 +59,9 @@ function where(siteId: number, range: Range, filter: Filter = {}, extra = "") {
   if (filter.page) parts.push(`pathname = '${esc(filter.page)}'`)
   if (filter.country && filter.country !== "(none)") parts.push(`country_code = '${esc(filter.country)}'`)
   if (filter.country === "(none)") parts.push(`country_code = ''`)
-  if (filter.browser && filter.browser !== "(none)") parts.push(`browser = '${esc(filter.browser)}'`)
-  if (filter.os && filter.os !== "(none)") parts.push(`operating_system = '${esc(filter.os)}'`)
-  if (filter.device && filter.device !== "(none)") parts.push(`screen_size = '${esc(filter.device)}'`)
-  if (filter.goal?.event_name) parts.push(`name = '${esc(filter.goal.event_name)}'`)
-  if (filter.goal?.page_path) parts.push(`name = 'pageview' AND pathname = '${esc(filter.goal.page_path)}'`)
+  if (filter.browser) parts.push(`browser = '${esc(filter.browser === "(none)" ? "" : filter.browser)}'`)
+  if (filter.os) parts.push(`operating_system = '${esc(filter.os === "(none)" ? "" : filter.os)}'`)
+  if (filter.device) parts.push(`screen_size = '${esc(filter.device === "(none)" ? "" : filter.device)}'`)
   if (extra) parts.push(extra)
   return parts.join(" AND ")
 }
@@ -79,13 +79,6 @@ export type Row = { name: string, value: number, code?: string }
 export type Point = { date: string, value: number }
 export type MetricKey = "visitors" | "visits" | "pageviews" | "views_per_visit" | "bounce_rate" | "visit_duration"
 export type SeriesBy = Record<MetricKey, Point[]>
-export type FunnelResult = {
-  name: string
-  all_visitors: number
-  entering_visitors: number
-  steps: Array<{ label: string, visitors: number, dropoff: number, conversion_rate: number }>
-}
-export type JourneyStep = { name: string, pathname: string, visitors: number }
 
 async function query<T>(sql: string): Promise<T[]> {
   const res = await ch().query({ query: sql, format: "JSONEachRow" })
@@ -98,12 +91,13 @@ export async function hasSiteEvents(siteId: number) {
 }
 
 function bucketExpr(range: Range, interval: Interval) {
-  if (range.from.startsWith("realtime")) return "toStartOfMinute(sess.mn)"
-  if (interval === "minute") return "toStartOfMinute(sess.mn)"
-  if (interval === "hour" || range.from.startsWith("last24h")) return "toStartOfHour(sess.mn)"
-  if (interval === "week") return "toMonday(sess.mn)"
-  if (interval === "month") return "toStartOfMonth(sess.mn)"
-  return "toDate(sess.mn)"
+  const time = `toTimeZone(sess.mn, '${esc(range.timezone || "UTC")}')`
+  if (range.from.startsWith("realtime")) return `toStartOfMinute(${time})`
+  if (interval === "minute") return `toStartOfMinute(${time})`
+  if (interval === "hour" || range.from.startsWith("last24h")) return `toStartOfHour(${time})`
+  if (interval === "week") return `toMonday(${time})`
+  if (interval === "month") return `toStartOfMonth(${time})`
+  return `toDate(${time})`
 }
 
 function bucketLabelSql(range: Range, interval: Interval) {
@@ -271,7 +265,6 @@ const fields: Record<string, string> = {
 }
 
 let extraColsReady = false
-let demoBackfillStarted = false
 
 export async function ensureEventColumns() {
   if (extraColsReady) return
@@ -325,75 +318,6 @@ export async function ensureEventColumns() {
     await ch().command({ query: `ALTER TABLE events_v2 ADD COLUMN IF NOT EXISTS ${name} ${typ}` })
   }
   extraColsReady = true
-  await backfillMissingDimensions()
-}
-
-export async function backfillMissingDimensions() {
-  if (demoBackfillStarted) return
-  demoBackfillStarted = true
-  const [row] = await query<{ n: string }>(`SELECT toString(count()) AS n FROM events_v2 WHERE page_title = ''`)
-  if (!Number(row?.n || 0)) return
-  await ch().command({
-    query: `
-      ALTER TABLE events_v2 UPDATE
-        page_title = arrayElement(
-          ['Home','Pricing','Blog','Documentation','About','Changelog','Sign in','Dashboard','Settings','API Reference','Privacy Policy','Getting Started','Integrations','Download','Contact','FAQ','Features','Customers','Status','Security'],
-          (cityHash64(pathname) % 20) + 1
-        ),
-        browser_language = multiIf(
-          replaceRegexpAll(country_code, '\\0', '') = 'DE', 'de-DE',
-          replaceRegexpAll(country_code, '\\0', '') = 'US', 'en-US',
-          replaceRegexpAll(country_code, '\\0', '') = 'IT', 'it-IT',
-          replaceRegexpAll(country_code, '\\0', '') = 'BR', 'pt-BR',
-          replaceRegexpAll(country_code, '\\0', '') = 'PL', 'pl-PL',
-          replaceRegexpAll(country_code, '\\0', '') = 'EE', 'et-EE',
-          'en'
-        ),
-        screen_resolution = multiIf(
-          screen_size = 'Mobile', arrayElement(['390x844','375x812','414x896'], (user_id % 3) + 1),
-          screen_size = 'Tablet', arrayElement(['768x1024','810x1080','834x1194'], (user_id % 3) + 1),
-          screen_size = 'Laptop', arrayElement(['1440x900','1366x768','1536x864'], (user_id % 3) + 1),
-          arrayElement(['1920x1080','2560x1440','1680x1050'], (user_id % 3) + 1)
-        ),
-        url_query = multiIf(
-          (user_id % 9) = 0, 'utm_source=newsletter',
-          (user_id % 9) = 1, 'page=2',
-          (user_id % 9) = 2 AND utm_source != '', concat('utm_source=', utm_source),
-          (user_id % 9) = 3, 'ref=twitter',
-          ''
-        ),
-        search_query = if(
-          referrer_source IN ('Google','DuckDuckGo','Bing') OR lower(utm_source) IN ('google','duckduckgo','bing'),
-          arrayElement(['网站统计','开源分析','隐私分析','self hosted analytics','lite stats','流量分析','clickhouse analytics'], (user_id % 7) + 1),
-          ''
-        ),
-        operating_system = multiIf(
-          operating_system = 'Windows', concat('Windows ', multiIf(
-            operating_system_version IN ('7','8','10','11'), operating_system_version,
-            operating_system_version IN ('0','1','2'), '7',
-            operating_system_version IN ('3','4','5'), '8.1',
-            operating_system_version IN ('6','9'), '10',
-            '11'
-          )),
-          operating_system IN ('GNU/Linux','Linux'), multiIf(
-            operating_system_version IN ('1','2','3'), 'Ubuntu',
-            operating_system_version IN ('4','5','6'), 'Debian',
-            operating_system_version IN ('7','8','9'), 'Fedora',
-            operating_system_version IN ('10','11'), 'Arch Linux',
-            'Linux'
-          ),
-          operating_system IN ('Mac','Mac OS','macOS','MacOS'), concat('macOS ', multiIf(
-            operating_system_version IN ('12','13','14','15'), operating_system_version,
-            operating_system_version IN ('2','5','6'), '13',
-            operating_system_version IN ('7','9'), '14',
-            '15'
-          )),
-          operating_system
-        )
-      WHERE page_title = ''
-    `,
-    clickhouse_settings: { mutations_sync: "1" },
-  })
 }
 
 function safeTz(tz: string) {
@@ -483,157 +407,6 @@ export async function breakdown(siteId: number, range: Range, field: string, fil
   return rows.map((r) => ({ name: r.name, value: Number(r.value) }))
 }
 
-export async function goalVisitors(siteId: number, range: Range, g: Goal, filter: Filter = {}) {
-  const stats = await goalStats(siteId, range, g, filter)
-  return stats.visitors
-}
-
-export async function goalStats(siteId: number, range: Range, g: Goal, filter: Filter = {}) {
-  let extra = ""
-  if (g.event_name) extra = `name = '${esc(g.event_name)}'`
-  else if (g.page_path) extra = `name = 'pageview' AND pathname = '${esc(g.page_path)}'`
-  else return { visitors: 0, events: 0 }
-  const [row] = await query<{ visitors: string, events: string }>(`
-    SELECT toString(uniqExact(user_id)) AS visitors, toString(count()) AS events
-    FROM events_v2 WHERE ${where(siteId, range, filter, extra)}
-  `)
-  return { visitors: Number(row?.visitors || 0), events: Number(row?.events || 0) }
-}
-
-export async function propKeys(siteId: number, range: Range, filter: Filter = {}, allowed?: string[] | null): Promise<string[]> {
-  const rows = await query<{ key: string }>(`
-    SELECT meta.key AS key
-    FROM events_v2 ARRAY JOIN \`meta.key\` AS \`meta.key\`
-    WHERE ${where(siteId, range, filter)}
-    GROUP BY key ORDER BY count() DESC LIMIT 40
-  `)
-  const keys = rows.map((r) => r.key).filter(Boolean)
-  if (allowed && allowed.length) return keys.filter((k) => allowed.includes(k) || ["url", "path", "search_query", "page_title", "browser_language", "screen_resolution", "url_query"].includes(k))
-  return keys
-}
-
-export async function propBreakdown(siteId: number, range: Range, key: string, filter: Filter = {}): Promise<Row[]> {
-  const rows = await query<{ name: string, value: string }>(`
-    SELECT
-      if(empty(v), '(none)', v) AS name,
-      toString(uniqExact(user_id)) AS value
-    FROM (
-      SELECT user_id, \`meta.value\`[indexOf(\`meta.key\`, '${esc(key)}')] AS v
-      FROM events_v2
-      WHERE ${where(siteId, range, filter)} AND has(\`meta.key\`, '${esc(key)}')
-    )
-    GROUP BY name ORDER BY toUInt64(value) DESC LIMIT 20
-  `)
-  return rows.map((r) => ({ name: r.name, value: Number(r.value) }))
-}
-
-function goalCond(g: Goal) {
-  if (g.event_name) return `name = '${esc(g.event_name)}'`
-  if (g.page_path) return `name = 'pageview' AND pathname = '${esc(g.page_path)}'`
-  return "0"
-}
-
-export async function funnelStats(siteId: number, range: Range, funnel: { name: string, steps: Goal[] }, filter: Filter = {}): Promise<FunnelResult> {
-  const conds = funnel.steps.map(goalCond).join(", ")
-  const rows = await query<{ level: string, visitors: string }>(`
-    SELECT toString(level) AS level, toString(count()) AS visitors
-    FROM (
-      SELECT user_id, windowFunnel(86400)(timestamp, ${conds}) AS level
-      FROM events_v2
-      WHERE ${where(siteId, range, filter)}
-      GROUP BY user_id
-    )
-    GROUP BY level
-  `)
-  const byLevel = new Map<number, number>()
-  let all = 0
-  for (const r of rows) {
-    const level = Number(r.level)
-    const n = Number(r.visitors)
-    byLevel.set(level, n)
-    all += n
-  }
-  const cumulative: number[] = []
-  for (let i = funnel.steps.length; i >= 1; i--) {
-    const here = (byLevel.get(i) || 0) + (cumulative[0] || 0)
-    cumulative.unshift(here)
-  }
-  const entering = cumulative[0] || 0
-  const steps = funnel.steps.map((step, i) => {
-    const visitors = cumulative[i] || 0
-    const prev = i === 0 ? entering : cumulative[i - 1] || 0
-    return {
-      label: step.display_name,
-      visitors,
-      dropoff: Math.max(0, prev - visitors),
-      conversion_rate: entering ? Math.round((visitors / entering) * 1000) / 10 : 0,
-    }
-  })
-  return { name: funnel.name, all_visitors: all, entering_visitors: entering, steps }
-}
-
-export async function exploreNext(siteId: number, range: Range, journey: Array<{ name: string, pathname: string }>, filter: Filter = {}): Promise<JourneyStep[]> {
-  const last = journey[journey.length - 1]
-  let sql: string
-  if (!last) {
-    sql = `
-      SELECT name, pathname, toString(uniqExact(user_id)) AS visitors
-      FROM events_v2
-      WHERE ${where(siteId, range, filter)}
-      GROUP BY name, pathname
-      ORDER BY toUInt64(visitors) DESC LIMIT 12
-    `
-  } else {
-    sql = `
-      SELECT next_name AS name, next_path AS pathname, toString(uniqExact(user_id)) AS visitors
-      FROM (
-        SELECT
-          user_id,
-          name,
-          pathname,
-          lead(name) OVER (PARTITION BY user_id ORDER BY timestamp) AS next_name,
-          lead(pathname) OVER (PARTITION BY user_id ORDER BY timestamp) AS next_path
-        FROM events_v2
-        WHERE ${where(siteId, range, filter)}
-      )
-      WHERE name = '${esc(last.name)}' AND pathname = '${esc(last.pathname)}'
-        AND next_name != ''
-      GROUP BY name, pathname
-      ORDER BY toUInt64(visitors) DESC LIMIT 12
-    `
-  }
-  const rows = await query<{ name: string, pathname: string, visitors: string }>(sql)
-  return rows.map((r) => ({ name: r.name, pathname: r.pathname, visitors: Number(r.visitors) }))
-}
-
-export async function exploreFunnel(siteId: number, range: Range, journey: Array<{ name: string, pathname: string }>, filter: Filter = {}) {
-  if (!journey.length) return []
-  const conds = journey.map((s) => `name = '${esc(s.name)}' AND pathname = '${esc(s.pathname)}'`).join(", ")
-  const rows = await query<{ level: string, visitors: string }>(`
-    SELECT toString(level) AS level, toString(count()) AS visitors
-    FROM (
-      SELECT user_id, windowFunnel(86400)(timestamp, ${conds}) AS level
-      FROM events_v2
-      WHERE ${where(siteId, range, filter)}
-      GROUP BY user_id
-    )
-    GROUP BY level
-  `)
-  const byLevel = new Map<number, number>()
-  for (const r of rows) byLevel.set(Number(r.level), Number(r.visitors))
-  const cumulative: number[] = []
-  for (let i = journey.length; i >= 1; i--) {
-    cumulative.unshift((byLevel.get(i) || 0) + (cumulative[0] || 0))
-  }
-  const entering = cumulative[0] || 0
-  return journey.map((s, i) => ({
-    name: s.name,
-    pathname: s.pathname,
-    visitors: cumulative[i] || 0,
-    conversion_rate: entering ? Math.round(((cumulative[i] || 0) / entering) * 1000) / 10 : 0,
-  }))
-}
-
 export type RecentEvent = {
   name: string
   pathname: string
@@ -645,24 +418,25 @@ export type RecentEvent = {
   time: string
 }
 
-export async function recentEvents(siteId: number, filter: Filter = {}, limit = 16): Promise<RecentEvent[]> {
+export async function recentEvents(siteId: number, filter: Filter = {}, limit = 16, minutes = 1440): Promise<RecentEvent[]> {
   const rows = await query<RecentEvent>(`
     SELECT
       name,
       pathname,
       if(referrer_source = '', 'Direct', referrer_source) AS source,
-      country_code AS country,
+      replaceAll(toString(country_code), '\\0', '') AS country,
       browser,
       operating_system AS os,
       screen_size AS device,
       toString(timestamp) AS time
     FROM events_v2
     WHERE site_id = ${siteId}
+      AND timestamp >= now() - INTERVAL ${Math.max(1, Math.min(10080, Math.trunc(minutes)))} MINUTE
       ${filter.source ? `AND ${filter.source === "Direct" ? "(referrer_source = '' OR referrer_source = 'Direct')" : `referrer_source = '${esc(filter.source)}'`}` : ""}
       ${filter.page ? `AND pathname = '${esc(filter.page)}'` : ""}
       ${filter.country && filter.country !== "(none)" ? `AND country_code = '${esc(filter.country)}'` : ""}
     ORDER BY timestamp DESC
-    LIMIT ${limit}
+    LIMIT ${Math.max(1, Math.min(201, Math.trunc(limit)))}
   `)
   return rows
 }
@@ -780,7 +554,7 @@ export async function siteSummaries(siteIds: number[]) {
   return out
 }
 
-export async function insertEvent(ev: {
+export type EventPayload = {
   siteId: number
   name: string
   hostname: string
@@ -802,39 +576,139 @@ export async function insertEvent(ev: {
   keyword?: string
   utm?: { source?: string, medium?: string, campaign?: string }
   props?: Record<string, string>
-}) {
-  await ensureEventColumns().catch(() => undefined)
+}
+
+function toClickHouseRow(ev: EventPayload) {
   const keys = Object.keys(ev.props || {})
   const values = keys.map((k) => ev.props![k])
-  await ch().insert({
-    table: "events_v2",
-    format: "JSONEachRow",
-    values: [{
-      timestamp: new Date().toISOString().replace("T", " ").slice(0, 19),
-      name: ev.name || "pageview",
-      site_id: ev.siteId,
-      user_id: ev.userId,
-      session_id: ev.sessionId,
-      hostname: ev.hostname,
-      pathname: ev.pathname || "/",
-      referrer: ev.referrer,
-      referrer_source: ev.referrerSource,
-      browser: ev.browser || "",
-      browser_version: ev.browserVersion || "",
-      operating_system: ev.os || "",
-      operating_system_version: ev.osVersion || "",
-      screen_size: ev.device || "",
-      country_code: /^[A-Za-z]{2}$/.test(ev.country || "") ? ev.country!.toUpperCase() : "",
-      page_title: (ev.title || "").slice(0, 300),
-      browser_language: (ev.language || "").slice(0, 16),
-      screen_resolution: (ev.screen || "").slice(0, 32),
-      url_query: (ev.query || "").slice(0, 500),
-      search_query: (ev.keyword || "").slice(0, 300),
-      utm_source: ev.utm?.source || "",
-      utm_medium: ev.utm?.medium || "",
-      utm_campaign: ev.utm?.campaign || "",
-      "meta.key": keys,
-      "meta.value": values,
-    }],
-  })
+  return {
+    timestamp: Math.floor(Date.now() / 1000),
+    name: ev.name || "pageview",
+    site_id: ev.siteId,
+    user_id: ev.userId,
+    session_id: ev.sessionId,
+    hostname: ev.hostname,
+    pathname: ev.pathname || "/",
+    referrer: ev.referrer,
+    referrer_source: ev.referrerSource,
+    browser: ev.browser || "",
+    browser_version: ev.browserVersion || "",
+    operating_system: ev.os || "",
+    operating_system_version: ev.osVersion || "",
+    screen_size: ev.device || "",
+    country_code: /^[A-Za-z]{2}$/.test(ev.country || "") ? ev.country!.toUpperCase() : "",
+    page_title: (ev.title || "").slice(0, 300),
+    browser_language: (ev.language || "").slice(0, 16),
+    screen_resolution: (ev.screen || "").slice(0, 32),
+    url_query: (ev.query || "").slice(0, 500),
+    search_query: (ev.keyword || "").slice(0, 300),
+    utm_source: ev.utm?.source || "",
+    utm_medium: ev.utm?.medium || "",
+    utm_campaign: ev.utm?.campaign || "",
+    "meta.key": keys,
+    "meta.value": values,
+  }
+}
+
+type ClickHouseEventRow = ReturnType<typeof toClickHouseRow>
+
+const BATCH_SIZE = 200
+const FLUSH_INTERVAL_MS = 1000
+const MAX_QUEUE_SIZE = 10000
+
+let eventBuffer: ClickHouseEventRow[] = []
+let flushTimer: ReturnType<typeof setTimeout> | null = null
+let isFlushing = false
+
+export async function flushEventQueue(): Promise<void> {
+  if (isFlushing || eventBuffer.length === 0) return
+  isFlushing = true
+  if (flushTimer) {
+    clearTimeout(flushTimer)
+    flushTimer = null
+  }
+  const batch = eventBuffer
+  eventBuffer = []
+
+  try {
+    await ensureEventColumns().catch(() => undefined)
+    await ch().insert({
+      table: "events_v2",
+      format: "JSONEachRow",
+      values: batch,
+    })
+  } catch (err) {
+    console.error("[LiteStats] Failed to flush events to ClickHouse:", err)
+    if (eventBuffer.length + batch.length < MAX_QUEUE_SIZE) {
+      eventBuffer = [...batch, ...eventBuffer]
+    }
+  } finally {
+    isFlushing = false
+    if (eventBuffer.length && !flushTimer) flushTimer = setTimeout(() => { flushTimer = null; void flushEventQueue() }, FLUSH_INTERVAL_MS)
+  }
+}
+
+export function queueEvent(ev: EventPayload): void {
+  if (eventBuffer.length >= MAX_QUEUE_SIZE) {
+    console.warn("[LiteStats] Event buffer full, dropping event to prevent OOM")
+    return
+  }
+  eventBuffer.push(toClickHouseRow(ev))
+  if (eventBuffer.length >= BATCH_SIZE) {
+    void flushEventQueue()
+  } else if (!flushTimer) {
+    flushTimer = setTimeout(() => {
+      flushTimer = null
+      void flushEventQueue()
+    }, FLUSH_INTERVAL_MS)
+  }
+}
+
+if (typeof process !== "undefined") {
+  let stopping = false
+  const shutdown = async () => {
+    if (stopping) return
+    stopping = true
+    const deadline = Date.now() + 10_000
+    while ((isFlushing || eventBuffer.length) && Date.now() < deadline) {
+      if (!isFlushing) await flushEventQueue()
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    process.exit(eventBuffer.length || isFlushing ? 1 : 0)
+  }
+  process.once("SIGINT", () => { void shutdown() })
+  process.once("SIGTERM", () => { void shutdown() })
+}
+
+export type RecentVisitor = {
+  id: string; pathname: string; source: string; country: string; browser: string; os: string;
+  device: string; screen: string; language: string; firstSeen: string; lastSeen: string;
+  active: boolean; pageviews: number; events: number; pages: string[];
+}
+
+/** Anonymous visitors with activity in the last 30 minutes, independent of dashboard filters. */
+export async function recentVisitors(siteId: number) {
+  const rows = await query<RecentVisitor & { total: string; online: string }>(`
+    SELECT toString(user_id) AS id,
+      argMax(e.pathname, timestamp) AS pathname,
+      argMax(if(referrer_source = '', 'Direct', referrer_source), timestamp) AS source,
+      replaceAll(toString(argMax(country_code, timestamp)), '\\0', '') AS country,
+      argMax(trim(concat(e.browser, ' ', browser_version)), timestamp) AS browser,
+      argMax(trim(concat(operating_system, ' ', operating_system_version)), timestamp) AS os,
+      argMax(screen_size, timestamp) AS device,
+      argMax(screen_resolution, timestamp) AS screen,
+      argMax(browser_language, timestamp) AS language,
+      formatDateTime(min(timestamp), '%Y-%m-%dT%H:%i:%SZ', 'UTC') AS firstSeen,
+      formatDateTime(max(timestamp), '%Y-%m-%dT%H:%i:%SZ', 'UTC') AS lastSeen,
+      max(timestamp) >= now() - INTERVAL 5 MINUTE AS active,
+      toUInt32(countIf(name = 'pageview')) AS pageviews, toUInt32(count()) AS events,
+      groupUniqArray(20)(e.pathname) AS pages,
+      toString(count() OVER ()) AS total,
+      toString(sum(toUInt8(max(timestamp) >= now() - INTERVAL 5 MINUTE)) OVER ()) AS online
+    FROM events_v2 AS e
+    WHERE site_id = ${siteId} AND timestamp >= now() - INTERVAL 30 MINUTE
+    GROUP BY user_id ORDER BY max(timestamp) DESC LIMIT 200
+  `)
+  return { total: Number(rows[0]?.total || 0), online: Number(rows[0]?.online || 0),
+    rows: rows.map(({total: _total, online: _online, ...row}) => ({...row, active: Boolean(row.active)})) }
 }

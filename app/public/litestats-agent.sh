@@ -7,7 +7,7 @@ URL="${LITESTATS_URL:-}"
 ID="${LITESTATS_ID:-}"
 SECRET="${LITESTATS_SECRET:-}"
 INTERVAL="${LITESTATS_INTERVAL:-15}"
-PING="${LITESTATS_PING:-0}"
+PING="${LITESTATS_PING:-1}"
 ONCE=0
 STATE_FILE="${LITESTATS_STATE:-/tmp/litestats-agent.state}"
 
@@ -27,6 +27,7 @@ while [ $# -gt 0 ]; do
     --interval|-interval) INTERVAL="$2"; shift 2 ;;
     --interval=*|-interval=*) INTERVAL="${1#*=}"; shift ;;
     --ping|-ping) PING=1; shift ;;
+    --no-ping) PING=0; shift ;;
     --once) ONCE=1; shift ;;
     -h|--help) usage ;;
     *) echo "未知参数: $1" >&2; usage ;;
@@ -103,7 +104,11 @@ read_mem() {
     awk '
       $1 == "MemTotal:" { total = $2 }
       $1 == "MemAvailable:" { avail = $2 }
+      $1 == "MemFree:" { free = $2 }
+      $1 == "Buffers:" { buffers = $2 }
+      $1 == "Cached:" { cached = $2 }
       END {
+        if (!avail) avail = free + buffers + cached
         total_mb = int(total / 1024)
         used_mb = int((total - avail) / 1024)
         if (used_mb < 0) used_mb = 0
@@ -113,12 +118,21 @@ read_mem() {
     return
   fi
   total=$(( $(sysctl -n hw.memsize 2>/dev/null || echo 0) / 1024 / 1024 ))
-  page=$(pagesize 2>/dev/null || echo 4096)
   vm=$(vm_stat 2>/dev/null || true)
-  active=$(printf '%s\n' "$vm" | awk '/Pages active/ { gsub(/\./, "", $3); print $3+0; exit }')
+  page=$(printf '%s\n' "$vm" | awk '/page size of/ { gsub(/[^0-9]/, "", $8); print $8; exit }')
+  [ -n "$page" ] || page=$(pagesize 2>/dev/null || echo 4096)
+  anon=$(printf '%s\n' "$vm" | awk '/Anonymous pages/ { gsub(/\./, "", $NF); print $NF+0; exit }')
+  purgeable=$(printf '%s\n' "$vm" | awk '/Pages purgeable/ { gsub(/\./, "", $NF); print $NF+0; exit }')
   wired=$(printf '%s\n' "$vm" | awk '/Pages wired/ { gsub(/\./, "", $NF); print $NF+0; exit }')
   compressed=$(printf '%s\n' "$vm" | awk '/compressor/ { gsub(/\./, "", $NF); print $NF+0; exit }')
-  used=$(( (${active:-0} + ${wired:-0} + ${compressed:-0}) * page / 1024 / 1024 ))
+  if [ "${anon:-0}" -gt 0 ]; then
+    app_mem=$(( anon - purgeable ))
+    [ "$app_mem" -ge 0 ] || app_mem=0
+    used=$(( (app_mem + ${wired:-0} + ${compressed:-0}) * page / 1024 / 1024 ))
+  else
+    active=$(printf '%s\n' "$vm" | awk '/Pages active/ { gsub(/\./, "", $3); print $3+0; exit }')
+    used=$(( (${active:-0} + ${wired:-0} + ${compressed:-0}) * page / 1024 / 1024 ))
+  fi
   [ "$used" -le "$total" ] || used=$total
   echo "$total $used"
 }
@@ -130,6 +144,28 @@ read_swap() {
       $1 == "SwapFree:" { free = $2 }
       END { print int(total/1024), int((total-free)/1024) }
     ' /proc/meminfo
+    return
+  fi
+  res=$(sysctl -n vm.swapusage 2>/dev/null | awk '
+    function to_mb(str) {
+      u = substr(str, length(str))
+      v = substr(str, 1, length(str)-1) + 0
+      if (u == "K" || u == "k") return int(v / 1024)
+      if (u == "M" || u == "m") return int(v)
+      if (u == "G" || u == "g") return int(v * 1024)
+      if (u == "T" || u == "t") return int(v * 1024 * 1024)
+      return int(v)
+    }
+    {
+      for (i=1; i<=NF; i++) {
+        if ($i == "total" && $(i+1) == "=") total = to_mb($(i+2))
+        if ($i == "used" && $(i+1) == "=") used = to_mb($(i+2))
+      }
+      print total+0, used+0
+    }
+  ')
+  if [ -n "$res" ]; then
+    echo "$res"
     return
   fi
   echo "0 0"
@@ -202,10 +238,24 @@ read_socks() {
   netstat -an 2>/dev/null | awk -v proto="$kind" 'BEGIN { p=tolower(proto) } tolower($1) ~ "^"p { n++ } END { print n+0 }'
 }
 
-ping_ms() {
-  host=$1
-  out=$(ping -c 1 -W 1 "$host" 2>/dev/null || ping -c 1 -W 1000 "$host" 2>/dev/null || true)
-  printf '%s\n' "$out" | awk -F'time=' 'NF>1 { split($2, a, " "); gsub(/ms/,"",a[1]); if (a[1]+0==a[1]) { printf "%d", a[1]+0; exit } }'
+ping_probe() {
+  probe_key=$1
+  probe_host=$2
+  if [ "$(uname -s)" = Darwin ]; then
+    probe_out=$(LC_ALL=C ping -n -c 3 -W 1000 -t 6 "$probe_host" 2>/dev/null || true)
+  else
+    probe_out=$(LC_ALL=C ping -n -c 3 -W 1 -w 6 "$probe_host" 2>/dev/null || true)
+  fi
+  printf '%s\n' "$probe_out" | awk -v key="$probe_key" -v host="$probe_host" '
+    /% packet loss/ { for(i=1;i<=NF;i++) if($i ~ /%$/) {loss=$i; gsub(/%/,"",loss)} }
+    /^(rtt|round-trip)/ { split($0,parts,"="); split(parts[2],times,"/"); avg=times[2] }
+    END {
+      printf ",\"%s_target\":\"%s\"",key,host
+      if (loss != "") {
+        printf ",\"%s_loss\":%s,\"%s_status\":\"%s\"",key,loss,key,(loss+0==100 ? "timeout" : "ok")
+      } else { printf ",\"%s_status\":\"unavailable\"",key }
+      if (avg != "") {printf ",\"%s\":%s",key,avg+0} else {printf ",\"%s\":false",key}
+    }'
 }
 
 save_state() {
@@ -278,18 +328,11 @@ collect_and_post() {
 
   ping_json=""
   if [ "$PING" = 1 ]; then
-    ct=$(ping_ms 202.96.128.86 || true)
-    cu=$(ping_ms 210.22.84.3 || true)
-    cm=$(ping_ms 211.136.17.107 || true)
-    bd=$(ping_ms 223.5.5.5 || true)
-    [ -n "$ct" ] && ping_json="$ping_json,\"ping_ct\":$ct"
-    [ -n "$cu" ] && ping_json="$ping_json,\"ping_cu\":$cu"
-    [ -n "$cm" ] && ping_json="$ping_json,\"ping_cm\":$cm"
-    [ -n "$bd" ] && ping_json="$ping_json,\"ping_bd\":$bd"
+    ping_json="$(ping_probe ping_ct 202.96.128.86)$(ping_probe ping_cu 210.22.84.3)$(ping_probe ping_cm 211.136.17.107),\"ping_checked_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\""
   fi
 
   body=$(printf '%s' "{\"id\":\"$(json_esc "$ID")\",\"secret\":\"$(json_esc "$SECRET")\",\"metrics\":{\"cpu\":$cpu,\"ram_total\":${ram_total:-0},\"ram_used\":${ram_used:-0},\"swap_total\":${swap_total:-0},\"swap_used\":${swap_used:-0},\"disk_total\":${disk_total:-0},\"disk_used\":${disk_used:-0},\"load_avg\":\"$(json_esc "$load")\",\"boot_time\":${boot:-0},\"net_rx\":$rx,\"net_tx\":$tx,\"net_in_speed\":$in_speed,\"net_out_speed\":$out_speed,\"os\":\"$(json_esc "$os")\",\"arch\":\"$(json_esc "$arch")\",\"kernel_version\":\"$(json_esc "$kernel")\",\"cpu_info\":\"$(json_esc "$cpu_info")\",\"cpu_cores\":${cores:-1},\"processes\":${processes:-0},\"tcp_conn\":${tcp:-0},\"udp_conn\":${udp:-0}$ping_json}}")
-  curl -sS -m 15 -X POST "$(report_url)" -H "Content-Type: application/json" --data-binary "$body" >/dev/null
+  curl -fsS -m 15 -X POST "$(report_url)" -H "Content-Type: application/json" --data-binary "$body" >/dev/null
 }
 
 collect_and_post

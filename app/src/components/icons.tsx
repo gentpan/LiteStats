@@ -1,4 +1,3 @@
-import type { ReactNode } from "react"
 
 const BROWSER_ICONS: Record<string, string> = {
   Chrome: "chrome.svg",
@@ -74,7 +73,7 @@ export function CountryFlag({ code, className = "", shape = "square" }: { code: 
   )
 }
 
-export function BrowserIcon({ name }: { name: string }) {
+function BrowserIcon({ name }: { name: string }) {
   const filename = BROWSER_ICONS[name] ?? "fallback.svg"
   return (
     <img
@@ -86,7 +85,7 @@ export function BrowserIcon({ name }: { name: string }) {
   )
 }
 
-export function OsIcon({ name }: { name: string }) {
+function OsIcon({ name }: { name: string }) {
   const filename = OS_ICONS[name]
     || Object.entries(OS_ICONS).find(([key]) => name.startsWith(key))?.[1]
     || "fallback.svg"
@@ -113,7 +112,7 @@ const screenSvg = {
   className: "feather -mt-px inline-block",
 }
 
-export function DeviceIcon({ name }: { name: string }) {
+function DeviceIcon({ name }: { name: string }) {
   if (name === "Mobile") {
     return (
       <svg {...screenSvg}>
@@ -165,7 +164,7 @@ export function DeviceIcon({ name }: { name: string }) {
   )
 }
 
-export function SourceFavicon({ name }: { name: string }) {
+function SourceFavicon({ name }: { name: string }) {
   const key = (name || "").trim()
   if (!key || key === "Direct" || key === "(none)" || key === "Direct / None") {
     return <img alt="" src="/images/icon/link.svg" className="mr-2 size-4" />
@@ -190,8 +189,4 @@ export function RowIcon({ kind, name }: { kind?: RowIconKind, name: string }) {
   if (kind === "os") return <OsIcon name={name} />
   if (kind === "device") return <span className="mr-1.5"><DeviceIcon name={name} /></span>
   return null
-}
-
-export function iconFor(kind: RowIconKind | undefined, name: string): ReactNode {
-  return <RowIcon kind={kind} name={name} />
 }

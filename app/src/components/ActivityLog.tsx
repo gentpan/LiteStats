@@ -1,114 +1,54 @@
 import { useMemo, useState } from "react"
-import { CountryFlag } from "~/components/icons"
-import { ReportCard } from "~/components/ui"
+import { useT } from "~/lib/i18n"
+import { CountryFlag } from "./icons"
+import { UIIcon } from "./UIIcon"
+import { Surface } from "./Surface"
+import { ActionButton } from "./ActionButton"
 import { countryName } from "~/lib/countries"
 import type { RecentEvent } from "~/lib/ch"
 
-function formatTime(iso: string) {
-  const date = new Date(iso.includes("T") ? iso : iso.replace(" ", "T") + "Z")
-  if (Number.isNaN(date.getTime())) {
-    const part = iso.slice(11, 19)
-    return part || ""
-  }
-  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" })
+function timestamp(value: string) {
+  return new Date(value.includes("T") ? value : value.replace(" ", "T") + "Z")
 }
 
-function sessionCopy(row: RecentEvent) {
-  const parts: string[] = []
-  const country = countryName(row.country)
-  if (row.country && country !== "未知") parts.push(`来自 ${country}`)
-  if (row.os && row.device) parts.push(`使用 ${row.os} ${row.device.toLowerCase()}`)
-  else if (row.os) parts.push(`使用 ${row.os}`)
-  else if (row.device) parts.push(`使用 ${row.device.toLowerCase()}`)
-  if (row.browser) parts.push(`浏览器 ${row.browser}`)
-  if (parts.length === 0) return "一位访客开始了会话"
-  return `访客 ${parts.join(" ")}`
-}
-
-function EyeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12z" />
-      <circle cx="12" cy="12" r="2.25" />
-    </svg>
-  )
-}
-
-function Avatar({ row }: { row: RecentEvent }) {
-  const seed = `${row.country || ""}${row.browser || ""}${row.os || ""}`
-  const hue = seed.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % 360
-  return (
-    <span
-      className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm"
-      style={{ backgroundColor: `hsl(${hue} 55% 86%)` }}
-    >
-      {row.country ? <CountryFlag code={row.country} className="country-flag--avatar" /> : "•"}
-    </span>
-  )
-}
-
-function ActivityItem({ row }: { row: RecentEvent }) {
-  if (row.name === "session") {
-    return (
-      <li className="flex items-start gap-3 py-2.5">
-        <span className="w-20 shrink-0 pt-1.5 text-xs text-gray-500 tabular-nums">{formatTime(row.time)}</span>
-        <Avatar row={row} />
-        <p className="min-w-0 pt-1 text-sm text-gray-800">{sessionCopy(row)}</p>
-      </li>
-    )
-  }
-  return (
-    <li className="flex items-start gap-3 py-2.5">
-      <span className="w-20 shrink-0 pt-0.5 text-xs text-gray-500 tabular-nums">{formatTime(row.time)}</span>
-      <span className="flex size-8 shrink-0 items-center justify-center">
-        <EyeIcon />
-      </span>
-      <div className="min-w-0 pt-1">
-        <p className="truncate text-sm font-medium text-gray-900">
-          {row.name === "pageview" ? (row.pathname || "/") : row.name}
-        </p>
-        {row.name !== "pageview" && row.pathname ? (
-          <p className="truncate text-xs text-gray-500">{row.pathname}</p>
-        ) : null}
-      </div>
-    </li>
-  )
-}
-
-export function ActivityLog({ rows }: { rows: RecentEvent[] }) {
+export function ActivityLog({rows, timezone, hasMore}: {rows: RecentEvent[]; timezone: string; hasMore: boolean}) {
+  const {t, locale} = useT()
   const [query, setQuery] = useState("")
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase()
-    if (!needle) return rows
-    return rows.filter((row) =>
-      [row.pathname, row.name, countryName(row.country), row.browser, row.os, row.device, row.source]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(needle),
-    )
-  }, [rows, query])
-
-  return (
-    <ReportCard className="col-span-full min-h-[24rem] md:h-auto" title="活动日志" more={false}>
-      <div className="mt-3">
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="搜索"
-          className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400"
-        />
+  const [kind, setKind] = useState("all")
+  const [page, setPage] = useState(0)
+  const types = [{id:"all",label:"全部记录"}, {id:"pageview",label:"页面浏览"}, {id:"session",label:"新会话"}, {id:"custom",label:"自定义事件"}]
+  const matchesKind = (row: RecentEvent, value: string) => value === "all" || (value === "custom" ? !["session","pageview"].includes(row.name) : row.name === value)
+  const filtered = useMemo(()=>rows.filter(row=>matchesKind(row,kind) && [row.name,row.name === "session" ? t("新会话") : row.name === "pageview" ? t("页面浏览") : t("自定义事件"),row.pathname,row.source,row.source === "Direct" || !row.source ? t("直接访问") : "",countryName(row.country,locale),row.browser,row.os,row.device].join(" ").toLowerCase().includes(query.trim().toLowerCase())),[rows,kind,query,locale,t])
+  const lastPage = Math.max(0, Math.ceil(filtered.length/20)-1)
+  const currentPage = Math.min(page,lastPage)
+  const visible = filtered.slice(currentPage*20,(currentPage+1)*20)
+  const dateFormat = new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "zh-CN", {timeZone:timezone,month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"})
+  return <Surface className="activity-log-panel">
+    <div className="activity-log-tools">
+      <div className="activity-type-tabs" role="group" aria-label={t("事件类型")}>
+        {types.map(type=><button key={type.id} type="button" aria-pressed={kind===type.id} onClick={()=>{setKind(type.id);setPage(0)}}>{t(type.label)}<span>{rows.filter(row=>matchesKind(row,type.id)).length}</span></button>)}
       </div>
-      {filtered.length === 0 ? (
-        <p className="mt-6 text-sm text-gray-500">最近 30 分钟没有访问。</p>
-      ) : (
-        <ul className="mt-2 divide-y divide-gray-100">
-          {filtered.map((row, i) => (
-            <ActivityItem key={`${row.time}-${row.pathname}-${i}`} row={row} />
-          ))}
-        </ul>
-      )}
-    </ReportCard>
-  )
+      <label className="activity-search"><UIIcon name="search" /><span className="sr-only">{t("搜索活动记录")}</span><input type="search" className="input" placeholder={t("搜索页面、来源、国家或设备")} value={query} onChange={event=>{setQuery(event.target.value);setPage(0)}} /></label>
+    </div>
+    <div className="activity-log-caption"><span>{t("匹配 {0} 条记录",{0:filtered.length})}</span><span>{t("时间由新到旧")} · {timezone}</span></div>
+    <div className="activity-columns" aria-hidden="true"><span>{t("时间")}</span><span>{t("事件与页面")}</span><span>{t("国家/地区")}</span><span>{t("来源与设备")}</span></div>
+    {visible.length ? <ol className="activity-records">{visible.map((row,index)=>{
+      const date=timestamp(row.time)
+      const time=Number.isNaN(date.getTime()) ? row.time : dateFormat.format(date)
+      const label=row.name === "session" ? t("新会话") : row.name === "pageview" ? t("页面浏览") : row.name
+      return <li key={`${row.time}-${row.name}-${row.pathname}-${index}`}><details className="activity-record">
+        <summary>
+          <time className="activity-time" dateTime={Number.isNaN(date.getTime()) ? undefined : date.toISOString()}>{time}</time>
+          <div className="activity-event"><span className="activity-event-icon"><UIIcon name={row.name === "session" ? "user" : row.name === "pageview" ? "eye" : "code"}/></span><div><strong>{label}</strong><span title={row.pathname}>{row.pathname || "/"}</span></div></div>
+          <span className="activity-country">{row.country ? <CountryFlag code={row.country}/> : <UIIcon name="globe"/>}{countryName(row.country,locale)}</span>
+          <div className="activity-device"><strong>{row.source === "Direct" || !row.source ? t("直接访问") : row.source}</strong><span>{[row.browser,row.os,row.device].filter(Boolean).join(" · ") || t("未知设备")}</span></div>
+          <UIIcon name="arrow" className="activity-expand"/>
+        </summary>
+        <dl className="activity-record-details">
+          {[ [t("事件名称"),row.name], [t("页面路径"),row.pathname || "/"], [t("来源"),row.source === "Direct" || !row.source ? t("直接访问") : row.source], [t("国家/地区"),countryName(row.country,locale)], [t("浏览器"),row.browser], [t("操作系统"),row.os], [t("设备"),row.device], [t("时间"),`${time} (${timezone})`] ].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value || "—"}</dd></div>)}
+        </dl>
+      </details></li>
+    })}</ol> : <div className="activity-empty"><UIIcon name="activity"/><strong>{t(rows.length ? "没有匹配的活动记录" : "所选时间范围内没有活动")}</strong><p>{t(rows.length ? "尝试调整关键词或事件类型。" : "网站收到访问或自定义事件后，将在这里显示。")}</p>{query || kind !== "all" ? <ActionButton onClick={()=>{setQuery("");setKind("all");setPage(0)}}>{t("清除筛选")}</ActionButton> : null}</div>}
+    <footer className="activity-pagination"><p>{t(hasMore ? "仅展示所选范围内最新 200 条，搜索与类型筛选作用于这些记录。" : "搜索与类型筛选作用于当前已加载记录。")}</p><div><ActionButton disabled={currentPage===0} onClick={()=>setPage(currentPage-1)}>{t("上一页")}</ActionButton><span>{currentPage+1} / {lastPage+1}</span><ActionButton disabled={currentPage>=lastPage} onClick={()=>setPage(currentPage+1)}>{t("下一页")}</ActionButton></div></footer>
+  </Surface>
 }

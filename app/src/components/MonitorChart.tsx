@@ -1,3 +1,5 @@
+import { formatTimestamp } from "~/lib/format"
+import { useT } from "~/lib/i18n"
 import { useEffect, useId, useMemo, useRef, useState } from "react"
 
 export type ChartSeries = {
@@ -8,7 +10,7 @@ export type ChartSeries = {
 }
 
 const DEFAULT_HEIGHT = 196
-const MARGIN = { top: 12, right: 8, bottom: 28, left: 16 }
+const MARGIN = { top: 14, right: 0, bottom: 20, left: 0 }
 
 function niceStep(range: number) {
   if (range <= 0) return 1
@@ -42,6 +44,7 @@ export function MonitorChart({
   formatValue?: (value: number) => string
   height?: number
 }) {
+  const { t, locale } = useT()
   const box = useRef<HTMLDivElement>(null)
   const gid = useId().replace(/:/g, "")
   const [width, setWidth] = useState(640)
@@ -59,8 +62,9 @@ export function MonitorChart({
   const layout = useMemo(() => {
     const values = series.flatMap((s) => s.values.filter((v): v is number => v != null && Number.isFinite(v)))
     const { max, ticks } = scale(Math.max(0, ...values))
-    const left = Math.max(MARGIN.left, Math.max(...ticks.map((v) => formatTick(v, formatValue).length), 1) * 7 + 10)
-    const innerW = Math.max(1, width - left - MARGIN.right)
+    const left = MARGIN.left
+    const right = MARGIN.right
+    const innerW = Math.max(1, width - left - right)
     const innerH = height - MARGIN.top - MARGIN.bottom
     const x = (i: number) => left + (labels.length <= 1 ? innerW / 2 : (i / (labels.length - 1)) * innerW)
     const y = (v: number) => MARGIN.top + innerH - (v / max) * innerH
@@ -84,7 +88,7 @@ export function MonitorChart({
         })
       : []
     return { max, left, innerW, innerH, x, y, paths, xTicks, ticks }
-  }, [labels, series, width, formatValue, height])
+  }, [labels, series, width, height])
 
   function indexFromX(clientX: number) {
     const rect = box.current?.getBoundingClientRect()
@@ -92,8 +96,6 @@ export function MonitorChart({
     const t = (clientX - rect.left - layout.left) / layout.innerW
     return Math.max(0, Math.min(labels.length - 1, Math.round(t * (labels.length - 1))))
   }
-
-  const tipX = hover == null ? 0 : Math.min(Math.max(layout.x(hover) + 12, 8), width - 220)
 
   return (
     <div
@@ -103,10 +105,10 @@ export function MonitorChart({
       onPointerMove={(e) => setHover(indexFromX(e.clientX))}
       onPointerLeave={() => setHover(null)}
     >
-      {labels.length === 0 ? (
-        <p className="flex h-full items-center justify-center text-sm text-gray-500">这段时间还没有样本</p>
+      {!series.some(item => item.values.some(value => value != null && Number.isFinite(value))) ? (
+        <p className="flex h-full items-center justify-center text-sm text-gray-500">{t("这段时间还没有样本")}</p>
       ) : (
-        <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
+        <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
           <defs>
             {series.map((item) => (
               <linearGradient key={item.id} id={`${gid}-${item.id}`} x1="0" x2="0" y1="0" y2="1">
@@ -117,38 +119,94 @@ export function MonitorChart({
           </defs>
           {layout.ticks.map((v, i) => (
             <g key={v}>
-              <line x1={layout.left} x2={width - MARGIN.right} y1={layout.y(v)} y2={layout.y(v)} stroke={i === 0 ? "#d4d4d8" : "#ececee"} />
-              <text x={layout.left - 8} y={layout.y(v) + 4} textAnchor="end" className="fill-zinc-500" fontSize="11">
+              <line
+                x1={layout.left}
+                x2={width - MARGIN.right}
+                y1={layout.y(v)}
+                y2={layout.y(v)}
+                stroke={i === 0 ? "var(--color-gray-200)" : "var(--color-gray-150)"}
+                strokeDasharray={i === 0 ? undefined : "3 3"}
+              />
+              <text
+                x={layout.left + 2}
+                y={layout.y(v) - 3}
+                textAnchor="start"
+                className="fill-zinc-400 select-none pointer-events-none"
+                fontSize="10"
+              >
                 {formatTick(v, formatValue)}
               </text>
             </g>
           ))}
-          {layout.xTicks.map((tick) => (
-            <text key={tick.index} x={tick.x} y={height - 8} textAnchor="middle" className="fill-zinc-500" fontSize="11">
-              {tick.label}
-            </text>
-          ))}
+          {layout.xTicks.map((tick, i) => {
+            const anchor = i === 0 ? "start" : i === layout.xTicks.length - 1 ? "end" : "middle"
+            return (
+              <text
+                key={tick.index}
+                x={tick.x}
+                y={height - 4}
+                textAnchor={anchor}
+                className="fill-zinc-400 select-none"
+                fontSize="10"
+              >
+                {t(tick.label)}
+              </text>
+            )
+          })}
           {series.map((item, i) => (
             <g key={item.id}>
               {layout.paths[i].area ? <path d={layout.paths[i].area} fill={`url(#${gid}-${item.id})`} /> : null}
+              {item.values.map((value, index) => value != null && item.values[index - 1] == null && item.values[index + 1] == null ? <circle key={index} cx={layout.x(index)} cy={layout.y(value)} r={3} fill={item.color} /> : null)}
               {layout.paths[i].line ? <path d={layout.paths[i].line} fill="none" stroke={item.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" /> : null}
             </g>
           ))}
           {hover != null ? (
-            <line x1={layout.x(hover)} x2={layout.x(hover)} y1={MARGIN.top} y2={height - MARGIN.bottom} stroke="#c7d2fe" />
+            <line
+              x1={layout.x(hover)}
+              x2={layout.x(hover)}
+              y1={MARGIN.top}
+              y2={height - MARGIN.bottom}
+              stroke="#c7d2fe"
+              strokeWidth="1.5"
+              strokeDasharray="2 2"
+            />
           ) : null}
+          {hover != null
+            ? series.map((item) => {
+                const v = item.values[hover]
+                if (v == null || !Number.isFinite(v)) return null
+                return (
+                  <circle
+                    key={item.id}
+                    cx={layout.x(hover)}
+                    cy={layout.y(v)}
+                    r={3.5}
+                    fill={item.color}
+                    stroke="#fff"
+                    strokeWidth="1.5"
+                  />
+                )
+              })
+            : null}
         </svg>
       )}
       {hover != null && labels[hover] ? (
-        <div className="pointer-events-none absolute rounded-md bg-gray-800 px-3 py-2 text-xs text-gray-100 shadow" style={{ left: tipX, top: 6 }}>
-          <div className="mb-1 font-medium">{new Date(labels[hover]).toLocaleString()}</div>
+        <div
+          className="pointer-events-none absolute z-10 rounded-md bg-gray-800 px-3 py-2 text-xs text-gray-100 shadow whitespace-nowrap"
+          style={{
+            top: 6,
+            left: layout.x(hover),
+            transform: layout.x(hover) > width / 2 ? "translateX(calc(-100% - 12px))" : "translateX(12px)",
+          }}
+        >
+          <div className="mb-1 font-medium">{formatTimestamp(labels[hover], locale)}</div>
           {series.map((item) => {
             const value = item.values[hover]
             return (
               <div key={item.id} className="flex items-center justify-between gap-4">
                 <span className="flex items-center gap-1.5">
                   <span className="size-2 rounded-full" style={{ background: item.color }} />
-                  {item.label}
+                  {t(item.label)}
                 </span>
                 <span className="font-semibold">{value == null ? "—" : formatValue(value)}</span>
               </div>
@@ -163,5 +221,5 @@ export function MonitorChart({
 function formatChartTime(iso: string) {
   const date = new Date(iso)
   if (!Number.isFinite(date.getTime())) return ""
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  return date.toLocaleTimeString("en-GB", { timeZone: "UTC", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
 }

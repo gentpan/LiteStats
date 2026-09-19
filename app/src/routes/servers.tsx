@@ -1,4 +1,7 @@
-import { Outlet, createFileRoute, useChildMatches, useRouter } from "@tanstack/react-router"
+import { ManagementHeader } from "~/components/ManagementHeader"
+import { ActionButton } from "~/components/ActionButton"
+import { useT } from "~/lib/i18n"
+import { redirect, Outlet, createFileRoute, useChildMatches } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react"
 import { InstallDialog } from "~/components/InstallDialog"
 import { ServerNodeCard } from "~/components/ServerNodeCard"
@@ -9,17 +12,19 @@ import { formatBps, metricNum, serverOnline, type MonitorServer } from "~/lib/mo
 export const Route = createFileRoute("/servers")({
   loader: async () => {
     const me = await meFn()
-    if (!me) return { me: null, servers: [] as MonitorServer[] }
+    if (!me) throw redirect({ to: "/login" })
+    if (!me.isAdmin) throw redirect({ to: "/" })
     return { me, servers: await serversFn() }
   },
   component: ServersPage,
 })
 
 function ServersPage() {
+  const { t } = useT()
   const childMatches = useChildMatches()
   const { me, servers: initial } = Route.useLoaderData()
-  const router = useRouter()
   const [servers, setServers] = useState<MonitorServer[]>(() => initial ?? [])
+  const [adding, setAdding] = useState(false)
   const [name, setName] = useState("")
   const [query, setQuery] = useState("")
   const [created, setCreated] = useState<{ id: string, name: string, secret: string } | null>(null)
@@ -49,10 +54,6 @@ function ServersPage() {
 
   if (childMatches.length > 0) return <Outlet />
 
-  if (!me) {
-    void router.navigate({ to: "/login" })
-    return null
-  }
 
   const origin = typeof window === "undefined" ? "" : window.location.origin
   const online = servers.filter((server) => serverOnline(server.last_seen_at)).length
@@ -60,19 +61,12 @@ function ServersPage() {
   const outSpeed = servers.reduce((sum, server) => sum + metricNum(server.latest_metrics, "net_out_speed"), 0)
 
   return (
-    <Shell user={me} wide>
-      <div className="server-board pt-6 pb-16">
-        <div className="flex flex-col gap-4 border-b border-gray-200 pb-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">服务器</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              {servers.length} 台 · 在线 {online} · 离线 {servers.length - online} · ↓ {formatBps(inSpeed)} · ↑ {formatBps(outSpeed)}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <input className="input w-40" placeholder="搜索" value={query} onChange={(e) => setQuery(e.target.value)} />
-            <form
-              className="flex flex-wrap items-center gap-2"
+    <Shell user={me}>
+      <div className="server-board pb-16">
+        <ManagementHeader title={t("服务器")} description={`${t("{0} 台 · 在线 {1} · 离线 {2}", {0: servers.length, 1: online, 2: servers.length - online})} · ↓ ${formatBps(inSpeed)} · ↑ ${formatBps(outSpeed)}`}><ActionButton icon="plus" className="btn btn-primary" onClick={()=>setAdding(!adding)} aria-expanded={adding}>{t("添加服务器")}</ActionButton></ManagementHeader>
+        <div className="management-toolbar"><label className="management-search"><span>{t("搜索服务器")}</span><input className="input" aria-label={t("搜索服务器")} placeholder={t("搜索服务器")} value={query} onChange={e=>setQuery(e.target.value)}/></label></div>
+        {adding ?             <form
+              className="management-create-form"
               onSubmit={async (e) => {
                 e.preventDefault()
                 setPending(true)
@@ -80,26 +74,24 @@ function ServersPage() {
                 try {
                   const row = await addServerFn({ data: { name } })
                   setCreated(row)
-                  setName("")
+                  setName(""); setAdding(false)
                   setServers((await serversFn()) ?? [])
                 } catch (err) {
-                  setError(err instanceof Error ? err.message : "无法添加服务器")
+                  setError(err instanceof Error ? err.message : t("无法添加服务器"))
                 } finally {
                   setPending(false)
                 }
               }}
             >
-              <input className="input w-44" placeholder="新服务器名称" value={name} onChange={(e) => setName(e.target.value)} />
-              <button className="btn btn-primary" type="submit" disabled={pending}>{pending ? "添加中…" : "添加服务器"}</button>
-            </form>
-          </div>
-        </div>
-        {error ? <p className="mt-4 text-sm text-red-500">{error}</p> : null}
+              <input className="input min-w-0 flex-1 sm:w-44" aria-label={t("新服务器名称")} placeholder={t("新服务器名称")} value={name} onChange={(e) => setName(e.target.value)} />
+              <ActionButton icon="plus" className="btn btn-primary" type="submit" disabled={pending}>{pending ? t("添加中…") : t("添加服务器")}</ActionButton>
+            <ActionButton onClick={()=>setAdding(false)}>{t("取消")}</ActionButton></form> : null}
+        {error ? <p className="mt-4 text-sm text-red-500">{t(error || "")}</p> : null}
         {created ? <InstallDialog server={created} origin={origin} onClose={() => setCreated(null)} /> : null}
         {visible.length === 0 ? (
-          <p className="mt-16 text-center text-sm text-gray-500">还没有匹配的服务器。本机会自动采集，其它机器添加后安装 LiteStats 探针。</p>
+          <p className="mt-16 text-center text-sm text-gray-500">{t("还没有匹配的服务器。本机会自动采集，其它机器添加后安装 LiteStats 探针。")}</p>
         ) : (
-          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {visible.map((server) => (
               <ServerNodeCard
                 key={server.id}
@@ -108,11 +100,11 @@ function ServersPage() {
                   try {
                     setCreated(await serverInstallFn({ data: { id: server.id } }))
                   } catch (err) {
-                    setError(err instanceof Error ? err.message : "无法读取安装命令")
+                    setError(err instanceof Error ? err.message : t("无法读取安装命令"))
                   }
                 }}
                 onRemove={async () => {
-                  if (!window.confirm("删除这台服务器？")) return
+                  if (!window.confirm(t("删除这台服务器？"))) return
                   await removeServerFn({ data: { id: server.id } })
                   setServers(await serversFn())
                 }}

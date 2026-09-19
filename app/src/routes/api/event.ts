@@ -1,6 +1,9 @@
+import { createHmac } from "node:crypto"
+import { SESSION_KEY } from "~/lib/env"
+import { eventSchema, readJson } from "~/lib/request-validation"
 import { createFileRoute } from "@tanstack/react-router"
-import { findSiteByDomain } from "~/lib/db"
-import { insertEvent } from "~/lib/ch"
+import { findSiteByDomain, eventSession } from "~/lib/db"
+import { queueEvent } from "~/lib/ch"
 import { extractSearchQuery, parseAcceptLanguage } from "~/lib/languages"
 import { parseUa, screenSize } from "~/lib/ua"
 
@@ -12,23 +15,21 @@ function cors() {
   }
 }
 
-function hash64(s: string) {
-  let h = 14695981039346656037n
-  for (let i = 0; i < s.length; i++) {
-    h ^= BigInt(s.charCodeAt(i))
-    h = (h * 1099511628211n) & 0xffffffffffffffffn
-  }
-  return h.toString()
-}
-
 export const Route = createFileRoute("/api/event")({
   server: {
     handlers: {
       OPTIONS: async () => new Response(null, { status: 204, headers: cors() }),
       POST: async ({ request }) => {
+        // Respect Do Not Track (DNT) and Global Privacy Control (GPC)
+        const dnt = request.headers.get("dnt")
+        const gpc = request.headers.get("sec-gpc")
+        if (dnt === "1" || gpc === "1") {
+          return new Response("ok", { status: 202, headers: { ...cors(), "Content-Type": "text/plain; charset=utf-8" } })
+        }
+
         let body: Record<string, unknown> = {}
         try {
-          body = await request.json() as Record<string, unknown>
+          body = eventSchema.parse(await readJson(request))
         } catch {
           return new Response("bad request", { status: 400, headers: cors() })
         }
@@ -63,10 +64,16 @@ export const Route = createFileRoute("/api/event")({
         } catch {
           /* ignore */
         }
-        const ip = (request.headers.get("x-forwarded-for") || "").split(",")[0] || "0"
+        const ip = (
+          request.headers.get("cf-connecting-ip") ||
+          request.headers.get("x-real-ip") ||
+          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          "0"
+        )
         const ua = request.headers.get("user-agent") || ""
-        const day = new Date().toISOString().slice(0, 10)
-        const hour = new Date().toISOString().slice(0, 13)
+        const day = new Intl.DateTimeFormat("en-CA", { timeZone: site.timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())
+        const visitorId = createHmac("sha256", SESSION_KEY).update(`${site.id}|${ip}|${ua}|${day}`).digest("hex")
+        const sessionId = await eventSession(visitorId)
         const propsRaw = (body.p || body.props || body.m || body.meta || {}) as Record<string, unknown>
         const props: Record<string, string> = {}
         const allowed = site.allowed_event_props
@@ -82,15 +89,15 @@ export const Route = createFileRoute("/api/event")({
         const title = String(body.t || body.title || "")
         const keyword = extractSearchQuery(referrer)
 
-        await insertEvent({
+        queueEvent({
           siteId: site.id,
           name: String(body.n || body.name || "pageview"),
           hostname: host || site.domain,
           pathname: path,
           referrer,
           referrerSource: source,
-          userId: hash64(`${site.id}|${ip}|${ua}|${day}`),
-          sessionId: hash64(`${site.id}|${ip}|${ua}|${hour}`),
+          userId: visitorId,
+          sessionId,
           browser: parsed.browser,
           browserVersion: parsed.browserVersion,
           os: parsed.os,

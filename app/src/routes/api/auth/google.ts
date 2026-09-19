@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { findSiteById } from "~/lib/db"
+import { findSiteById, findSiteForUser } from "~/lib/db"
 import { exchangeGoogleCode, saveGoogleAuth, verifyGoogleState } from "~/lib/keywords"
 import { currentUser } from "~/lib/session"
 
@@ -16,7 +16,8 @@ export const Route = createFileRoute("/api/auth/google")({
         if (!user || !site || !code) {
           return Response.redirect(new URL("/login", url.origin), 302)
         }
-        const token = await exchangeGoogleCode(code)
+        if (!(await findSiteForUser(user.id, site.domain, "admin"))) return new Response("Forbidden", { status: 403 })
+        const token = await exchangeGoogleCode(code, site.id)
         await saveGoogleAuth(site.id, user.id, token)
         return Response.redirect(new URL(`/sites/${encodeURIComponent(site.domain)}/settings?tab=integrations`, url.origin), 302)
       },

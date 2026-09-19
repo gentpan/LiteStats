@@ -1,22 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router"
-import { meFn } from "~/lib/actions"
-
+import { createFileRoute, redirect } from "@tanstack/react-router"
 export const Route = createFileRoute("/team")({
-  loader: async () => ({ me: await meFn() }),
-  component: TeamRedirect,
+  beforeLoad: () => { throw redirect({ to: "/account", search: { tab: "preferences" } }) },
 })
-
-function TeamRedirect() {
-  const { me } = Route.useLoaderData()
-  const router = useRouter()
-  if (!me) {
-    void router.navigate({ to: "/login" })
-    return null
-  }
-  if (me.team && !me.team.setup_complete) {
-    void router.navigate({ to: "/team/setup" })
-    return null
-  }
-  void router.navigate({ to: "/account", search: { tab: "team/general" } })
-  return null
-}

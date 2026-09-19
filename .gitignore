@@ -22,3 +22,12 @@ node_modules/
 tmp/
 dist/
 coverage/
+
+# Private operational records and one-off production migration scripts
+/deploy/CLEANIP.md
+/app/scripts/migrate_cleanip.py
+/app/scripts/migrate_umami.py
+*.pem
+*.key
+.env.*
+!.env.example

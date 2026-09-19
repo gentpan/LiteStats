@@ -1,3 +1,4 @@
+import { collectCarrierMetrics } from "./carrier-probe"
 import { execFile } from "node:child_process"
 import { hostname, loadavg, totalmem, freemem, uptime, cpus, platform, release, arch, type as osType } from "node:os"
 import { readFile, readdir } from "node:fs/promises"
@@ -6,12 +7,12 @@ import { randomBytes, timingSafeEqual } from "node:crypto"
 import { db } from "./db"
 import type { MonitorMetrics, MonitorServer } from "./monitor-view"
 
-export type { MonitorMetrics, MonitorServer }
+export type { MonitorMetrics }
 
 export type MonitorServerRow = MonitorServer & {
   secret?: string
   hidden?: boolean
-  meta?: Record<string, unknown>
+  meta?: Record<string, number | string | boolean | null>
 }
 
 const execFileAsync = promisify(execFile)
@@ -28,7 +29,7 @@ type Snapshot = {
 let started = false
 let prev: Snapshot | null = null
 
-export async function ensureMonitorTables() {
+async function ensureMonitorTables() {
   const pool = await db()
   await pool.query(`
     CREATE TABLE IF NOT EXISTS monitor_servers (
@@ -90,15 +91,6 @@ export async function ensureMonitorTables() {
   `)
 }
 
-export function startMonitorCollector() {
-  if (started) return
-  started = true
-  void tick().catch(() => {})
-  setInterval(() => {
-    void tick().catch(() => {})
-  }, 15_000)
-}
-
 export async function startMonitorCollectorNow() {
   if (!started) {
     started = true
@@ -140,6 +132,9 @@ export type MonitorHistoryPoint = {
   ping_ct: number | null
   ping_cu: number | null
   ping_cm: number | null
+  ping_ct_loss: number | null
+  ping_cu_loss: number | null
+  ping_cm_loss: number | null
   ping_bd: number | null
 }
 
@@ -172,7 +167,7 @@ export async function getMonitorServer(id: string): Promise<MonitorServerRow | n
     ...row,
     last_seen_at: isoTimestamp(row.last_seen_at),
     latest_metrics: (row.latest_metrics || {}) as MonitorMetrics,
-    meta: (row.meta || {}) as Record<string, unknown>,
+    meta: (row.meta || {}) as NonNullable<MonitorServer["meta"]>,
   }
 }
 
@@ -200,6 +195,9 @@ export async function getMonitorHistory(id: string, hours: number): Promise<Moni
     ping_ct: number | null
     ping_cu: number | null
     ping_cm: number | null
+    ping_ct_loss: number | null
+    ping_cu_loss: number | null
+    ping_cm_loss: number | null
     ping_bd: number | null
   }>(
     `SELECT
@@ -222,6 +220,9 @@ export async function getMonitorHistory(id: string, hours: number): Promise<Moni
        AVG(CASE WHEN metrics->>'ping_ct' ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (metrics->>'ping_ct')::float END) AS ping_ct,
        AVG(CASE WHEN metrics->>'ping_cu' ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (metrics->>'ping_cu')::float END) AS ping_cu,
        AVG(CASE WHEN metrics->>'ping_cm' ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (metrics->>'ping_cm')::float END) AS ping_cm,
+       AVG(CASE WHEN metrics->>'ping_ct_loss' ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (metrics->>'ping_ct_loss')::float END) AS ping_ct_loss,
+       AVG(CASE WHEN metrics->>'ping_cu_loss' ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (metrics->>'ping_cu_loss')::float END) AS ping_cu_loss,
+       AVG(CASE WHEN metrics->>'ping_cm_loss' ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (metrics->>'ping_cm_loss')::float END) AS ping_cm_loss,
        AVG(CASE WHEN metrics->>'ping_bd' ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (metrics->>'ping_bd')::float END) AS ping_bd
      FROM monitor_samples
      WHERE server_id = $1 AND collected_at >= now() - ($2 || ' hours')::interval
@@ -250,25 +251,7 @@ export async function listMonitorServers(): Promise<MonitorServerRow[]> {
     ...row,
     last_seen_at: isoTimestamp(row.last_seen_at),
     latest_metrics: (row.latest_metrics || {}) as MonitorMetrics,
-    meta: (row.meta || {}) as Record<string, unknown>,
-  }))
-}
-
-export async function listMonitorServersAdmin(): Promise<MonitorServerRow[]> {
-  await ensureMonitorTables()
-  await ensureLocalServer()
-  await startMonitorCollectorNow()
-  const res = await (await db()).query<MonitorServerRow>(
-    `SELECT id, name, kind, secret, last_seen_at, COALESCE(latest_metrics, '{}'::jsonb) AS latest_metrics,
-            position, COALESCE(hidden, false) AS hidden, COALESCE(meta, '{}'::jsonb) AS meta
-     FROM monitor_servers
-     ORDER BY position, inserted_at`,
-  )
-  return res.rows.map((row) => ({
-    ...row,
-    last_seen_at: isoTimestamp(row.last_seen_at),
-    latest_metrics: (row.latest_metrics || {}) as MonitorMetrics,
-    meta: (row.meta || {}) as Record<string, unknown>,
+    meta: (row.meta || {}) as NonNullable<MonitorServer["meta"]>,
   }))
 }
 
@@ -351,7 +334,7 @@ async function recordSample(serverId: string, metrics: MonitorMetrics) {
 function extractMetrics(payload: Record<string, unknown>): MonitorMetrics {
   const nested = payload.metrics
   if (nested && typeof nested === "object" && !Array.isArray(nested)) {
-    return stringifyKeys(nested as Record<string, unknown>)
+    return stringifyKeys(nested as NonNullable<MonitorServer["meta"]>)
   }
   return stringifyKeys(payload)
 }
@@ -410,10 +393,7 @@ async function toMetrics(snap: Snapshot, last: Snapshot | null): Promise<Monitor
     processes: await processCount(),
     tcp_conn: await sockCount("tcp"),
     udp_conn: await sockCount("udp"),
-    ping_ct: false,
-    ping_cu: false,
-    ping_cm: false,
-    ping_bd: false,
+    ...await collectCarrierMetrics(),
   }
 }
 
@@ -442,9 +422,38 @@ async function memoryInfo() {
   try {
     const contents = await readFile("/proc/meminfo", "utf8")
     const kb = (key: string) => Number((contents.match(new RegExp(`${key}:\\s+(\\d+)`)) || [])[1] || 0)
-    const used = Math.max(kb("MemTotal") - kb("MemAvailable"), 0)
+    const avail = kb("MemAvailable") || (kb("MemFree") + kb("Buffers") + kb("Cached"))
+    const used = Math.max(kb("MemTotal") - avail, 0)
     return { total: Math.round(kb("MemTotal") / 1024), used: Math.round(used / 1024) }
   } catch {
+    if (platform() === "darwin") {
+      try {
+        const { stdout } = await execFileAsync("vm_stat")
+        const pageSizeMatch = stdout.match(/page size of (\d+) bytes/)
+        const pageSize = pageSizeMatch ? Number(pageSizeMatch[1]) : 16384
+        const page = (key: string) => {
+          const m = stdout.match(new RegExp(`${key}:\\s+(\\d+)`))
+          return m ? Number(m[1]) : 0
+        }
+        const anonymous = page("Anonymous pages")
+        const purgeable = page("Pages purgeable")
+        const wired = page("Pages wired down")
+        const compressor = page("Pages occupied by compressor")
+        if (anonymous > 0) {
+          const appMem = Math.max(anonymous - purgeable, 0)
+          const usedBytes = (appMem + wired + compressor) * pageSize
+          const used = Math.min(Math.round(usedBytes / 1024 / 1024), total)
+          return { total, used }
+        }
+        const free = page("Pages free") + page("Pages speculative")
+        const inactive = page("Pages inactive")
+        const usedBytes = Math.max(totalmem() - (free + inactive) * pageSize, 0)
+        const used = Math.min(Math.round(usedBytes / 1024 / 1024), total)
+        return { total, used }
+      } catch {
+        // fallback to freemem
+      }
+    }
     const used = Math.max(total - Math.round(freemem() / 1024 / 1024), 0)
     return { total, used }
   }
@@ -458,6 +467,29 @@ async function swapInfo() {
     const used = Math.max(total - kb("SwapFree"), 0)
     return { total: Math.round(total / 1024), used: Math.round(used / 1024) }
   } catch {
+    if (platform() === "darwin") {
+      try {
+        const { stdout } = await execFileAsync("sysctl", ["-n", "vm.swapusage"])
+        const totalMatch = stdout.match(/total\s*=\s*([\d.]+)([KMGT])/)
+        const usedMatch = stdout.match(/used\s*=\s*([\d.]+)([KMGT])/)
+        const parseUnit = (val: string, unit: string) => {
+          const n = Number(val)
+          if (unit === "K") return Math.round(n / 1024)
+          if (unit === "M") return Math.round(n)
+          if (unit === "G") return Math.round(n * 1024)
+          if (unit === "T") return Math.round(n * 1024 * 1024)
+          return Math.round(n)
+        }
+        if (totalMatch && usedMatch) {
+          return {
+            total: parseUnit(totalMatch[1], totalMatch[2]),
+            used: parseUnit(usedMatch[1], usedMatch[2]),
+          }
+        }
+      } catch {
+        // fallback
+      }
+    }
     return { total: 0, used: 0 }
   }
 }
@@ -488,6 +520,24 @@ async function netCounters() {
     }
     return { rx, tx }
   } catch {
+    if (platform() === "darwin") {
+      try {
+        const { stdout } = await execFileAsync("netstat", ["-ibn"])
+        let rx = 0
+        let tx = 0
+        for (const line of stdout.split("\n").slice(1)) {
+          const parts = line.trim().split(/\s+/)
+          if (parts.length < 11 || !parts[2]?.startsWith("<Link")) continue
+          const iface = parts[0]
+          if (iface === "lo0" || /^(gif|stf|awdl|llw|utun|bridge|vmenet|ap|lo)/.test(iface)) continue
+          rx += Number(parts[6] || 0)
+          tx += Number(parts[9] || 0)
+        }
+        return { rx, tx }
+      } catch {
+        // fallback
+      }
+    }
     return { rx: 0, tx: 0 }
   }
 }
@@ -524,174 +574,15 @@ async function sockCount(kind: "tcp" | "udp") {
     const match = contents.match(new RegExp(`${key}:\\s+inuse\\s+(\\d+)`))
     return Number(match?.[1] || 0)
   } catch {
+    if (platform() === "darwin") {
+      try {
+        const { stdout } = await execFileAsync("netstat", ["-an", "-p", kind])
+        return Math.max(stdout.trim().split("\n").length - 2, 0)
+      } catch {
+        // fallback
+      }
+    }
     return 0
-  }
-}
-
-export async function getMonitorServerAdmin(id: string): Promise<MonitorServerRow | null> {
-  await ensureMonitorTables()
-  const res = await (await db()).query<MonitorServerRow>(
-    `SELECT id, name, kind, secret, last_seen_at, COALESCE(latest_metrics, '{}'::jsonb) AS latest_metrics,
-            position, COALESCE(hidden, false) AS hidden, COALESCE(meta, '{}'::jsonb) AS meta
-     FROM monitor_servers
-     WHERE id = $1`,
-    [id],
-  )
-  const row = res.rows[0]
-  if (!row) return null
-  return {
-    ...row,
-    last_seen_at: isoTimestamp(row.last_seen_at),
-    latest_metrics: (row.latest_metrics || {}) as MonitorMetrics,
-    meta: (row.meta || {}) as Record<string, unknown>,
-  }
-}
-
-export async function getCfsmHistory(id: string, hours: number): Promise<Record<string, unknown>[]> {
-  await ensureMonitorTables()
-  const span = Math.min(Math.max(hours, 0.1), 24 * HISTORY_KEEP_DAYS)
-  const step = historyStepSeconds(span)
-  const res = await (await db()).query<{ collected_at: Date, metrics: MonitorMetrics }>(
-    `SELECT DISTINCT ON (bucket)
-       collected_at,
-       metrics
-     FROM (
-       SELECT
-         collected_at,
-         COALESCE(metrics, '{}'::jsonb) AS metrics,
-         floor(extract(epoch from collected_at) / $3)::bigint AS bucket
-       FROM monitor_samples
-       WHERE server_id = $1 AND collected_at >= now() - ($2 || ' hours')::interval
-     ) t
-     ORDER BY bucket, collected_at`,
-    [id, String(span), step],
-  )
-  return res.rows.map((row) => flattenHistoryMetrics(row.collected_at, row.metrics || {}))
-}
-
-export type LatencyWindow = {
-  ping: Array<Record<string, unknown>>
-  loss: Array<Record<string, unknown>>
-}
-
-export async function getLatencyWindows(serverIds: string[], points = 20, hours = 2): Promise<Map<string, LatencyWindow>> {
-  const out = new Map<string, LatencyWindow>()
-  if (serverIds.length === 0) return out
-  await ensureMonitorTables()
-  const res = await (await db()).query<{ server_id: string, collected_at: Date, metrics: MonitorMetrics }>(
-    `SELECT server_id, collected_at, COALESCE(metrics, '{}'::jsonb) AS metrics
-     FROM monitor_samples
-     WHERE server_id = ANY($1) AND collected_at >= now() - ($2 || ' hours')::interval
-     ORDER BY server_id, collected_at`,
-    [serverIds, String(hours)],
-  )
-  const grouped = new Map<string, Array<{ at: number, metrics: MonitorMetrics }>>()
-  for (const row of res.rows) {
-    const list = grouped.get(row.server_id) || []
-    list.push({ at: new Date(row.collected_at).getTime(), metrics: row.metrics || {} })
-    grouped.set(row.server_id, list)
-  }
-  for (const id of serverIds) {
-    const rows = grouped.get(id) || []
-    out.set(id, downsampleLatency(rows, points))
-  }
-  return out
-}
-
-function downsampleLatency(rows: Array<{ at: number, metrics: MonitorMetrics }>, points: number): LatencyWindow {
-  if (rows.length === 0) return { ping: [], loss: [] }
-  const ping: Array<Record<string, unknown>> = []
-  const loss: Array<Record<string, unknown>> = []
-  const step = Math.max(1, Math.ceil(rows.length / points))
-  for (let i = 0; i < rows.length; i += step) {
-    const row = rows[i]
-    ping.push({
-      ts: row.at,
-      ct: probeNum(row.metrics, "ping_ct"),
-      cu: probeNum(row.metrics, "ping_cu"),
-      cm: probeNum(row.metrics, "ping_cm"),
-      bd: probeNum(row.metrics, "ping_bd"),
-    })
-    loss.push({
-      ts: row.at,
-      ct: probeNum(row.metrics, "loss_ct"),
-      cu: probeNum(row.metrics, "loss_cu"),
-      cm: probeNum(row.metrics, "loss_cm"),
-      bd: probeNum(row.metrics, "loss_bd"),
-    })
-  }
-  return { ping, loss }
-}
-
-function probeNum(metrics: MonitorMetrics, key: string) {
-  const raw = metrics[key]
-  if (raw === false || raw === "false" || raw == null || raw === "") return null
-  const n = Number(raw)
-  return Number.isFinite(n) ? n : null
-}
-
-function flattenHistoryMetrics(at: Date, metrics: MonitorMetrics) {
-  const timestamp = new Date(at).toISOString()
-  const out: Record<string, unknown> = { timestamp }
-  for (const [key, value] of Object.entries(metrics)) {
-    if (key === "id" || key === "secret") continue
-    out[key] = value
-  }
-  if (!out.load_avg && (metrics.load1 != null || metrics.load5 != null)) {
-    out.load_avg = `${metrics.load1 || 0} ${metrics.load5 || 0} ${metrics.load15 || 0}`
-  }
-  return out
-}
-
-export async function getMonitorSettings(): Promise<Record<string, unknown>> {
-  await ensureMonitorTables()
-  const res = await (await db()).query<{ value: Record<string, unknown> }>(
-    `SELECT value FROM monitor_settings WHERE key = 'site'`,
-  )
-  return (res.rows[0]?.value || {}) as Record<string, unknown>
-}
-
-export async function saveMonitorSettings(value: Record<string, unknown>) {
-  await ensureMonitorTables()
-  const current = await getMonitorSettings()
-  const next = { ...current, ...value }
-  await (await db()).query(
-    `INSERT INTO monitor_settings (key, value) VALUES ('site', $1::jsonb)
-     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
-    [JSON.stringify(next)],
-  )
-  return next
-}
-
-export async function updateMonitorServerMeta(id: string, patch: {
-  name?: string
-  hidden?: boolean
-  position?: number
-  meta?: Record<string, unknown>
-}) {
-  await ensureMonitorTables()
-  const row = await getMonitorServerAdmin(id)
-  if (!row) throw new Error("找不到服务器")
-  const meta = { ...(row.meta || {}), ...(patch.meta || {}) }
-  await (await db()).query(
-    `UPDATE monitor_servers
-     SET name = COALESCE($2, name),
-         hidden = COALESCE($3, hidden),
-         position = COALESCE($4, position),
-         meta = $5::jsonb,
-         updated_at = now()
-     WHERE id = $1`,
-    [id, patch.name ?? null, patch.hidden ?? null, patch.position ?? null, JSON.stringify(meta)],
-  )
-}
-
-export async function saveMonitorServerOrder(orders: Array<{ id: string, sort_order?: number, position?: number }>) {
-  await ensureMonitorTables()
-  const pool = await db()
-  for (const item of orders) {
-    const position = Number(item.sort_order ?? item.position)
-    if (!item.id || !Number.isFinite(position)) continue
-    await pool.query(`UPDATE monitor_servers SET position = $2, updated_at = now() WHERE id = $1`, [item.id, position])
   }
 }
 

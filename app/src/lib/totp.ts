@@ -23,20 +23,17 @@ export function generateTotpSecret() {
   return randomBytes(20)
 }
 
-export function totpCode(secret: Buffer, time = Math.floor(Date.now() / 1000)) {
-  const counter = Math.floor(time / 30)
-  const buf = Buffer.alloc(8)
-  buf.writeUInt32BE(Math.floor(counter / 0x100000000), 0)
-  buf.writeUInt32BE(counter >>> 0, 4)
-  const hmac = createHmac("sha1", secret).update(buf).digest()
-  const offset = hmac[hmac.length - 1] & 0xf
-  const code = ((hmac[offset] & 0x7f) << 24 | hmac[offset + 1] << 16 | hmac[offset + 2] << 8 | hmac[offset + 3]) % 1e6
-  return String(code).padStart(6, "0")
-}
-
 export function totpUri(email: string, secret: Buffer) {
   const label = encodeURIComponent(`LiteStats:${email}`)
   return `otpauth://totp/${label}?secret=${toBase32(secret)}&issuer=LiteStats&period=30&digits=6`
+}
+
+export function totpCode(secret: Buffer, unix: number) {
+  const counter = Buffer.alloc(8)
+  counter.writeBigUInt64BE(BigInt(Math.floor(unix / 30)))
+  const hash = createHmac("sha1", secret).update(counter).digest()
+  const offset = hash[hash.length - 1] & 15
+  return String((hash.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, "0")
 }
 
 export function verifyTotp(secret: Buffer, code: string, lastUsedUnix?: number | null) {
