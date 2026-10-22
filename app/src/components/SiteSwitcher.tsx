@@ -72,7 +72,7 @@ export function SiteSwitcher({
       >
         <SiteFavicon domain={domain} className="size-4" />
         <span className="hidden truncate font-semibold sm:mr-1 sm:block lg:mr-0">{displayName}</span>
-        <UIIcon name="chevron-down" className="hidden size-4 lg:block" />
+        <UIIcon name="chevron-down" className="ui-chevron hidden lg:block" />
       </button>
       {open ? (
         <div className="squircle dashboard-popover absolute left-0 z-20 mt-2 flex w-[min(calc(100vw-2rem),20rem)] origin-top-left flex-col gap-0.5 rounded-md bg-white p-1 font-medium text-gray-800 shadow-lg ring-1 ring-black/5">

@@ -1,4 +1,5 @@
 import { UIIcon } from "./UIIcon"
+import { HelpHint } from "./HelpHint"
 import { useState } from "react"
 import { Surface } from "./Surface"
 import { TrafficHeatmap } from "./TrafficHeatmap"
@@ -11,6 +12,8 @@ import { useT } from "~/lib/i18n"
 import { countryName } from "~/lib/countries"
 import { languageName } from "~/lib/languages"
 import { isDirectSource } from "~/lib/source-icons"
+import { RowIcon } from "./icons"
+import { reportValueLabel } from "~/lib/report-values"
 import type { dashboardFn } from "~/lib/actions"
 import type { MetricKey } from "~/lib/ch"
 import { downloadDashboardZip } from "~/lib/export"
@@ -38,8 +41,8 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
     search.source && { key: "source" as const, label: t("来源 {0}", {0: isDirectSource(search.source) ? t("直接访问") : search.source}) },
     search.page && { key: "page" as const, label: t("页面 {0}", {0: search.page}) },
     search.country && { key: "country" as const, label: t("地区 {0}", {0: countryName(search.country, locale)}) },
-    search.browser && { key: "browser" as const, label: t("浏览器 {0}", {0: search.browser}) },
-    search.os && { key: "os" as const, label: t("系统 {0}", {0: search.os}) },
+    search.browser && { key: "browser" as const, label: t("浏览器 {0}", {0: reportValueLabel("browser", search.browser, locale)}) },
+    search.os && { key: "os" as const, label: t("系统 {0}", {0: reportValueLabel("os", search.os, locale)}) },
     search.device && { key: "device" as const, label: t("设备 {0}", {0: search.device}) },
   ].filter(Boolean) as Array<{ key: "source" | "page" | "country" | "browser" | "os" | "device", label: string }>
 
@@ -49,6 +52,7 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
 
   const countries = data.countries.map((r) => ({ ...r, label: countryName(r.name, locale) }))
   const keywords = keywordView(data.searchTerms, sourceTab)
+  const deviceReportTitle = deviceTab === "os" ? t("操作系统") : deviceTab === "device" ? t("设备") : deviceTab === "language" ? t("语言") : deviceTab === "screen" ? t("屏幕") : t("浏览器")
 
   return (
     <div className="analytics-dashboard mb-16 grid min-w-0 grid-cols-1 md:grid-cols-2">
@@ -87,8 +91,9 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
       {chips.length ? (
         <div className="col-span-full flex flex-wrap gap-2">
           {chips.map((c) => (
-            <button key={c.key} type="button" className="squircle active-filter-chip flex h-8 items-center rounded-md px-2.5 text-sm" onClick={() => go({ [c.key]: "" })}>
-              {t(c.label)}
+            <button key={c.key} type="button" className="squircle active-filter-chip flex min-h-8 max-w-full items-center gap-1.5 rounded-md px-2.5 py-1 text-sm" onClick={() => go({ [c.key]: "" })}>
+              {c.key !== "page" ? <span className="report-value-icon"><RowIcon kind={c.key} name={String(search[c.key] || "")}/></span> : null}
+              <span className="min-w-0 [overflow-wrap:anywhere]">{t(c.label)}</span>
               <UIIcon name="close" className="ml-1.5 size-3"/>
             </button>
           ))}
@@ -173,12 +178,12 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
         ]}
         active={sourceTab}
         onChange={setSourceTab}
+        extra={keywords ? <HelpHint>{t(keywords.description)}</HelpHint> : undefined}
         details={{
           title: sourceTab === "channel" ? t("渠道") : sourceTab === "utm_medium" ? t("UTM 媒介") : sourceTab === "utm_source" ? t("UTM 来源") : sourceTab === "utm_campaign" ? t("UTM 活动") : sourceTab === "google_kw" ? t("Google 搜索词") : sourceTab === "bing_kw" ? t("Bing 搜索词") : sourceTab === "organic_kw" ? t("引荐搜索词") : t("来源"),
           kind: sourceTab === "source" ? "source" : sourceTab === "channel" ? "channel" : sourceTab.endsWith("_kw") ? "keyword" : "campaign",
           rows: sourceRows(data, sourceTab),
           columns: keywords?.columns,
-          description: keywords?.description,
           onPick: sourceTab === "source" ? (name) => go({ source: name }) : undefined,
         }}
       >
@@ -212,25 +217,28 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
         />
       </ReportCard>
 
-      <Surface className="analytics-panel traffic-report"><TrafficHeatmap cells={data.heatmap || []} /></Surface>
+      <Surface className="analytics-panel traffic-report traffic-paired-report"><TrafficHeatmap cells={data.heatmap || []} /></Surface>
 
-      <ReportCard
+      <ReportCard className="device-report traffic-paired-report"
         tabs={[{ id: "browser", label: "浏览器" }, { id: "os", label: "操作系统" }, { id: "device", label: "设备" }, { id: "language", label: "语言" }, { id: "screen", label: "屏幕" }]}
         active={deviceTab}
         onChange={setDeviceTab}
         details={{
-          title: deviceTab === "os" ? t("操作系统") : deviceTab === "device" ? t("设备") : deviceTab === "language" ? t("语言") : deviceTab === "screen" ? t("屏幕") : t("浏览器"),
+          title: deviceReportTitle,
           kind: deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : deviceTab === "language" ? "language" : deviceTab === "screen" ? "screen" : "browser",
           rows: deviceRows(data, deviceTab, locale),
           onPick: deviceTab === "language" || deviceTab === "screen" ? undefined : (name) => go({ [deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : "browser"]: name }),
         }}
       >
-        <List
-          plain
-          kind={deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : deviceTab === "language" ? "language" : deviceTab === "screen" ? "screen" : "browser"}
-          rows={deviceRows(data, deviceTab, locale)}
-          onPick={deviceTab === "language" || deviceTab === "screen" ? undefined : (name) => go({ [deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : "browser"]: name })}
-        />
+        <div key={deviceTab} className="device-report-scroll" role="region" aria-label={deviceReportTitle} tabIndex={0}>
+          <List
+            plain
+            maxItems={0}
+            kind={deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : deviceTab === "language" ? "language" : deviceTab === "screen" ? "screen" : "browser"}
+            rows={deviceRows(data, deviceTab, locale)}
+            onPick={deviceTab === "language" || deviceTab === "screen" ? undefined : (name) => go({ [deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : "browser"]: name })}
+          />
+        </div>
       </ReportCard>
 
     </div>

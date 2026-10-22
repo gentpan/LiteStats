@@ -3,6 +3,7 @@ import { saveSeoAiSettingsFn, removeSeoAiSettingsFn } from "~/lib/seo-ai-actions
 import type { SeoAiExpectedConfig, SeoAiGeneration, SeoAiPublicConfig, SeoAiReport } from "~/lib/seo-ai"
 import { useT } from "~/lib/i18n"
 import { formatTimestamp } from "~/lib/format"
+import { HelpHint } from "./HelpHint"
 
 export function KeywordSeoPanel({domain, config, history, sourceLabel, canGenerate, onGenerate, warning}: {
   domain: string; config: SeoAiPublicConfig; history: SeoAiReport[]; sourceLabel: string;
@@ -30,7 +31,7 @@ export function KeywordSeoPanel({domain, config, history, sourceLabel, canGenera
     finally {setBusy(null)}
   }
   return <section className="squircle keyword-card keyword-seo" aria-labelledby="seo-title">
-    <div className="keyword-card-title"><div><h2 id="seo-title">{t("AI SEO 建议")}</h2><p className="keyword-note">{t("根据真实关键词寻找改进方向，建议需人工核实。不会自动修改网站，也不会还原隐藏的搜索词。")}</p></div></div>
+    <div className="keyword-card-title"><div className="flex items-center gap-2"><h2 id="seo-title">{t("AI SEO 建议")}</h2><HelpHint>{t("根据真实关键词寻找改进方向，建议需人工核实。不会自动修改网站，也不会还原隐藏的搜索词。")}</HelpHint></div></div>
     {warning ? <p className="keyword-error" role="alert">{t(warning)}</p> : null}
     <details className="keyword-ai-settings" open={!settings.hasKey || undefined}><summary>{t("模型服务设置")}{settings.hasKey ? ` · ${t("已配置")}` : ""}</summary>
       <p className="keyword-note">{t("填写兼容 Chat Completions 的服务。密钥加密保存，仅站点管理员可管理；服务商可能按调用计费。")}</p>
@@ -39,9 +40,9 @@ export function KeywordSeoPanel({domain, config, history, sourceLabel, canGenera
         setSettings(result); setEndpoint(result.endpoint); setModel(result.model); setTokenParameter(result.tokenParameter); setApiKey(""); setNotice(t("模型设置已保存"))
       })}}><fieldset disabled={!!busy}>
         <div className="keyword-form-grid keyword-ai-fields">
-          <label>{t("完整接口地址")}<input className="squircle input" type="url" required maxLength={2048} value={endpoint} onChange={event => {setEndpoint(event.target.value); setNotice("")}} placeholder="https://api.example.com/v1/chat/completions" autoComplete="off"/></label>
-          <label>{t("模型名称")}<input className="squircle input" required maxLength={200} value={model} onChange={event => {setModel(event.target.value); setNotice("")}} placeholder={t("服务商提供的模型名称")} autoComplete="off"/></label>
-          <label>API Key<input className="squircle input" type="password" value={apiKey} maxLength={4096} required={!settings.hasKey || endpoint.trim() !== settings.endpoint} onChange={event => {setApiKey(event.target.value); setNotice("")}} autoComplete="new-password" placeholder={settings.hasKey ? t("留空保留已保存的密钥") : t("填写 API Key")}/></label>
+          <label>{t("完整接口地址")}<input className="squircle input" type="url" required maxLength={2048} value={endpoint} onChange={event => {setEndpoint(event.target.value); setNotice("")}} placeholder="https://api.example.com/v1/chat/completions" autoComplete="off" autoCapitalize="none" spellCheck={false}/></label>
+          <label>{t("模型名称")}<input className="squircle input" required maxLength={200} value={model} onChange={event => {setModel(event.target.value); setNotice("")}} placeholder={t("服务商提供的模型名称")} autoComplete="off" autoCapitalize="none" spellCheck={false}/></label>
+          <label>API Key<input className="squircle input" type="password" value={apiKey} maxLength={4096} required={!settings.hasKey || endpoint.trim() !== settings.endpoint} onChange={event => {setApiKey(event.target.value); setNotice("")}} autoComplete="new-password" autoCapitalize="none" spellCheck={false} placeholder={settings.hasKey ? t("留空保留已保存的密钥") : t("填写 API Key")}/></label>
         </div>
         <details className="keyword-ai-advanced"><summary>{t("兼容选项")}</summary><label>{t("输出长度参数")}<select className="squircle input" value={tokenParameter} onChange={event => {setTokenParameter(event.target.value as typeof tokenParameter); setNotice("")}}><option value="max_completion_tokens">max_completion_tokens</option><option value="max_tokens">max_tokens</option></select><span className="keyword-note">{t("默认选第一项；服务商要求旧版参数时再切换。")}</span></label></details>
         <div className="keyword-actions"><button className="squircle btn" type="submit" disabled={!!busy}>{t(busy === "save" ? "保存中…" : "保存设置")}</button>

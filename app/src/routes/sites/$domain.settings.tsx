@@ -98,7 +98,7 @@ function SettingsPage() {
             {ok ? <p className="text-sm text-indigo-600">{t(ok || "")}</p> : null}
 
 
-            {tab === "general" ? <Tile icon="globe" title={t("站点详情")} subtitle={t("管理这个站点的基本配置。")}>
+            {tab === "general" ? <Tile icon="globe" title={t("站点详情")}>
               <SettingsForm onSubmit={async event => {
                 event.preventDefault()
                 const saved = await saveSettingsFn({data:{domain,name,timezone,newDomain,public:data.site.public}})
@@ -106,7 +106,7 @@ function SettingsPage() {
                 else await router.invalidate()
                 setOk(t("设置已保存"))
               }}>
-                <Field label={t("站点名称")} hint={t("在站点列表中显示，留空则默认使用域名。")}><input className="squircle input" placeholder={domain} value={name} onChange={event=>setName(event.target.value)} /></Field>
+                <Field label={t("站点名称")}><input className="squircle input" title={t("在站点列表中显示，留空则默认使用域名。")} placeholder={domain} value={name} onChange={event=>setName(event.target.value)} /></Field>
                 <Field label={t("站点域名")}><input className="squircle input" value={newDomain} onChange={event=>setNewDomain(event.target.value)} required /></Field>
                 <Field label={t("报表时区")}><select className="squircle input" value={timezone} onChange={event=>setTimezone(event.target.value)}>
                   {ZONES.some(zone=>zone.value === timezone) ? null : <option value={timezone}>{timezone}</option>}
@@ -118,7 +118,7 @@ function SettingsPage() {
 
             {tab === "visibility" ? (
               <div>
-                <Tile icon="eye" title={t("公开仪表盘")} subtitle={t("把统计公开，或者继续保持私密。")}>
+                <Tile icon="eye" title={t("公开仪表盘")}>
                   <SettingsForm onSubmit={async event=>{event.preventDefault();await saveSettingsFn({data:{domain,public:isPublic}});await router.invalidate();setOk(t("设置已保存"))}}>
                     <label className="flex items-center gap-3 text-sm text-gray-800"><input type="checkbox" checked={isPublic} onChange={event=>setIsPublic(event.target.checked)} />{t("公开这个站点的仪表盘")}</label>
                     <FormActions><ActionButton className="btn btn-primary" type="submit">{t("保存设置")}</ActionButton></FormActions>
@@ -137,11 +137,11 @@ function SettingsPage() {
                     <Field label={t("共享链接名称")}><input className="squircle input" value={shareName} onChange={(e) => setShareName(e.target.value)} /></Field>
                     <FormActions><ActionButton icon="plus" className="btn btn-primary" type="submit">{t("创建")}</ActionButton></FormActions>
                   </SettingsForm>
-                  <ul className="space-y-2 text-sm">
+                  <ul className="settings-share-list space-y-2 text-sm">
                     {data.shares.map((s) => (
-                      <li key={s.id} className="flex flex-wrap justify-between gap-3 break-all">
-                        <a className="text-indigo-600 hover:text-indigo-500" href={`/share/${s.slug}`}>{s.name} · /share/{s.slug}<TabIcon name="arrow" /></a>
-                        <ActionButton className="text-red-600" type="button" onClick={async () => { await removeShareFn({ data: { domain, id: s.id } }); await router.invalidate() }}>{t("删除")}</ActionButton>
+                      <li key={s.id} className="settings-list-row flex min-w-0 flex-wrap justify-between gap-3">
+                        <a className="min-w-0 flex-1 text-indigo-600 hover:text-indigo-500" href={`/share/${s.slug}`}><span className="min-w-0 [overflow-wrap:anywhere]">{s.name} · /share/{s.slug}</span><TabIcon name="arrow" /></a>
+                        <ActionButton className="shrink-0 text-red-600" type="button" onClick={async () => { await removeShareFn({ data: { domain, id: s.id } }); await router.invalidate() }}>{t("删除")}</ActionButton>
                       </li>
                     ))}
                   </ul>
@@ -187,10 +187,9 @@ function SettingsPage() {
 }
 
 
-function IntegrationSection({ provider, title, description, status, connected, children }: {
+function IntegrationSection({ provider, title, status, connected, children }: {
   provider: "google" | "bing"
   title: string
-  description: string
   status: string
   connected: boolean
   children: ReactNode
@@ -200,7 +199,7 @@ function IntegrationSection({ provider, title, description, status, connected, c
     <header className="search-integration-heading">
       <div className="search-integration-title">
         <BrandIcon name={provider} />
-        <div><h2 id={titleId}>{title}</h2><p>{description}</p></div>
+        <h2 id={titleId}>{title}</h2>
       </div>
       <span className={`squircle integration-status${connected ? " is-connected" : ""}`}>{status}</span>
     </header>
@@ -233,8 +232,7 @@ function Integrations({
   return (
     <div className="search-integrations">
       {oauthIssue ? <Surface radius="medium" role="alert" className="bg-gray-100 p-3 text-sm leading-relaxed text-gray-700">{t(oauthMessages[oauthIssue])}</Surface> : null}
-      <p className="search-integrations-intro">{t("连接已验证站点的站长平台后，可查看汇总关键词和搜索点击量，无法对应到单个访客；部分低频词不会公开。")}</p>
-      <IntegrationSection provider="google" title={t("Google 搜索词")} description={t("查看来自 Google 搜索的关键词与点击数据。")} status={t(data.google ? "已连接" : data.googleOAuth.configured ? "待授权" : "未配置")} connected={!!data.google}>
+      <IntegrationSection provider="google" title={t("Google 搜索词")} status={t(data.google ? "已连接" : data.googleOAuth.configured ? "待授权" : "未配置")} connected={!!data.google}>
         {data.googleOAuth.error ? <p role="alert" className="text-sm text-red-600">{t(data.googleOAuth.error)}</p> : null}
         <div className="search-integration-help">
           <p>{t("Google 搜索词需要 OAuth 只读授权，普通 API Key 无法读取 Search Console 数据。")}</p>
@@ -277,7 +275,7 @@ function Integrations({
           <div className="search-integration-connection"><a title={t("连接 Google Search Console")} className="squircle btn btn-secondary inline-flex" href={data.googleAuthUrl}><BrandIcon name="google" />{t("连接 Google")}</a></div>
         ) : null        }
       </IntegrationSection>
-      <IntegrationSection provider="bing" title={t("Bing 搜索词")} description={t("连接 Bing Webmaster，查看必应搜索关键词。")} status={t(data.bing ? "已配置" : "未配置")} connected={!!data.bing}>
+      <IntegrationSection provider="bing" title={t("Bing 搜索词")} status={t(data.bing ? "已配置" : "未配置")} connected={!!data.bing}>
         <p className="search-integration-help">{t("在 Bing Webmaster Tools 中获取 API Key，使用本站在平台中验证过的完整地址。保存后密钥输入框会清空，已保存的密钥不会回显。")}</p>
         <SettingsForm className="integration-form" onSubmit={async event=>{event.preventDefault();setBingSaved(false);await saveBingFn({data:{domain,apiKey,siteUrl}});setApiKey("");setBingSaved(true);onSaved()}}>
           <div className="integration-fields">

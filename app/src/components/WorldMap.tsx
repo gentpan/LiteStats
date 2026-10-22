@@ -7,6 +7,7 @@ import { CountryFlag } from "~/components/icons"
 import { countryName } from "~/lib/countries"
 import { numberShort } from "~/lib/format"
 import { MapboxVisitorMap } from "./MapboxVisitorMap"
+import { HelpHint } from "./HelpHint"
 import { useMapStyle } from "~/lib/map-style-preference"
 import { readMapFlags, saveMapFlags } from "~/lib/map-flags-preference"
 import {
@@ -155,6 +156,9 @@ function WorldMap({
       .attr("stroke-linejoin", "round")
       .attr("d", path as never)
       .attr("cursor", (d) => dataByAlpha3Code.get(d.properties.a3)?.visitors ? "pointer" : "default")
+      .attr("tabindex", d => dataByAlpha3Code.get(d.properties.a3)?.visitors && onCountryClick ? 0 : null)
+      .attr("role", d => dataByAlpha3Code.get(d.properties.a3)?.visitors && onCountryClick ? "button" : null)
+      .attr("aria-label", d => {const row=dataByAlpha3Code.get(d.properties.a3);return row ? `${row.name} · ${numberShort(row.visitors)} ${t("访客")}` : null})
 
     // D3 interpolates actual colors, not CSS variables. Repaint on preference
     // changes without rebuilding geography or resetting the user's zoom.
@@ -179,6 +183,12 @@ function WorldMap({
       .attr("pointer-events", "none")
 
     countries
+      .on("keydown", (event, country) => {
+        if (event.key !== "Enter" && event.key !== " ") return
+        event.preventDefault()
+        const row = dataByAlpha3Code.get(country.properties.a3)
+        if (row?.visitors) onCountryClick?.(row.code)
+      })
       .on("mouseover", function (event, country) {
         const [x, y] = d3.pointer(event, svg.node()?.parentNode)
         setTooltip({ x, y, hovered: country.properties.a3 })
@@ -207,6 +217,7 @@ function WorldMap({
       const xy = center ? projection(center) : null
       if (!xy) continue
       const marker = flags.append("g").attr("transform", `translate(${xy[0]},${xy[1]})`).attr("cursor", "pointer")
+      marker.attr("aria-hidden", "true")
       marker.append("image").attr("href", `/images/flags/1x1/${row.code.toLowerCase()}.svg`).attr("x", -12).attr("y", -12).attr("width", 24).attr("height", 24)
       marker.append("title").text(`${row.name} · ${row.visitors}`)
       marker.on("click", () => onCountryClick?.(row.code))
@@ -288,8 +299,8 @@ function WorldMap({
       </div>
       {hovered ? (
         <div
-          className="squircle pointer-events-none absolute z-50 translate-x-2 translate-y-2 rounded-md bg-white p-2 shadow-lg ring-1 ring-black/5"
-          style={{ left: tooltip.x, top: tooltip.y }}
+          className="visitor-map-tooltip squircle pointer-events-none absolute z-50 rounded-md bg-white p-2 shadow-lg ring-1 ring-black/5"
+          style={{ left: `clamp(8px, ${tooltip.x + 8}px, calc(100% - 176px))`, top: `clamp(8px, ${tooltip.y + 8}px, calc(100% - 112px))` }}
         >
           <div className="flex items-center gap-1.5 text-sm font-semibold">
             <CountryFlag code={hovered.code} />
@@ -347,7 +358,13 @@ export function MapCard({
       <div className="geography-grid geography-with-ranking">
         <Surface className="geography-map analytics-panel">
           <div className="analytics-heading">
-            <h3 className="text-sm font-bold text-gray-900">{t("访客分布")}</h3>
+            <div className="flex min-w-0 items-center gap-2">
+              <h3 className="text-sm font-bold text-gray-900">{t("访客分布")}</h3>
+              <HelpHint>
+                <p>{t("查看访客来自哪里，点击国家可筛选报表。")}</p>
+                <p>{t("按国家/地区汇总，标记不是访客的精确位置。占比按已记录的地区访客数计算。")}</p>
+              </HelpHint>
+            </div>
             <div className="map-heading-controls">
               <label className="map-flags-toggle">
                 <span>{t("国旗")}</span>
@@ -359,9 +376,7 @@ export function MapCard({
                 {liveCount} {t("当前访客")}</div>
             </div>
           </div>
-          <p className="analytics-description">{t("查看访客来自哪里，点击国家可筛选报表。")}</p>
           <VisitorMap key={mapboxToken} token={mapboxToken} rows={rows} live={live} showFlags={showFlags} onCountryClick={onCountryClick} />
-          <p className="map-note">{t("按国家/地区汇总，标记不是访客的精确位置。占比按已记录的地区访客数计算。")}</p>
 
         </Surface>
       </div>

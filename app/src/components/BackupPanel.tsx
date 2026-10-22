@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { UIIcon } from "./UIIcon"
 import { ActionButton } from "./ActionButton"
+import { HelpHint } from "./HelpHint"
 import { Field, SettingsForm } from "./SettingsForm"
 import { Tile } from "./ui"
 import { formatTimestamp } from "~/lib/format"
@@ -70,7 +71,7 @@ export function BackupPanel({ initial }: { initial: Settings }) {
   return <div className="backup-panel" aria-busy={!!busy}>
     <SettingsForm onSubmit={() => perform("save", save)}>
       <fieldset disabled={!!busy} className="backup-form-fields">
-        <Tile icon="cloud" brand={form.provider === "r2" ? "cloudflare" : undefined} id="storage" title={t("对象存储")} subtitle={t("连接 Cloudflare R2 或 Amazon S3，存放站点、账号和访问记录的备份。")}>
+        <Tile icon="cloud" brand={form.provider === "r2" ? "cloudflare" : undefined} id="storage" title={t("对象存储")}>
           <div className="backup-fields">
             <Field label={t("存储服务")}>
               <select className="squircle input" value={form.provider} onChange={e => set("provider", e.target.value)}>
@@ -83,22 +84,22 @@ export function BackupPanel({ initial }: { initial: Settings }) {
             <Field wide label={t("服务地址（Endpoint）")} hint={form.provider === "r2" ? t("在 R2 存储桶概览中复制 S3 API 地址；不要填写公开访问域名。") : t("标准 Amazon S3 可留空；使用自定义地址时请填写完整的 HTTPS 地址。") }>
               <input className="squircle input" type="url" required={form.provider === "r2"} maxLength={2048} value={form.endpoint} placeholder={form.provider === "r2" ? "https://<ACCOUNT_ID>.r2.cloudflarestorage.com" : "https://s3.us-east-1.amazonaws.com"} autoCapitalize="none" spellCheck={false} onChange={e => set("endpoint", e.target.value)}/>
             </Field>
-            <Field label={t("区域（Region）")} hint={form.provider === "r2" ? t("R2 使用 auto，系统自动选择区域。") : t("填写存储桶所在的 AWS 区域，例如 us-east-1。") }>
-              <input className="squircle input" required maxLength={64} readOnly={form.provider === "r2"} value={form.region} placeholder="us-east-1" spellCheck={false} onChange={e => set("region", e.target.value)}/>
+            <Field label={t("区域（Region）")}>
+              <input className="squircle input" title={form.provider === "r2" ? t("R2 使用 auto，系统自动选择区域。") : t("填写存储桶所在的 AWS 区域，例如 us-east-1。") } required maxLength={64} readOnly={form.provider === "r2"} value={form.region} placeholder="us-east-1" spellCheck={false} onChange={e => set("region", e.target.value)}/>
             </Field>
-            <Field label={t("备份目录前缀")} hint={t("备份存放在此前缀下，留空使用 litestats。") }>
-              <input className="squircle input" maxLength={512} value={form.prefix} placeholder="litestats" spellCheck={false} onChange={e => set("prefix", e.target.value)}/>
+            <Field label={t("备份目录前缀")}>
+              <input className="squircle input" title={t("备份存放在此前缀下，留空使用 litestats。") } maxLength={512} value={form.prefix} placeholder="litestats" spellCheck={false} onChange={e => set("prefix", e.target.value)}/>
             </Field>
           </div>
           <div className="backup-credentials">
-            <h3>{t("访问凭据")}</h3>
-            <p>{t("密钥加密保存在服务器，保存后不再显示原文。")}</p>
+            <div className="flex items-center gap-2"><h3>{t("访问凭据")}</h3><HelpHint>{t("密钥加密保存在服务器，保存后不再显示原文。")}</HelpHint></div>
+            {destinationChanged || (form.hasAccessKey && form.hasSecretKey) ? <p>{credentialHint(form.hasAccessKey && form.hasSecretKey)}</p> : null}
             <div className="backup-fields">
-              <Field label="Access Key ID" hint={credentialHint(form.hasAccessKey)}>
-                <input className="squircle input" type="password" required={!form.hasAccessKey || destinationChanged} maxLength={256} autoComplete="new-password" name="s3-access-key" value={form.access_key} placeholder={form.hasAccessKey && !destinationChanged ? t("已保存的 Access Key ID") : "Access Key ID"} spellCheck={false} onChange={e => set("access_key", e.target.value)}/>
+              <Field label="Access Key ID">
+                <input className="squircle input" title={credentialHint(form.hasAccessKey)} type="password" required={!form.hasAccessKey || destinationChanged} maxLength={256} autoComplete="new-password" name="s3-access-key" value={form.access_key} placeholder={form.hasAccessKey && !destinationChanged ? t("已保存的 Access Key ID") : "Access Key ID"} spellCheck={false} onChange={e => set("access_key", e.target.value)}/>
               </Field>
-              <Field label="Secret Access Key" hint={credentialHint(form.hasSecretKey)}>
-                <input className="squircle input" type="password" required={!form.hasSecretKey || destinationChanged} maxLength={512} autoComplete="new-password" name="s3-secret-key" value={form.secret_key} placeholder={form.hasSecretKey && !destinationChanged ? t("已保存的 Secret Access Key") : "Secret Access Key"} spellCheck={false} onChange={e => set("secret_key", e.target.value)}/>
+              <Field label="Secret Access Key">
+                <input className="squircle input" title={credentialHint(form.hasSecretKey)} type="password" required={!form.hasSecretKey || destinationChanged} maxLength={512} autoComplete="new-password" name="s3-secret-key" value={form.secret_key} placeholder={form.hasSecretKey && !destinationChanged ? t("已保存的 Secret Access Key") : "Secret Access Key"} spellCheck={false} onChange={e => set("secret_key", e.target.value)}/>
               </Field>
             </div>
           </div>
@@ -112,13 +113,13 @@ export function BackupPanel({ initial }: { initial: Settings }) {
             }}>{t(busy === "test" ? "测试中…" : "测试连接")}</ActionButton>
             <p>{t("测试当前填写的信息，不会保存设置或创建备份。")}</p>
           </div>
-          {connection ? <div role="status" className="squircle backup-connection-result"><UIIcon name="check"/><div><strong>{t("连接成功，可以读取备份目录")}</strong><p>{t("已验证 {0} 的读取权限，未上传或删除文件。", {0: connection.bucket})}</p><p>{t("上传权限将在执行备份时验证。")}</p></div></div> : null}
+          {connection ? <div role="status" className="squircle backup-connection-result"><UIIcon name="check"/><div className="min-w-0"><strong>{t("连接成功，可以读取备份目录")}</strong><p>{t("已验证 {0} 的读取权限，未上传或删除文件。", {0: connection.bucket})}</p><p>{t("上传权限将在执行备份时验证。")}</p></div></div> : null}
           {connectionError ? <p role="alert" className="squircle settings-feedback is-error">{connectionError}</p> : null}
         </Tile>
-        <Tile icon="clock" id="schedule" title={t("自动备份")} subtitle={t("备份包含 PostgreSQL 站点与账号数据，以及 ClickHouse 访问事件。")}>
+        <Tile icon="clock" id="schedule" title={t("自动备份")}>
           <div className="backup-fields">
-            <Field label={t("备份频率")} hint={frequency === "hourly" ? t("距离上次成功备份满一小时后执行，后台每分钟检查一次。") : t("选择“仅手动”可关闭自动备份。") }>
-              <select className="squircle input" value={frequency} onChange={e => {
+            <Field label={t("备份频率")} hint={frequency === "hourly" ? t("距离上次成功备份满一小时后执行，后台每分钟检查一次。") : undefined}>
+              <select className="squircle input" title={t("选择“仅手动”可关闭自动备份。") } value={frequency} onChange={e => {
                 setMsg(""); setErr(""); setForm(cur => ({...cur, schedule: e.target.value as Settings["schedule"], enabled: e.target.value !== "off"}))
               }}>
                 <option value="off">{t("仅手动")}</option><option value="hourly">{t("每小时")}</option><option value="daily">{t("每天")}</option><option value="weekly">{t("每周")}</option>
@@ -146,7 +147,7 @@ export function BackupPanel({ initial }: { initial: Settings }) {
     </SettingsForm>
     {msg ? <p role="status" className="squircle settings-feedback">{msg}</p> : null}
     {err ? <p role="alert" className="squircle settings-feedback is-error">{err}</p> : null}
-    <Tile icon="cloud" id="restore" title={t("备份与恢复")} subtitle={t("使用已保存的存储配置，立即备份或查找已有备份。")}>
+    <Tile icon="cloud" id="restore" title={t("备份与恢复")}>
       <dl className="squircle backup-status-grid">
         <div><dt>{t("上次成功备份")}</dt><dd>{form.last_run_at ? formatTimestamp(form.last_run_at, locale) : t("尚无成功备份")}</dd></div>
         <div><dt>{t("备份状态")}</dt><dd>{t(form.last_status === "error" ? "最近一次备份失败" : form.last_run_at ? "备份成功" : "尚未执行备份")}</dd></div>

@@ -23,11 +23,6 @@ export function TrackingDocs({ domain }: { domain: string }) {
             <UIIcon name="code" />
             {en ? "Developer Documentation & Usage Guide" : "开发者使用指南与接口文档"}
           </h3>
-          <p className="api-docs-lead">
-            {en
-              ? "Integration guide for event ingestion and tracking scripts."
-              : "提供 HTTP 事件采集与网页埋点的使用示例。"}
-          </p>
         </div>
         <button
           type="button"

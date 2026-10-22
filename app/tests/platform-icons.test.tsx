@@ -2,6 +2,7 @@ import { expect, test } from "bun:test"
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { renderToStaticMarkup } from "react-dom/server"
 import { RowIcon } from "../src/components/icons"
+import { parseUa } from "../src/lib/ua"
 
 const publicRoot = new URL("../public/", import.meta.url)
 function render(kind: "browser" | "os", name: string) {
@@ -72,6 +73,40 @@ test("OS versions select the correct family, while unknown names keep a generic 
     expect(html).toContain("h-4 w-4 shrink-0")
     expect(html).not.toContain("fa-brands")
     expect(html).toContain(kind === "browser" ? "fa-browser" : "fa-circle-question")
+  }
+})
+
+test("dark original platform artwork has a neutral surface without resizing or recoloring", () => {
+  for (const [kind, name] of [["browser", "curl/8.5"], ["os", "KaiOS 3"], ["os", "Debian 13"], ["os", "FreeBSD 14"], ["os", "macOS 26"]] as const) {
+    const { html, src } = render(kind, name)
+    expect(src).toBeDefined()
+    expect(html).toContain("platform-icon-neutral")
+    expect(html).toContain("h-4 w-4 shrink-0 object-contain")
+    expect(html).not.toMatch(/filter:|invert|brightness|opacity-/)
+  }
+  for (const [kind, name] of [["browser", "Chrome"], ["browser", "Safari"], ["os", "iOS 26"]] as const) {
+    expect(render(kind, name).html).not.toContain("platform-icon-neutral")
+  }
+})
+
+test("browser and OS names emitted by the collector always resolve to existing local artwork", () => {
+  for (const ua of [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0",
+    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_6) AppleWebKit/605.1.15 Version/18.6 Safari/605.1.15",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 Version/18.6 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (Linux; Android 16; Pixel 9) AppleWebKit/537.36 Chrome/145.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (X11; CrOS x86_64 16000.0.0) AppleWebKit/537.36 Chrome/145.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0",
+  ]) {
+    const parsed = parseUa(ua)
+    for (const [kind, name] of [["browser", parsed.browser], ["os", parsed.os]] as const) {
+      const { html, src } = render(kind, name)
+      expect(src).toBeDefined()
+      expect(existsSync(new URL(src!.slice(1), publicRoot))).toBe(true)
+      expect(html).not.toContain("fa-brands")
+      expect(html).toContain("h-4 w-4 shrink-0 object-contain")
+    }
   }
 })
 

@@ -7,8 +7,8 @@ export function AccentPicker() {
   const hintId = useId()
   const accent = useSyncExternalStore(subscribeAccentColor, readAccentColor, () => "purple")
   const [storageUnavailable, setStorageUnavailable] = useState(false)
-  return <fieldset className="accent-picker" aria-describedby={hintId}>
-    <legend className="accent-picker-label">{t("界面配色")}</legend>
+  return <fieldset className="accent-picker" aria-describedby={storageUnavailable ? hintId : undefined}>
+    <legend className="accent-picker-label" title={t("立即生效，保存在当前浏览器。")}>{t("界面配色")}</legend>
     <div className="accent-options">
       {ACCENT_CHOICES.map(choice => <label key={choice.value} className={`squircle accent-option${accent === choice.value ? " is-selected" : ""}`} data-accent-option={choice.value}>
         <input type="radio" className="sr-only" name="interface-accent" value={choice.value} checked={accent === choice.value} onChange={() => setStorageUnavailable(!setAccentColor(choice.value))} />
@@ -16,6 +16,6 @@ export function AccentPicker() {
         <span>{t(choice.label)}</span>
       </label>)}
     </div>
-    <p className="settings-hint" id={hintId} role="status">{t(storageUnavailable ? "已应用，当前浏览器无法保存此配色。" : "立即生效，保存在当前浏览器。")}</p>
+    {storageUnavailable ? <p className="settings-hint" id={hintId} role="status">{t("已应用，当前浏览器无法保存此配色。")}</p> : null}
   </fieldset>
 }

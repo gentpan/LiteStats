@@ -21,8 +21,10 @@ test("official keywords use click counts in both normal and expanded lists; refe
       if (tab !== "organic_kw") expect(html).not.toMatch(/>[\d.]+%</)
     }
   }
-  expect(markup(terms, "google_kw")).toContain("太平洋时间")
-  expect(markup(terms, "bing_kw")).toContain("不跟随上方日期")
+  expect(markup(terms, "google_kw")).not.toContain("太平洋时间")
+  expect(markup(terms, "bing_kw")).not.toContain("不跟随上方日期")
+  expect(keywordView(terms, "google_kw")?.description).toContain("太平洋时间")
+  expect(keywordView(terms, "bing_kw")?.description).toContain("不跟随上方日期")
   for (const tab of ["google_kw", "bing_kw"]) {
     expect(keywordView(terms, tab)?.description).toContain("所选资源")
     expect(keywordView(terms, tab)?.description).not.toContain("整站")

@@ -5,6 +5,7 @@ import { UIIcon } from "~/components/UIIcon"
 import { useT } from "~/lib/i18n"
 import { useEffect, useRef, useState } from "react"
 import { SiteSwitcher } from "~/components/SiteSwitcher"
+import { ReportFilter } from "./ReportFilter"
 import { INTERVAL_LABEL, PERIOD_LABEL, availableIntervals, intervalStorageKey, periodLabel, type DashSearch, type Interval, type Period } from "~/lib/range"
 
 const GROUPS: Period[][] = [
@@ -69,7 +70,6 @@ export function DashTopBar({
     if(custom) {setCustomFrom(isCalendarDate(search.from) ? search.from : "");setCustomTo(isCalendarDate(search.to) ? search.to : "")}
   }, [custom])
   const [filterKey, setFilterKey] = useState<keyof DashSearch>("source")
-  const [filterValue, setFilterValue] = useState("")
   const box = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -85,14 +85,14 @@ export function DashTopBar({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (visitorsOpen) return
+      if (visitorsOpen || e.isComposing || e.keyCode === 229 || document.querySelector('dialog[open], [aria-modal="true"]')) return
       if (e.key === "Escape") {
         setOpen(null)
         setCustom(false)
         return
       }
       const tag = (e.target as HTMLElement)?.tagName
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target as HTMLElement)?.isContentEditable) return
       if (e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key.toLowerCase() === "i" && search.period !== "realtime") {
         const options = availableIntervals(search.period, { from: search.from, to: search.to })
@@ -119,15 +119,6 @@ export function DashTopBar({
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [onPeriod, search.period, search.interval, search.from, search.to, domain, visitorsOpen])
-
-  function applyFilter() {
-    const entered=filterValue.trim()
-    if(!entered)return
-    const match=filterOptions[filterKey]?.find(option=>[option.name,option.label].some(value=>value?.toLowerCase()===entered.toLowerCase()))
-    onPeriod({[filterKey]:match?.name || (filterKey === "country" ? entered.toUpperCase() : entered)} as Partial<DashSearch>)
-    setFilterValue("")
-    setOpen(null)
-  }
 
   const label = periodLabel(search.period, { from: search.from, to: search.to })
 
@@ -163,6 +154,7 @@ export function DashTopBar({
           >
             <UIIcon name="funnel" className="size-3.5" />
             <span>{t("筛选")}</span>
+            <UIIcon name="chevron-down" className="ui-chevron" />
           </button>
           {open === "filter" ? (
             <div className="squircle dashboard-popover absolute right-0 z-20 mt-2 w-72 origin-top-right rounded-md bg-white p-1 font-medium text-gray-800 shadow-lg ring-1 ring-black/5">
@@ -174,37 +166,14 @@ export function DashTopBar({
                     aria-pressed={filterKey === f.key}
                     data-selected={filterKey === f.key}
                     className="squircle control-menu-item rounded-md px-3 py-2 text-left text-sm hover:bg-gray-100"
-                    onClick={() => {setFilterKey(f.key);setFilterValue(String(search[f.key] || ""))}}
+                    onClick={() => setFilterKey(f.key)}
                   >
                     {t(f.label)}
                   </button>
                 ))}
               </div>
               <p className="px-3 pt-1 text-xs text-gray-500">{t("精确匹配；可选择已有值或输入完整值。")}</p>
-              <div className="dash-filter-entry">
-                <input
-                  className="squircle input"
-                  list="dashboard-filter-values"
-                  aria-label={t("输入筛选值")}
-                  placeholder={t("输入筛选值")}
-                  value={filterValue}
-                  onChange={(e) => setFilterValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key !== "Enter" || e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229 || !filterValue.trim()) return
-                    applyFilter()
-                  }}
-                />
-                <datalist id="dashboard-filter-values">{filterOptions[filterKey]?.map(option=><option key={option.name} value={option.name}>{option.label || option.name}</option>)}</datalist>
-                <button
-                  type="button"
-                  disabled={!filterValue.trim()}
-                  className="squircle btn btn-primary"
-                  onClick={() => {
-                    if (!filterValue.trim()) return
-                    applyFilter()
-                  }}
-                >{t("应用")}</button>
-              </div>
+              <ReportFilter key={filterKey} kind={filterKey} options={filterOptions[filterKey] || []} initialValue={String(search[filterKey] || "")} onApply={name=>{onPeriod({[filterKey]:name});setOpen(null)}}/>
             </div>
           ) : null}
         </div>
@@ -218,6 +187,7 @@ export function DashTopBar({
           >
             <UIIcon name="calendar" className="size-4" />
             <span className="truncate">{t(label || "")}</span>
+            <UIIcon name="chevron-down" className="ui-chevron" />
           </button>
           {open === "period" ? (
             <div className="squircle dashboard-popover absolute right-0 z-20 mt-2 w-56 origin-top-right rounded-md bg-white p-1 font-medium text-gray-800 shadow-lg ring-1 ring-black/5">

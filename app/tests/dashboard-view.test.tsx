@@ -19,8 +19,8 @@ const data: ComponentProps<typeof AnalyticsDashboard>["data"] = {
   searchTerms: {google: {configured: false, rows: []}, bing: {configured: false, rows: []}, organic: []},
 }
 
-async function render(readonly: boolean, source = "Google", locale: Locale = "zh-CN") {
-  const root = createRootRoute({component: () => <I18nProvider locale={locale}><AnalyticsDashboard data={{...data, sources:[{name:source,value:9}]}} domain="view.test"
+async function render(readonly: boolean, source = "Google", locale: Locale = "zh-CN", browsers = data.browsers) {
+  const root = createRootRoute({component: () => <I18nProvider locale={locale}><AnalyticsDashboard data={{...data, browsers, sources:[{name:source,value:9}]}} domain="view.test"
     search={parseDashSearch({period: "7d", source})} readonly={readonly} canManage={false} onSearch={() => {}}
   /></I18nProvider>})
   const router = createRouter({routeTree: root, history: createMemoryHistory({initialEntries: ["/"]})})
@@ -44,6 +44,16 @@ test("member and share views retain the same metrics, report groups and active f
     expect(html).not.toContain("<iframe")
     expect(html).not.toContain("Google Maps")
     expect(html).not.toContain("Mapbox")
+  }
+})
+
+test("the device report retains every row so wheel scrolling can reach entries after the ninth", async () => {
+  const rows = Array.from({length:25}, (_, index) => ({name:`Browser ${index + 1}`,value:25 - index}))
+  for (const readonly of [false, true]) {
+    const html = await render(readonly, "Google", "zh-CN", rows)
+    expect(html).toContain('class="device-report-scroll"')
+    for (const row of rows) expect(html).toContain(`title="${row.name}"`)
+    expect(html).not.toContain("report-list-pagination")
   }
 })
 

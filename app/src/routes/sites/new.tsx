@@ -48,21 +48,21 @@ function NewSitePage() {
           </Link>
         )}
       />
-      <div className="mx-auto mt-6 w-full max-w-2xl pb-16">
-        <div className="wizard-steps">
-          <div className={`wizard-step${step === 1 ? " is-active" : step > 1 ? " is-done" : ""}`}>
-            <span className="wizard-index">1</span>
-            {t("site.step_site")}
+      <div className="new-site-wizard mx-auto mt-6 min-w-0 w-full max-w-2xl pb-16">
+        <div className="wizard-steps" role="list" aria-label={t("site.new_title")}>
+          <div role="listitem" aria-current={step === 1 ? "step" : undefined} className={`wizard-step${step === 1 ? " is-active" : step > 1 ? " is-done" : ""}`}>
+            <span className="wizard-index shrink-0">1</span>
+            <span className="wizard-step-label min-w-0 break-words">{t("site.step_site")}</span>
           </div>
           <div className="wizard-line" />
-          <div className={`wizard-step${step === 2 ? " is-active" : step > 2 ? " is-done" : ""}`}>
-            <span className="wizard-index">2</span>
-            {t("site.step_install")}
+          <div role="listitem" aria-current={step === 2 ? "step" : undefined} className={`wizard-step${step === 2 ? " is-active" : step > 2 ? " is-done" : ""}`}>
+            <span className="wizard-index shrink-0">2</span>
+            <span className="wizard-step-label min-w-0 break-words">{t("site.step_install")}</span>
           </div>
           <div className="wizard-line" />
-          <div className={`wizard-step${step === 3 ? " is-active" : ""}`}>
-            <span className="wizard-index">3</span>
-            {t("site.step_done")}
+          <div role="listitem" aria-current={step === 3 ? "step" : undefined} className={`wizard-step${step === 3 ? " is-active" : ""}`}>
+            <span className="wizard-index shrink-0">3</span>
+            <span className="wizard-step-label min-w-0 break-words">{t("site.step_done")}</span>
           </div>
         </div>
         <Surface className="setup-card bg-white shadow-sm">
@@ -84,16 +84,14 @@ function NewSitePage() {
               }
             }}
           >
-            <p className="text-sm text-gray-500">{t("site.new_sub")}</p>
             <label className="block text-sm font-medium text-gray-900">
               {t("站点名称")}
-              <span className="mt-1 block text-xs font-normal text-gray-500">{t("在站点列表中显示，留空则默认使用域名。")}</span>
-              <input className="squircle input mt-2" placeholder="如：我的博客" value={name} onChange={(e) => setName(e.target.value)} />
+              <input className="squircle input mt-2" title={t("在站点列表中显示，留空则默认使用域名。")} placeholder={t("如：我的博客")} value={name} onChange={(e) => setName(e.target.value)} />
             </label>
             <label className="block text-sm font-medium text-gray-900">
               {t("site.domain")}
               <span className="mt-1 block text-xs font-normal text-gray-500">{t("site.domain_hint")}</span>
-              <input className="squircle input mt-2" autoFocus placeholder="example.com" value={domain} onChange={(e) => setDomain(e.target.value)} required />
+              <input className="squircle input mt-2" autoFocus autoCapitalize="none" spellCheck={false} placeholder="example.com" value={domain} onChange={(e) => setDomain(e.target.value)} required />
             </label>
             <label className="block text-sm font-medium text-gray-900">
               {t("site.timezone")}
@@ -101,8 +99,8 @@ function NewSitePage() {
                 {ZONES.map((zone) => <option key={zone.value} value={zone.value}>{t(zone.label)}</option>)}
               </select>
             </label>
-            {error ? <p className="text-sm text-red-500">{t(error || "")}</p> : null}
-            <div className="flex justify-end">
+            {error ? <p role="alert" className="min-w-0 break-words text-sm text-red-500">{t(error || "")}</p> : null}
+            <div className="wizard-actions flex min-w-0 flex-wrap justify-end gap-2">
               <ActionButton className="btn btn-primary" icon="arrow" disabled={pending} type="submit">{pending ? t("添加中…") : t("site.next")}</ActionButton>
             </div>
           </form>
@@ -111,8 +109,8 @@ function NewSitePage() {
           <div className="space-y-4">
             <p className="text-sm text-gray-600">{t("site.snippet")}</p>
             <TrackingSnippet code={snippet} />
-            {error ? <p className="text-sm text-red-500">{t(error || "")}</p> : null}
-            <div className="flex flex-wrap justify-end gap-2">
+            {error ? <p role="alert" className="min-w-0 break-words text-sm text-red-500">{t(error || "")}</p> : null}
+            <div className="wizard-actions flex min-w-0 flex-wrap justify-end gap-2">
               <ActionButton type="button" className="btn btn-secondary" onClick={() => setStep(3)}>{t("site.skip")}</ActionButton>
               <ActionButton
                 type="button"
@@ -145,7 +143,7 @@ function NewSitePage() {
         {step === 3 ? (
           <div className="space-y-4">
             <p className="text-sm text-gray-600">{ready ? t("site.detected") : t("site.snippet")}</p>
-            <div className="flex justify-end">
+            <div className="wizard-actions flex min-w-0 flex-wrap justify-end gap-2">
               <Link to="/sites/$domain" params={{ domain: created }} className="squircle btn btn-primary">{t("site.done_go")}<UIIcon name="arrow"/></Link>
             </div>
           </div>

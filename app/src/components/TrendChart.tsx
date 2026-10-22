@@ -96,15 +96,20 @@ export function TrendChart({
   const { t, locale } = useT()
   const gradientId = useId()
   const box = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(800)
+  const [width, setWidth] = useState(320)
   const [hover, setHover] = useState<{ index: number, x: number, persistent: boolean } | null>(null)
 
   useEffect(() => {
     const el = box.current
-    if (!el || typeof ResizeObserver === "undefined") return
-    const ro = new ResizeObserver(() => setWidth(el.clientWidth || 800))
+    if (!el) return
+    const measure = () => setWidth(el.clientWidth || 320)
+    measure()
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure)
+      return () => window.removeEventListener("resize", measure)
+    }
+    const ro = new ResizeObserver(measure)
     ro.observe(el)
-    setWidth(el.clientWidth || 800)
     return () => ro.disconnect()
   }, [])
 
@@ -170,8 +175,25 @@ export function TrendChart({
   return (
     <div
       ref={box}
-      className="relative mt-4 mb-3"
+      className="trend-chart relative mt-4 mb-3"
+      tabIndex={points.length ? 0 : undefined}
+      role="group"
+      aria-label={t(METRIC_LABEL[metric])}
       style={{ height: HEIGHT, marginInline: `max(0px, calc(${layout.labelSpace + 12}px - var(--trend-inset, 22px)))` }}
+      onPointerDown={event => {
+        if (event.pointerType !== "touch" || (event.target as Element).closest("button")) return
+        const index = indexFromClientX(event.clientX)
+        setHover({index, x: layout.x(index), persistent: true})
+      }}
+      onKeyDown={event => {
+        if (event.target !== event.currentTarget || !points.length) return
+        if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+          event.preventDefault()
+          const index = event.key === "Home" ? 0 : event.key === "End" ? points.length - 1 : Math.max(0, Math.min(points.length - 1, (hover?.index ?? 0) + (event.key === "ArrowLeft" ? -1 : 1)))
+          setHover({index, x: layout.x(index), persistent: true})
+        } else if (event.key === "Escape") setHover(null)
+        else if (event.key === "Enter" && selected && canZoom) {event.preventDefault();onZoom?.(selected.date)}
+      }}
       onPointerMove={(e) => {
         if (hover?.persistent) return
         const index = indexFromClientX(e.clientX)
@@ -181,7 +203,7 @@ export function TrendChart({
         if (!hover?.persistent) setHover(null)
       }}
       onClick={() => {
-        if (!hover || !selected || !canZoom) return
+        if (!hover || hover.persistent || !selected || !canZoom) return
         onZoom?.(selected.date)
       }}
       onContextMenu={(e) => {
@@ -243,15 +265,15 @@ export function TrendChart({
       )}
       {selected && hover ? (
         <div
-          className={`squircle absolute bg-gray-800 py-3 px-4 rounded-md shadow shadow-gray-200 w-max ${hover.persistent ? "" : "pointer-events-none"}`}
+          className={`trend-tooltip squircle absolute bg-gray-800 py-3 px-4 rounded-md shadow shadow-gray-200 w-max ${hover.persistent ? "" : "pointer-events-none"}`}
           style={{ left: tooltipX, top: 8, maxWidth: tooltipWidth }}
         >
           <aside className="flex flex-col gap-2 text-sm font-normal text-gray-100">
             <div className="squircle flex items-center justify-between rounded-sm">
               <div className="mr-4 text-xs font-semibold uppercase whitespace-nowrap">{t(METRIC_LABEL[metric])}</div>
             </div>
-            <div className="flex flex-row items-center justify-between">
-              <div className="mr-4 flex items-center">
+            <div className="trend-tooltip-value flex flex-row items-center justify-between">
+              <div className="min-w-0 flex items-center">
                 <div className="mr-2 size-2 flex-none rounded-full bg-indigo-400" />
                 <div className="min-w-0">
                   {tooltipLabel(selected.date, interval, withYear, hover.index, points.length, realtime, locale)}
@@ -261,7 +283,7 @@ export function TrendChart({
             </div>
             <hr className="my-1 border-gray-600" />
             <div className="flex flex-col gap-y-0.5">
-              {canZoom ? <div className="text-xs text-gray-300">{t("点击查看")} {t(INTERVAL_VIEW[interval])}</div> : null}
+              {canZoom ? <button type="button" className="text-left text-xs text-gray-300 underline" onClick={event=>{event.stopPropagation();onZoom?.(selected.date)}}>{t("点击查看")} {t(INTERVAL_VIEW[interval])}</button> : null}
               <div className="text-xs text-gray-300">{hover.persistent ? t("点击空白处关闭") : t("右键固定提示")}</div>
             </div>
           </aside>

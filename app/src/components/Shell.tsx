@@ -255,13 +255,14 @@ function UserMenu({
   const { t } = useT()
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (!menuRef.current?.contains(e.target as Node)) setOpen(false)
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false)
+      if (e.key === "Escape" && menuRef.current?.querySelector('[role="menu"]')) {setOpen(false);triggerRef.current?.focus()}
     }
     window.addEventListener("mousedown", onClick)
     window.addEventListener("keydown", onKey)
@@ -276,12 +277,15 @@ function UserMenu({
       <button
         type="button"
         className="squircle site-header-user"
+        ref={triggerRef}
+        aria-label={t("账户菜单")}
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
       >
         <span className="selection-detail hidden truncate text-sm font-medium text-gray-800 md:block">{user.name || user.email}</span>
         <UserAvatar avatar={user.avatar} gravatarUrl={user.gravatarUrl} name={user.name || user.email} className="site-header-avatar" />
+        <UIIcon name="chevron-down" className="ui-chevron" />
       </button>
       {open ? (
         <div className="squircle site-header-menu" role="menu">

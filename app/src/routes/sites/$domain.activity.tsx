@@ -42,7 +42,7 @@ function ActivityPage() {
     return ()=>clearInterval(id)
   },[auto,router,t])
   return <Shell user={me}>
-    <ManagementHeader title={t("活动日志")} description={t("逐条查看页面浏览、会话和自定义事件，展开记录了解访问上下文。")}><Link to="/sites/$domain" params={{domain}} className="squircle btn"><UIIcon name="arrow" className="rotate-180"/>{t("返回统计")}</Link></ManagementHeader>
+    <ManagementHeader title={t("活动日志")}><Link to="/sites/$domain" params={{domain}} className="squircle btn"><UIIcon name="arrow" className="rotate-180"/>{t("返回统计")}</Link></ManagementHeader>
     <div className="squircle activity-page-toolbar"><SiteSwitcher domain={domain}/><div>
       <label className="activity-window">{t("时间范围")}<select className="squircle input" value={range} onChange={event=>void router.navigate({to:"/sites/$domain/activity",params:{domain},search:{window:event.target.value as Window}})}><option value="30m">{t("近 30 分钟")}</option><option value="24h">{t("近 24 小时")}</option><option value="7d">{t("近 7 天")}</option></select></label>
       <label className="activity-auto"><input type="checkbox" checked={auto} onChange={event=>setAuto(event.target.checked)}/>{t("每 30 秒刷新")}</label>

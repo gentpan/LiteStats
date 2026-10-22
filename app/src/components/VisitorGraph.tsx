@@ -40,7 +40,7 @@ export function VisitorGraph({
         <Card icon="clock" index={5} label={t("访问时长")} selected={metric === "visit_duration"} onSelect={() => onMetric("visit_duration")} value={overview.visit_duration} prev={compare.visit_duration} text={formatDuration(overview.visit_duration)} />
       </div>
       <div className="trend-section">
-        <div className="analytics-heading"><h3>{t("访问趋势")}</h3><span>{t("点击上方指标切换图表")}</span></div>
+        <div className="analytics-heading"><h3 title={t("点击上方指标切换图表")}>{t("访问趋势")}</h3></div>
         <TrendChart points={points} metric={metric} interval={interval} realtime={realtime} onZoom={onZoom} />
       </div>
     </Surface>

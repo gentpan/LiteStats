@@ -2,6 +2,7 @@ import { useMemo, useState } from "react"
 import { useT } from "~/lib/i18n"
 import { CountryFlag } from "./icons"
 import { UIIcon } from "./UIIcon"
+import { ReportValue } from "./ReportValue"
 import { Surface } from "./Surface"
 import { ActionButton } from "./ActionButton"
 import { countryName } from "~/lib/countries"
@@ -27,7 +28,7 @@ export function ActivityLog({rows, timezone, hasMore}: {rows: RecentEvent[]; tim
   return <Surface className="activity-log-panel">
     <div className="activity-log-tools">
       <div className="activity-type-tabs" role="group" aria-label={t("事件类型")}>
-        {types.map(type=><button className="squircle" key={type.id} type="button" aria-pressed={kind===type.id} onClick={()=>{setKind(type.id);setPage(0)}}>{t(type.label)}<span className="squircle">{rows.filter(row=>matchesKind(row,type.id)).length}</span></button>)}
+        {types.map(type=><button className="squircle" key={type.id} type="button" aria-pressed={kind===type.id} onClick={()=>{setKind(type.id);setPage(0)}}><span className="activity-type-label">{t(type.label)}</span><span className="squircle activity-type-count">{rows.filter(row=>matchesKind(row,type.id)).length}</span></button>)}
       </div>
       <label className="activity-search"><UIIcon name="search" /><span className="sr-only">{t("搜索活动记录")}</span><input type="search" className="squircle input" placeholder={t("搜索页面、来源、国家或设备")} value={query} onChange={event=>{setQuery(event.target.value);setPage(0)}} /></label>
     </div>
@@ -41,12 +42,11 @@ export function ActivityLog({rows, timezone, hasMore}: {rows: RecentEvent[]; tim
         <summary>
           <time className="activity-time" dateTime={Number.isNaN(date.getTime()) ? undefined : date.toISOString()}>{time}</time>
           <div className="activity-event"><span className="squircle activity-event-icon"><UIIcon name={row.name === "session" ? "user" : row.name === "pageview" ? "eye" : "code"}/></span><div><strong>{label}</strong><span title={row.pathname}>{row.pathname || "/"}</span></div></div>
-          <span className="activity-country">{row.country ? <CountryFlag code={row.country}/> : <UIIcon name="globe"/>}{countryName(row.country,locale)}</span>
-          <div className="activity-device"><strong>{isDirectSource(row.source) ? t("直接访问") : row.source}</strong><span>{[row.browser,row.os,row.device].filter(Boolean).join(" · ") || t("未知设备")}</span></div>
-          <UIIcon name="arrow" className="activity-expand"/>
+          <span className="activity-country">{row.country ? <CountryFlag code={row.country}/> : <UIIcon name="globe"/>}<span>{countryName(row.country,locale)}</span></span>
+          <div className="activity-device"><strong><ReportValue kind="source" name={row.source}/></strong><span>{[row.browser,row.os,row.device].filter(Boolean).join(" · ") || t("未知设备")}</span></div>
         </summary>
         <dl className="activity-record-details">
-          {[ [t("事件名称"),row.name], [t("页面路径"),row.pathname || "/"], [t("来源"),isDirectSource(row.source) ? t("直接访问") : row.source], [t("国家/地区"),countryName(row.country,locale)], [t("浏览器"),row.browser], [t("操作系统"),row.os], [t("设备"),row.device], [t("时间"),`${time} (${timezone})`] ].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value || "—"}</dd></div>)}
+          {[ [t("事件名称"),row.name], [t("页面路径"),row.pathname || "/"], [t("来源"),isDirectSource(row.source) ? t("直接访问") : row.source], [t("国家/地区"),countryName(row.country,locale)], [t("浏览器"),row.browser], [t("操作系统"),row.os], [t("设备"),row.device], [t("时间"),`${time} (${timezone})`] ].map(([key,value])=>{const kind=key===t("浏览器") ? "browser" : key===t("操作系统") ? "os" : key===t("来源") ? "source" : undefined; return <div key={key}><dt>{key}</dt><dd>{kind ? <ReportValue kind={kind} name={kind==="source" ? row.source : value} wrap/> : value || "—"}</dd></div>})}
         </dl>
       </details></li>
     })}</ol> : <div className="activity-empty"><UIIcon name="activity"/><strong>{t(rows.length ? "没有匹配的活动记录" : "所选时间范围内没有活动")}</strong><p>{t(rows.length ? "尝试调整关键词或事件类型。" : "网站收到访问或自定义事件后，将在这里显示。")}</p>{query || kind !== "all" ? <ActionButton onClick={()=>{setQuery("");setKind("all");setPage(0)}}>{t("清除筛选")}</ActionButton> : null}</div>}

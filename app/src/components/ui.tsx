@@ -1,13 +1,13 @@
 import { UIIcon, BrandIcon, type BrandName } from "./UIIcon"
 import { Surface } from "~/components/Surface"
 import { useT } from "~/lib/i18n"
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react"
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import { createPortal } from "react-dom"
-import { CountryFlag, RowIcon, type RowIconKind } from "~/components/icons"
+import { CountryFlag, type RowIconKind } from "~/components/icons"
 import { numberShort, percentShort } from "~/lib/format"
 import { delta } from "~/lib/range"
-import { languageCode, languageFlag, languageName } from "~/lib/languages"
-import { isDirectSource } from "~/lib/source-icons"
+import { ReportValue } from "./ReportValue"
+import { reportSearchText } from "~/lib/report-values"
 
 const BAR: Record<string, string> = {
   source: "bg-blue-50 group-hover/row:bg-blue-100",
@@ -70,7 +70,7 @@ export function Card({
           {t(label || "")}
         </div>
         {icon ? <UIIcon name={icon} className="metric-watermark" /> : null}
-        <span className="flex items-baseline whitespace-nowrap">
+        <span className="metric-value-row flex items-baseline whitespace-nowrap">
           <p className="metric-value text-[1.2rem] font-semibold text-gray-900">
             {text ?? `${numberShort(value)}${suffix}`}
           </p>
@@ -141,6 +141,7 @@ export function List({
   compact = false,
   paginate = false,
   expanded = false,
+  referenceRows,
 }: {
   title?: string
   rows: ListRow[]
@@ -152,18 +153,19 @@ export function List({
   compact?: boolean
   paginate?: boolean
   expanded?: boolean
+  /** Searching narrows visible rows without changing percentages or bar scale. */
+  referenceRows?: ListRow[]
 }) {
-  const { t, locale } = useT()
+  const { t } = useT()
   const [page, setPage] = useState(1)
   const pages = Math.max(1, Math.ceil(rows.length / 10))
   const currentPage = Math.min(page, pages)
   const rowIdentity = rows.map(row=>row.name).join("\u0000")
   useEffect(()=>setPage(1),[rowIdentity])
   const shown = paginate ? rows.slice((currentPage - 1) * 10, currentPage * 10) : maxItems > 0 ? rows.slice(0, maxItems) : rows
-  const max = Math.max(1, ...(paginate ? rows : shown).map((r) => r.value))
-  const total = rows.reduce((n, r) => n + r.value, 0) || 1
+  const max = Math.max(1, ...(referenceRows || (paginate ? rows : shown)).map((r) => r.value))
+  const total = (referenceRows || rows).reduce((n, r) => n + r.value, 0) || 1
   const bar = BAR[kind || ""] || "bg-indigo-50 group-hover/row:bg-indigo-100"
-  const iconKind = kind === "source" || kind === "country" || kind === "browser" || kind === "os" || kind === "device" ? kind : undefined
   const flagKind = kind === "region" || kind === "city"
   const extraCols = columns || []
   const bundlePct = extraCols.length === 0
@@ -175,7 +177,7 @@ export function List({
       <div className="mx-auto font-medium text-gray-500">{t("暂无数据")}</div>
     </div>
   ) : (
-    <div className="flex h-full flex-col">
+    <div className={`flex flex-col ${expanded ? "" : "h-full"}`} style={extraCols.length ? {minWidth: 160 + extraCols.length * 72} : undefined}>
       <div className="flex w-full items-center pt-3 text-xs font-medium text-gray-500" style={{ height: ROW_HEIGHT }}>
         <div className="w-full min-w-0 grow truncate">{t(DIM_LABEL[kind || ""] || title || "")}</div>
         {bundlePct ? (
@@ -190,7 +192,6 @@ export function List({
         {shown.map((r) => {
           const width = Math.max(2, (r.value / max) * 100)
           const pct = (r.value / total) * 100
-          const label = kind === "source" && isDirectSource(r.name) ? t("直接访问") : r.label || r.name
           return (
             <div key={r.name} style={{ minHeight: ROW_HEIGHT }}>
               <div
@@ -198,6 +199,8 @@ export function List({
                 style={{ marginTop: ROW_GAP }}
                 onClick={onPick ? () => onPick(r.name) : undefined}
                 role={onPick ? "button" : undefined}
+                tabIndex={onPick ? 0 : undefined}
+                onKeyDown={onPick ? event => {if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {event.preventDefault();onPick(r.name)}} : undefined}
               >
                 <div className={`w-full min-w-0 grow ${expanded ? "" : "md:truncate"}`}>
                   <div className="relative h-full w-full">
@@ -205,8 +208,8 @@ export function List({
                     <div className={`relative z-9 px-2 py-1.5 text-sm ${expanded ? "[overflow-wrap:anywhere]" : ""}`}>
                       <div className="flex w-full items-center justify-start gap-x-1.5">
                         <span className={`flex w-full min-w-0 max-w-full items-center gap-x-2 ${expanded || kind === "language" ? "" : "overflow-hidden"}`}>
-                          {kind === "language" ? <span className="shrink-0" title={locale === "en" ? "Locale symbol, not visitor location" : "语言地区标识，不代表访客位置"}><CountryFlag code={languageFlag(r.name)} /></span> : flagKind && r.code ? <CountryFlag code={r.code} /> : <RowIcon kind={iconKind} name={r.name} />}
-                          {kind === "language" ? <span className="language-row-copy"><span>{r.label || languageName(r.name, locale)}</span>{languageCode(r.name) ? <span className="language-row-code" lang="en">{languageCode(r.name)}</span> : null}</span> : <span title={label} className={`w-full min-w-0 group-hover/row:underline ${expanded ? "" : "truncate"}`}>{label}</span>}
+                          {flagKind && r.code ? <CountryFlag code={r.code}/> : null}
+                          <ReportValue kind={kind} name={r.name} label={r.label} wrap={expanded}/>
                         </span>
                         {r.href ? (
                           <a
@@ -247,11 +250,12 @@ export function List({
       </div>
     </div>
   )
-  if (plain) return <>{body}{paginate && rows.length > 10 ? <nav className="report-list-pagination" aria-label={t("分页")}><span>{t("每页 10 条")} · {rows.length}</span><div><button className="squircle" type="button" disabled={currentPage <= 1} onClick={()=>setPage(currentPage-1)}>{t("上一页")}</button><span>{currentPage} / {pages}</span><button className="squircle" type="button" disabled={currentPage >= pages} onClick={()=>setPage(currentPage+1)}>{t("下一页")}</button></div></nav> : null}</>
+  const content = extraCols.length && !expanded ? <div className="report-list-scroll">{body}</div> : body
+  if (plain) return <>{content}{paginate && rows.length > 10 ? <nav className="report-list-pagination" aria-label={t("分页")}><span>{t("每页 10 条")} · {rows.length}</span><div><button className="squircle" type="button" disabled={currentPage <= 1} onClick={()=>setPage(currentPage-1)}>{t("上一页")}</button><span>{currentPage} / {pages}</span><button className="squircle" type="button" disabled={currentPage >= pages} onClick={()=>setPage(currentPage+1)}>{t("下一页")}</button></div></nav> : null}</>
   return (
     <Surface as="section" className="report-card relative flex w-full flex-col overflow-x-hidden bg-white shadow-sm">
       {title ? <h2 className="mb-3 text-xs font-bold uppercase tracking-[-.01em] text-gray-900">{t(title || "")}</h2> : null}
-      {body}
+      {content}
     </Surface>
   )
 }
@@ -284,34 +288,34 @@ function DetailsModal({
   spec: DetailsSpec
   onClose: () => void
 }) {
-  const { t } = useT()
+  const { t, locale } = useT()
+  const dialog = useRef<HTMLDialogElement>(null)
+  const titleId = useId()
   const [q, setQ] = useState("")
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()
     if (!needle) return spec.rows
-    return spec.rows.filter((r) => `${r.label || ""} ${r.name} ${spec.kind === "language" ? languageCode(r.name) : ""} ${spec.kind === "source" && isDirectSource(r.name) ? t("直接访问") : ""}`.toLowerCase().includes(needle))
-  }, [q, spec.rows, spec.kind, t])
+    return spec.rows.filter((r) => reportSearchText(spec.kind, r, locale).toLowerCase().includes(needle))
+  }, [q, spec.rows, spec.kind, locale])
 
   useEffect(() => {
     const prev = document.body.style.overflow
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const element = dialog.current
+    element?.showModal()
     document.body.style.overflow = "hidden"
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose()
-    }
-    window.addEventListener("keydown", onKey)
     return () => {
+      element?.close()
       document.body.style.overflow = prev
-      window.removeEventListener("keydown", onKey)
+      if (trigger?.isConnected) trigger.focus()
     }
-  }, [onClose])
+  }, [])
 
   return createPortal(
-    <div className="modal is-open">
-      <div className="fixed inset-0 z-[999] overflow-y-auto bg-black/60" onClick={onClose}>
-        <div className="flex min-h-full w-full items-start justify-center p-4 sm:p-8 md:p-12">
-          <div className="squircle report-details flex max-h-[calc(100dvh-4rem)] w-full max-w-[880px] flex-col overflow-hidden rounded-lg bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <dialog ref={dialog} className="squircle report-details-dialog" aria-labelledby={titleId} onCancel={event=>{event.preventDefault();onClose()}} onKeyDown={event=>{if(event.key === "Escape") {event.preventDefault();event.stopPropagation();if(!event.nativeEvent.isComposing && event.nativeEvent.keyCode !== 229) onClose()}}} onClick={event=>{if(event.target===event.currentTarget)onClose()}}>
+          <div className="report-details flex min-h-0 flex-col overflow-hidden">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h1 className="dialog-heading text-gray-900">{t(spec.title)}</h1>
+              <h2 id={titleId} className="dialog-heading min-w-0 text-gray-900">{t(spec.title)}</h2>
               <button type="button" className="squircle ui-icon-button text-gray-400 hover:text-gray-600" aria-label={t("关闭")} onClick={onClose}>
                 <UIIcon name="close" className="size-[1.125rem]" />
               </button>
@@ -319,18 +323,17 @@ function DetailsModal({
             {spec.description ? <p className="mb-3 text-xs leading-relaxed text-gray-500 [overflow-wrap:anywhere]">{t(spec.description)}</p> : null}
             <input
               type="search"
+              aria-label={t("搜索")}
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={t("搜索")}
               className="squircle input mb-2 placeholder:text-gray-400"
             />
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <List plain expanded maxItems={0} kind={spec.kind} rows={filtered} columns={spec.columns} onPick={spec.onPick ? (name) => { spec.onPick?.(name); onClose() } : undefined} />
+            <div className="report-details-scroll min-h-0 min-w-0 flex-1 overflow-auto">
+              <List plain expanded maxItems={0} kind={spec.kind} rows={filtered} referenceRows={spec.rows} columns={spec.columns} onPick={spec.onPick ? (name) => { spec.onPick?.(name); onClose() } : undefined} />
             </div>
           </div>
-        </div>
-      </div>
-    </div>,
+    </dialog>,
     document.body,
   )
 }
@@ -370,7 +373,7 @@ export function ReportCard({
   }, [])
 
   return (
-    <Surface as="section" className={`report-card relative flex w-full flex-col bg-white shadow-sm ${className.includes("overflow") ? "" : "overflow-x-hidden"} ${className}`}>
+    <Surface as="section" className={`report-card relative flex min-w-0 w-full flex-col bg-white shadow-sm ${className}`}>
       <div className="report-heading flex w-full justify-between border-b border-gray-200">
         {title ? <h3 className="pb-3 text-sm font-bold text-gray-900">{t(title || "")}</h3> : null}
         {tabs.length ? (
@@ -394,7 +397,7 @@ export function ReportCard({
                         <span className={`truncate text-left text-xs uppercase ${selected ? "font-bold tracking-[-.01em] text-gray-900" : "font-semibold text-gray-500 group-hover/tab:text-gray-800"}`}>
                           {t(label || "")}
                         </span>
-                        <UIIcon name="chevron-down" className={`-mr-1 ml-0.5 size-4 ${selected ? "text-gray-900" : "text-gray-500 group-hover/tab:text-gray-800"}`} />
+                        <UIIcon name="chevron-down" className="ui-chevron ml-1" />
                       </button>
                     </div>
                     {open === reportTab.id ? (

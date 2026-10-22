@@ -7,6 +7,12 @@ function render(cells: HeatCell[], locale: Locale = "zh-CN") {
   return renderToStaticMarkup(<I18nProvider locale={locale}><TrafficHeatmap cells={cells} /></I18nProvider>)
 }
 
+test("each traffic chart keeps a keyboard entry without tabbing through every hour", () => {
+  for (const cells of [[], [{dow: 4, hour: 13, value: 30}]]) {
+    expect(render(cells).match(/tabindex="0"/g)).toHaveLength(2)
+  }
+})
+
 test("hourly bars show the busiest weekday without adding visitors from other weekdays", () => {
   const html = render([{ dow: 3, hour: 7, value: 12 }, { dow: 4, hour: 7, value: 20 }, { dow: 4, hour: 13, value: 30 }])
   const chart = html.slice(html.indexOf('class="traffic-hourly-chart"'))

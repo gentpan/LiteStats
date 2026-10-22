@@ -24,7 +24,9 @@ const NAMES: Record<string, string> = {
 }
 
 export function languageCode(code: string) {
-  const raw = (code || "").replace(/\0/g, "").trim()
+  // Historical values are display-only here. Strip invisible controls so they
+  // cannot reorder the visible label/code or impersonate a different locale.
+  const raw = (code || "").replace(/[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "").trim()
   if (!raw || raw.toLowerCase() === "(none)") return ""
   const key = raw.replace(/_/g, "-")
   try { return Intl.getCanonicalLocales(key)[0] || key } catch { return key }
@@ -45,12 +47,20 @@ export function languageFlag(code: string) {
 export function languageName(code: string, locale = "zh-CN") {
   const key = languageCode(code)
   if (!key) return locale === "en" ? "Unknown" : "未知"
-  const short = key.split("-")[0]
+  // DisplayNames does not accept Unicode/private-use extensions. Keep those in
+  // the adjacent code, but use the base locale to describe the language.
+  let base = key
+  try { base = new Intl.Locale(key).baseName } catch { /* Preserve unknown historical text. */ }
+  const short = base.split("-")[0]
+  const exactName = Object.hasOwn(NAMES, base) ? NAMES[base] : undefined
+  const shortName = Object.hasOwn(NAMES, short) ? NAMES[short] : undefined
   if (locale === "en") {
-    try { return new Intl.DisplayNames(["en"], { type: "language" }).of(key) || key } catch { return key }
+    try { return new Intl.DisplayNames(["en"], { type: "language" }).of(base) || base } catch { return base }
   }
-  if (NAMES[key] || NAMES[short]) return NAMES[key] || NAMES[short]
-  try { return new Intl.DisplayNames(["zh-CN"], { type: "language" }).of(key) || key } catch { return key }
+  if (exactName) return exactName
+  // A short-name fallback would hide valid region/script qualifiers such as
+  // zh-Hant-TW, en-CA or fr-CA in Chinese while English retained them.
+  try { return new Intl.DisplayNames(["zh-CN"], { type: "language" }).of(base) || shortName || base } catch { return shortName || base }
 }
 
 export function parseAcceptLanguage(header: string) {

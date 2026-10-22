@@ -67,8 +67,9 @@ are not substituted for browser products.
 The SVG's macOS, iOS and HarmonyOS assets are black wordmarks rather than color
 platform artwork. Existing `images/icon/os/` images are retained for macOS, iOS,
 iPadOS, Chrome OS, Fire OS, HarmonyOS and Tizen. iOS and iPadOS retain their
-existing color artwork. The retained black Apple mark uses a neutral white
-surface for legibility in dark mode; it is not recolored. The SVG has no
+existing color artwork. The retained black Apple mark and the dark original
+curl, KaiOS, Debian and FreeBSD marks use a neutral white surface for legibility
+in dark mode; none is recolored. The SVG has no
 iPadOS, Chrome OS, Fire OS or Tizen product-specific entry at this commit.
 
 Single-color official brand defaults (such as Debian red, Arch blue, Fedora

@@ -1,4 +1,5 @@
 import { UIIcon } from "./UIIcon"
+import { HelpHint } from "./HelpHint"
 import { useEffect, useId, useState } from "react"
 import { useRouter } from "@tanstack/react-router"
 import { MAPBOX_STYLES, type MapboxStyleId } from "~/lib/mapbox-styles"
@@ -34,7 +35,7 @@ export function MapStylePicker() {
   }
   return <fieldset className="map-style-picker" disabled={pending} aria-describedby={hintId} aria-busy={pending}>
     <legend>{t("地图样式")}</legend>
-    <p id={hintId} className="settings-hint">{t("选择后自动保存到当前账号。标准为默认地图并适配界面深浅色；街道和深色保持自身配色。预览使用相同区域。")}</p>
+    <HelpHint id={hintId}>{t("选择后自动保存到当前账号。标准为默认地图并适配界面深浅色；街道和深色保持自身配色。预览使用相同区域。")}</HelpHint>
     <div className="map-style-options">
       {MAPBOX_STYLES.map(style => <label key={style.id} className={`squircle map-style-option${selected === style.id ? " is-selected" : ""}`}>
         <input className="sr-only" type="radio" name="mapbox-style" value={style.id} checked={selected === style.id} onChange={() => void choose(style.id)}/>

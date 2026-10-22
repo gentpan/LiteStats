@@ -2,6 +2,7 @@ import { createFileRoute, Link, redirect } from "@tanstack/react-router"
 import { useRef, useState } from "react"
 import { Shell } from "~/components/Shell"
 import { ManagementHeader } from "~/components/ManagementHeader"
+import { HelpHint } from "~/components/HelpHint"
 import { PageState } from "~/components/PageState"
 import { KeywordTable } from "~/components/KeywordTable"
 import { KeywordImportPanel } from "~/components/KeywordImportPanel"
@@ -89,7 +90,7 @@ function KeywordWorkspace({domain, data}: {domain: string; data: WorkspaceData})
     : pack.error ? t(({auth_error: "授权已失效或没有该资源的访问权限，请检查接入设置。", property_required: "Google 已授权，请选择并保存本站对应的 Search Console 资源。", request_timeout: "搜索平台响应超时，请稍后重试。"} as Record<string, string>)[pack.error] || "搜索平台暂时无法读取，请稍后重试。")
     : t("当前范围暂无关键词。最近的数据可能延迟，部分低频查询不会公开。")
   return <Shell user={data.me}>
-    <ManagementHeader title={t("搜索关键词")} description={`${domain} · ${t("搜索表现与内容改进")}`}>
+    <ManagementHeader title={t("搜索关键词")} description={domain}>
       <Link to="/sites/$domain" params={{domain}} className="squircle btn">{t("返回统计")}</Link>
       {canManage ? <Link to="/sites/$domain/settings" params={{domain}} search={{tab: "integrations"}} className="squircle btn">{t("接入设置")}</Link> : null}
     </ManagementHeader>
@@ -100,7 +101,7 @@ function KeywordWorkspace({domain, data}: {domain: string; data: WorkspaceData})
             if (source === value) return
             if (value === "import") {request.current++; setLoading(false); setError(""); setSource(value)} else void load(value)
           }}>{value === "google" ? "Google" : value === "bing" ? "Bing" : t("已导入")}</button>)}
-        </div><span className="keyword-note">{t("仅站点成员可见")}</span></div>
+        </div></div>
         {source !== "import" ? <form className="keyword-range" onSubmit={event => {event.preventDefault(); void load(source)}}>
           {source === "google" ? <><label>{t("开始日期")}<input className="squircle input" type="date" required value={from} onInput={event => setFrom(event.currentTarget.value)}/></label><label>{t("结束日期")}<input className="squircle input" type="date" min={from || undefined} required value={to} onInput={event => setTo(event.currentTarget.value)}/></label></> : null}
           <button className="squircle btn" disabled={loading || source === "google" && !isDateRange(from, to)} type="submit">{t(loading ? "加载中…" : "刷新报告")}</button>
@@ -110,9 +111,8 @@ function KeywordWorkspace({domain, data}: {domain: string; data: WorkspaceData})
           catch (err) {if (id === request.current) setError(err instanceof Error ? err.message : t("加载失败，请重试"))}
           finally {if (id === request.current) setLoading(false)}
         }}>{batches.map(item => <option key={item.id} value={item.id}>{`${item.provider === "google" ? "Google" : "Bing"} · ${item.from} – ${item.to} · #${item.id} · ${item.rowCount} ${t("条")}`}</option>)}</select></label> : null}
-        <p className="keyword-report-label">{label}</p>
+        <div className="flex items-center gap-2"><p className="keyword-report-label">{label}</p><HelpHint>{t(source === "google" ? "太平洋时间，所选资源的搜索表现；最多前 50 个词。数据可能延迟，低频查询可能被隐藏。" : source === "bing" ? "Bing 返回所选资源的可用数据，按周更新，无法按日期筛选；记录日期不等于完整覆盖范围。" : "每份 CSV 独立展示，日期来自导入时的填写。缺失指标显示 —，不当作 0。")}</HelpHint></div>
         {source !== "import" && pack?.report?.resource ? <p className="keyword-note">{t("所选资源")}：{pack.report.resource}</p> : null}
-        <p className="keyword-note">{t(source === "google" ? "太平洋时间，所选资源的搜索表现；最多前 50 个词。数据可能延迟，低频查询可能被隐藏。" : source === "bing" ? "Bing 返回所选资源的可用数据，按周更新，无法按日期筛选；记录日期不等于完整覆盖范围。" : "每份 CSV 独立展示，日期来自导入时的填写。缺失指标显示 —，不当作 0。")}</p>
         {error ? <p className="keyword-error" role="alert">{t(error)}</p> : null}
         {loading ? <p className="keyword-empty" role="status">{t("加载中…")}</p> : error ? null : rows.length ? <KeywordTable key={source === "import" ? batch?.id : `${source}:${range.from}:${range.to}`} rows={rows}/> : <div className="keyword-empty"><p>{source === "import" ? t("还没有导入报告，可在下方上传搜索平台导出的 CSV。") : liveMessage}</p>{canManage && source !== "import" ? <Link to="/sites/$domain/settings" params={{domain}} search={{tab: "integrations"}} className="squircle btn btn-primary">{t("连接搜索平台")}</Link> : null}</div>}
       </section>

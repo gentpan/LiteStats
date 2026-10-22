@@ -68,7 +68,6 @@ export function KeywordReport({view, domain, canManage, onPeriod}: {
 }) {
   const {t} = useT()
   return <>
-    <p className="mb-2 text-xs leading-relaxed text-gray-500 [overflow-wrap:anywhere]">{t(view.description)}</p>
     {view.message ? <div className="flex min-h-64 flex-col items-center justify-center gap-3 px-3 text-center text-sm text-gray-500">
       <p role="status">{t(view.message)}</p>
       {view.action === "configure" && canManage ? <a className="analytics-config-link" href={`/sites/${encodeURIComponent(domain)}/settings?tab=integrations`}>{t("配置搜索词")} <UIIcon name="external" className="size-3.5"/></a> : null}

@@ -50,7 +50,7 @@ export function AccountSecurity({
 
   return (
     <>
-      <Tile icon="mail" title={t("security.email")} subtitle={t("security.email_sub")}>
+      <Tile icon="mail" title={t("security.email")}>
         <SettingsForm
           onSubmit={async (e) => {
             e.preventDefault()
@@ -83,7 +83,7 @@ export function AccountSecurity({
           </FormActions>
         </SettingsForm>
       </Tile>
-      <Tile icon="lock" title={t("security.password")} subtitle={t("security.password_sub")}>
+      <Tile icon="lock" title={t("security.password")}>
         <SettingsForm
           onSubmit={async (e) => {
             e.preventDefault()
@@ -120,13 +120,13 @@ export function AccountSecurity({
           </FormActions>
         </SettingsForm>
       </Tile>
-      <Tile icon="shield" title={t("security.2fa")} subtitle={t("security.2fa_sub")}>
+      <Tile icon="shield" title={t("security.2fa")}>
         {codes ? (
           <div>
             <p className="text-sm font-medium text-gray-900">{t("security.2fa_codes")}</p>
             <p className="mt-1 text-sm text-gray-500">{t("security.2fa_codes_sub")}</p>
             <div className="squircle recovery-codes">
-              {codes.map((item) => <div key={item}>{item}</div>)}
+              {codes.map((item) => <div key={item} className="min-w-0 [overflow-wrap:anywhere]">{item}</div>)}
             </div>
             <ActionButton icon="check" type="button" className="btn btn-primary mt-4" onClick={() => { setCodes(null); onSaved() }}>{t("security.2fa_done")}</ActionButton>
           </div>
@@ -149,7 +149,7 @@ export function AccountSecurity({
           >
             <p className="text-sm text-gray-600">{t("security.2fa_scan")}</p>
             <img src={setup.qr} alt="" className="squircle auth-qr mt-3 size-44 rounded-md border border-gray-200 p-2" />
-            <p className="mt-2 text-xs text-gray-500">{t("security.2fa_secret")}：<code>{setup.secret}</code></p>
+            <p className="mt-2 min-w-0 text-xs text-gray-500">{t("security.2fa_secret")}：<code className="[overflow-wrap:anywhere]">{setup.secret}</code></p>
             <Field label={t("security.2fa_code")}>
               <input className="squircle input" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} required />
             </Field>
@@ -182,15 +182,15 @@ export function AccountSecurity({
         )}
         {error ? <p role="alert" className="mt-3 text-sm text-red-600">{t(error || "")}</p> : null}
       </Tile>
-      <Tile icon="key" title={t("security.passkey")} subtitle={t("security.passkey_sub")}>
+      <Tile icon="key" title={t("security.passkey")}>
         {passkeys.length === 0 ? <div className="settings-empty"><UIIcon name="key" /><span>{t("security.no_passkey")}</span></div> : (
           <ul className="divide-y divide-gray-100 text-sm">
             {passkeys.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-3 py-2">
-                <span>{item.name}</span>
+              <li key={item.id} className="settings-list-row flex min-w-0 flex-wrap items-center justify-between gap-3 py-2">
+                <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{item.name}</span>
                 <ActionButton
                   type="button"
-                  className="text-red-600 hover:text-red-700"
+                  className="shrink-0 text-red-600 hover:text-red-700"
                   onClick={async () => {
                     if (!window.confirm(t("移除这把 Passkey？"))) return
                     await removePasskeyFn({ data: { id: item.id } })

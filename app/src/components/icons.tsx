@@ -126,22 +126,30 @@ export function CountryFlag({ code, className = "", shape = "square" }: { code: 
 
 const rowIconClassName = "mr-2 h-4 w-4 shrink-0"
 
+// These original marks are too dark against a dark report row. A neutral
+// surface preserves their official colors and their 16px footprint.
+const neutralPlatformArtwork = new Set([
+  "/images/icon/os/mac.png",
+  platform("curl"),
+  platform("kaios"),
+  platform("debian"),
+  platform("freebsd"),
+])
+const platformIconClass = (src: string) => neutralPlatformArtwork.has(src) ? "platform-icon-neutral" : ""
+
 function AssetIcon({ src, fallback, className = "" }: { src: string, fallback: string, className?: string }) {
   return <ImageWithFallback src={src} className={`${rowIconClassName} object-contain ${className}`.trim()} fallback={<UIIcon name={fallback} className={rowIconClassName}/>}/>
 }
 
 function BrowserIcon({ name }: { name: string }) {
   const src = platformIconSrc(BROWSER_ICONS, name)
-  if (src) return <AssetIcon src={src} fallback="browser" />
+  if (src) return <AssetIcon src={src} fallback="browser" className={platformIconClass(src)} />
   return <UIIcon name="browser" className={rowIconClassName} />
 }
 
 function OsIcon({ name }: { name: string }) {
   const src = platformIconSrc(OS_ICONS, name)
-  // The retained Apple mark is black; a neutral surface keeps its original
-  // artwork readable in dark mode without recoloring a third-party logo.
-  const surface = src === "/images/icon/os/mac.png" ? "platform-icon-neutral" : ""
-  if (src) return <AssetIcon src={src} fallback="unknown" className={surface} />
+  if (src) return <AssetIcon src={src} fallback="unknown" className={platformIconClass(src)} />
   return <UIIcon name="unknown" className={rowIconClassName} />
 }
 

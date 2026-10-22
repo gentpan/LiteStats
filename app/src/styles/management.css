@@ -226,7 +226,6 @@ html[data-theme="dark"] .management-shell .settings-content :is(.ui-action[data-
 .api-docs-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px; }
 .api-docs-header h3 { display:flex; align-items:center; gap:8px; font-size:16px; font-weight:600; color:var(--color-gray-900); margin:0; }
 .api-docs-header h3 .ui-icon { width:18px; height:18px; color:var(--accent-text); }
-.api-docs-lead { margin-top:6px; font-size:13px; line-height:1.6; color:var(--color-gray-500); }
 .api-docs-toggle-btn { display:inline-flex; align-items:center; gap:6px; min-height:var(--ui-control-compact); padding:5px 12px; line-height:20px; font-size:12px; font-weight:500; color:var(--color-gray-600); background:var(--color-gray-50); border:1px solid var(--color-gray-200); --sq-r:8px; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all 0.15s ease; }
 .api-docs-toggle-btn:hover { background:var(--color-gray-100); color:var(--color-gray-900); }
 .api-docs-toggle-btn .ui-icon { width:14px; height:14px; }

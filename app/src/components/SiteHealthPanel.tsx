@@ -27,33 +27,50 @@ function ResponseChart({report}: {report: SiteCheckReport}) {
   const {t, locale} = useT()
   const id = useId()
   const chart = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(800)
+  const [width, setWidth] = useState(320)
   useEffect(() => {
     const element = chart.current
-    if (!element || typeof ResizeObserver === "undefined") return
-    const observer = new ResizeObserver(() => setWidth(element.clientWidth || 800))
+    if (!element) return
+    const measure = () => setWidth(Math.max(160, element.clientWidth || 320))
+    measure()
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure)
+      return () => window.removeEventListener("resize", measure)
+    }
+    const observer = new ResizeObserver(measure)
     observer.observe(element)
-    setWidth(element.clientWidth || 800)
     return () => observer.disconnect()
   }, [])
   const [selected, setSelected] = useState<number | null>(null)
   const summary = checkSummary(report.checks, report.now)
-  const W = width, H = 220, left = 42, right = 8, top = 22, bottom = 32
+  const W = width, H = 220, right = 8, top = 22, bottom = 32
   const end = Date.parse(report.now), start = end - 86400_000
   const high = Math.max(100, ...report.checks.map(check => check.durationMs || 0))
   const max = Math.ceil(high / 100) * 100
+  const left = Math.max(42, String(max).length * 7 + 12)
   const x = (time: string) => left + (Date.parse(time) - start) / 86400_000 * (W - left - right)
   const y = (value: number) => top + (1 - value / max) * (H - top - bottom)
   const segments = responseSegments(report.checks)
   const point = selected === null ? null : report.checks[selected]
   const dateLabel = (date: string) => new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "zh-CN", {timeZone: "UTC", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23"}).format(new Date(date)) + " UTC"
+  function selectPoint(event: React.PointerEvent<HTMLDivElement>) {
+    if (!report.checks.length) return
+    const bounds = event.currentTarget.getBoundingClientRect()
+    if (!bounds.width) return
+    const position = (event.clientX - bounds.left) / bounds.width * W
+    let nearest = 0
+    report.checks.forEach((check, index) => {
+      if (Math.abs(x(check.checkedAt) - position) < Math.abs(x(report.checks[nearest].checkedAt) - position)) nearest = index
+    })
+    setSelected(nearest)
+  }
   return <Surface className="health-chart analytics-panel">
     <div className="health-chart-heading"><div><h2>{t("网站响应")}</h2><p>{t("最近 24 小时 · 每 5 分钟检查")}</p></div>
       <div className="health-chart-stats"><span>{t("检查成功率")}<strong>{summary.rate === null ? "—" : `${summary.rate.toFixed(1)}%`}</strong></span><span>{t("响应中位数")}<strong>{summary.median === null ? "—" : `${summary.median} ms`}</strong></span></div>
     </div>
     <div ref={chart} className="health-response-chart" tabIndex={report.checks.length ? 0 : undefined} role="group" aria-label={t("响应时间图，使用左右方向键查看")}
-      onKeyDown={event => {if (["ArrowLeft", "ArrowRight"].includes(event.key)) {event.preventDefault(); setSelected(index => Math.min(report.checks.length - 1, Math.max(0, (index ?? report.checks.length - 1) + (event.key === "ArrowRight" ? 1 : -1))))} else if (event.key === "Escape") setSelected(null)}}
-      onPointerMove={event => {if (!report.checks.length) return; const bounds = event.currentTarget.getBoundingClientRect(); const position = (event.clientX - bounds.left) / bounds.width * W; let nearest = 0; report.checks.forEach((check, index) => {if (Math.abs(x(check.checkedAt) - position) < Math.abs(x(report.checks[nearest].checkedAt) - position)) nearest = index}); setSelected(nearest)}} onPointerLeave={() => setSelected(null)}>
+      onKeyDown={event => {if (report.checks.length && ["ArrowLeft", "ArrowRight"].includes(event.key)) {event.preventDefault(); setSelected(index => Math.min(report.checks.length - 1, Math.max(0, (index ?? report.checks.length - 1) + (event.key === "ArrowRight" ? 1 : -1))))} else if (event.key === "Escape") setSelected(null)}}
+      onPointerDown={selectPoint} onPointerMove={selectPoint} onPointerLeave={event => {if (event.pointerType !== "touch") setSelected(null)}}>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t("HTTP 响应时间，单位毫秒")}>
         <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--health-accent)" stopOpacity=".16"/><stop offset="100%" stopColor="var(--health-accent)" stopOpacity=".01"/></linearGradient></defs>
         {[0, .5, 1].map(ratio => <g key={ratio}><line x1={left} x2={W - right} y1={y(max * ratio)} y2={y(max * ratio)} className="health-grid-line"/><text x={left - 10} y={y(max * ratio) + 4} textAnchor="end">{Math.round(max * ratio)}</text></g>)}
@@ -66,7 +83,7 @@ function ResponseChart({report}: {report: SiteCheckReport}) {
         {point ? <line x1={x(point.checkedAt)} x2={x(point.checkedAt)} y1={top} y2={y(0)} className="health-cursor"/> : null}
       </svg>
       {!report.checks.length ? <div className="health-chart-empty">{t(report.enabled ? "等待首次检查" : "开启后开始记录网站状态")}</div> : null}
-      <div className="health-chart-caption" aria-live="polite">{point ? `${dateLabel(point.checkedAt)} · ${point.status ? `HTTP ${point.status}` : t(point.error || "检查失败")} · ${point.durationMs === null ? "—" : `${point.durationMs} ms`}` : t("悬停查看详情，空白表示没有检查记录")}</div>
+      <div className="health-chart-caption" aria-live="polite">{point ? `${dateLabel(point.checkedAt)} · ${point.status ? `HTTP ${point.status}` : t(point.error || "检查失败")} · ${point.durationMs === null ? "—" : `${point.durationMs} ms`}` : t("悬停或轻触查看详情，空白表示没有检查记录")}</div>
     </div>
     <div className="health-timeline" aria-label={t("最近 24 小时的检查状态")}>{summary.buckets.map(bucket => <span key={bucket.from} className={`squircle health-tone-${bucket.tone}`} title={`${dateLabel(bucket.from)} · ${bucket.total ? t("{0} 次检查，{1} 次失败", {0: bucket.total, 1: bucket.failed}) : t("未检查")}`}/>)}</div>
     <div className="health-chart-legend"><span><i className="squircle health-tone-good"/>{t("正常")}</span><span><i className="squircle health-tone-bad"/>{t("异常")}</span><span><i className="squircle health-tone-unknown"/>{t("未检查")}</span><span className="health-check-count">{t("共 {0} 次检查", {0: summary.total})}</span></div>
