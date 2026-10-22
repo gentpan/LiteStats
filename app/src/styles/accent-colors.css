@@ -1,0 +1,213 @@
+/* Accent color is independent of the light/dark surface mode. The default
+   preserves the existing purple. Status colors keep their own meaning. */
+html {
+  --accent-color:#4f46e5;
+  --accent-hover:#4338ca;
+  --accent-disabled:rgb(129 140 248 / .6);
+  --accent-on-solid:#fff;
+  --accent-soft:#eef2ff;
+  --accent-text:#4f46e5;
+  --accent-focus:#818cf8;
+  --accent-logo:var(--color-indigo-600);
+  --accent-logo-on:#fff;
+  --ui-selection-bg:var(--accent-color);
+  --ui-selection-text:var(--accent-on-solid);
+  --analytics-accent:#6366f1;
+  --analytics-tint:#eef0ff;
+  --analytics-guide:#c7d2fe;
+  --map-accent-1:#e0e7ff;
+  --map-accent-2:#b8c4f5;
+  --map-accent-3:#8b9ae8;
+  --map-accent-4:#6575d4;
+  --mapbox-accent-low:#c7d2fe;
+  --mapbox-accent-high:#6366f1;
+  --mapbox-accent-border:#818cf8;
+}
+
+html[data-theme="dark"] {
+  --accent-soft:#30304c;
+  --accent-text:#a5b4fc;
+  --accent-logo:#818cf8;
+  --ui-selection-bg:#a5adff;
+  --ui-selection-text:#171827;
+  --analytics-accent:#a5adff;
+  --analytics-tint:#2a2d44;
+}
+
+/* Existing indigo utilities are the interface accent ramp. Override them once
+   so links, sparklines, badges, focus rings and table fills stay in sync. */
+html[data-accent="blue"] {
+  --color-indigo-50:#eff6ff;
+  --color-indigo-100:#dbeafe;
+  --color-indigo-150:#c9e0ff;
+  --color-indigo-200:#bfdbfe;
+  --color-indigo-300:#93c5fd;
+  --color-indigo-400:#60a5fa;
+  --color-indigo-500:#3b82f6;
+  --color-indigo-600:#2563eb;
+  --color-indigo-700:#1d4ed8;
+  --color-indigo-800:#1e40af;
+  --color-indigo-900:#1e3a8a;
+  --color-indigo-950:#172554;
+  --accent-color:#2563eb;
+  --accent-hover:#1d4ed8;
+  --accent-disabled:rgb(96 165 250 / .6);
+  --accent-soft:#eff6ff;
+  --accent-text:#2563eb;
+  --accent-focus:#3b82f6;
+  --accent-logo:#2563eb;
+  --analytics-accent:#2563eb;
+  --analytics-tint:#eff6ff;
+  --analytics-guide:#bfdbfe;
+  --map-accent-1:#dbeafe;
+  --map-accent-2:#a8cbfa;
+  --map-accent-3:#75a6ed;
+  --map-accent-4:#437ed5;
+  --mapbox-accent-low:#bfdbfe;
+  --mapbox-accent-high:#2563eb;
+  --mapbox-accent-border:#60a5fa;
+}
+
+html[data-accent="green"] {
+  --color-indigo-50:#f0fdf4;
+  --color-indigo-100:#dcfce7;
+  --color-indigo-150:#ccf8dc;
+  --color-indigo-200:#bbf7d0;
+  --color-indigo-300:#86efac;
+  --color-indigo-400:#4ade80;
+  --color-indigo-500:#16803e;
+  --color-indigo-600:#15803d;
+  --color-indigo-700:#166534;
+  --color-indigo-800:#14532d;
+  --color-indigo-900:#123f27;
+  --color-indigo-950:#052e16;
+  --accent-color:#15803d;
+  --accent-hover:#166534;
+  --accent-disabled:rgb(74 222 128 / .6);
+  --accent-soft:#f0fdf4;
+  --accent-text:#15803d;
+  --accent-focus:#16a34a;
+  --accent-logo:#15803d;
+  --analytics-accent:#15803d;
+  --analytics-tint:#effbf3;
+  --analytics-guide:#bbf7d0;
+  --map-accent-1:#dcfce7;
+  --map-accent-2:#a4dfb8;
+  --map-accent-3:#6cc38d;
+  --map-accent-4:#399c64;
+  --mapbox-accent-low:#bbf7d0;
+  --mapbox-accent-high:#15803d;
+  --mapbox-accent-border:#4ade80;
+}
+
+html[data-accent="black"] {
+  --color-indigo-50:#f4f4f5;
+  --color-indigo-100:#e4e4e7;
+  --color-indigo-150:#dddde1;
+  --color-indigo-200:#d4d4d8;
+  --color-indigo-300:#a1a1aa;
+  --color-indigo-400:#84848e;
+  --color-indigo-500:#71717a;
+  --color-indigo-600:#27272a;
+  --color-indigo-700:#18181b;
+  --color-indigo-800:#131315;
+  --color-indigo-900:#09090b;
+  --color-indigo-950:#050506;
+  --accent-color:#27272a;
+  --accent-hover:#09090b;
+  --accent-disabled:rgb(113 113 122 / .6);
+  --accent-soft:#f4f4f5;
+  --accent-text:#27272a;
+  --accent-focus:#71717a;
+  --accent-logo:#27272a;
+  --analytics-accent:#52525b;
+  --analytics-tint:#f1f1f3;
+  --analytics-guide:#d4d4d8;
+  --map-accent-1:#e4e4e7;
+  --map-accent-2:#bcbcc4;
+  --map-accent-3:#92929e;
+  --map-accent-4:#62626f;
+  --mapbox-accent-low:#d4d4d8;
+  --mapbox-accent-high:#52525b;
+  --mapbox-accent-border:#84848e;
+}
+
+html[data-accent="blue"][data-theme="dark"] {
+  --accent-soft:#1c2d47;
+  --accent-text:#93c5fd;
+  --accent-logo:#60a5fa;
+  --accent-logo-on:#10203c;
+  --ui-selection-bg:#93c5fd;
+  --ui-selection-text:#10203c;
+  --analytics-accent:#93c5fd;
+  --analytics-tint:#1c2d47;
+  --analytics-guide:#36577f;
+  --map-accent-1:#334963;
+  --map-accent-2:#45688d;
+  --map-accent-3:#6293c4;
+  --map-accent-4:#93c5fd;
+  --mapbox-accent-low:#36577f;
+  --mapbox-accent-high:#93c5fd;
+  --mapbox-accent-border:#60a5fa;
+}
+
+html[data-accent="green"][data-theme="dark"] {
+  --accent-soft:#183626;
+  --accent-text:#86efac;
+  --accent-logo:#4ade80;
+  --accent-logo-on:#102e1c;
+  --ui-selection-bg:#86efac;
+  --ui-selection-text:#102e1c;
+  --analytics-accent:#86efac;
+  --analytics-tint:#183626;
+  --analytics-guide:#315b43;
+  --map-accent-1:#2b4939;
+  --map-accent-2:#3f7354;
+  --map-accent-3:#5aa779;
+  --map-accent-4:#86efac;
+  --mapbox-accent-low:#315b43;
+  --mapbox-accent-high:#86efac;
+  --mapbox-accent-border:#4ade80;
+}
+
+html[data-accent="black"][data-theme="dark"] {
+  --color-indigo-400:#c4c4cc;
+  --color-indigo-500:#d4d4d8;
+  --accent-color:#e4e4e7;
+  --accent-hover:#fff;
+  --accent-disabled:rgb(161 161 170 / .6);
+  --accent-on-solid:#18181b;
+  --accent-soft:#29292e;
+  --accent-text:#e4e4e7;
+  --accent-focus:#a1a1aa;
+  --accent-logo:#e4e4e7;
+  --accent-logo-on:#18181b;
+  --ui-selection-bg:#e4e4e7;
+  --ui-selection-text:#18181b;
+  --analytics-accent:#d4d4d8;
+  --analytics-tint:#29292e;
+  --analytics-guide:#55555e;
+  --map-accent-1:#494951;
+  --map-accent-2:#73737f;
+  --map-accent-3:#a0a0ac;
+  --map-accent-4:#d4d4d8;
+  --mapbox-accent-low:#55555e;
+  --mapbox-accent-high:#d4d4d8;
+  --mapbox-accent-border:#a1a1aa;
+}
+
+.accent-picker { min-width:0; margin:0; padding:0; border:0; }
+.preferences-form + .accent-picker { margin-top:var(--ui-section-gap); }
+.accent-picker-label { font-size:var(--ui-text-body); font-weight:500; color:var(--color-gray-800); margin-bottom:8px; }
+.accent-options { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.accent-option { --sq-r:18px; position:relative; display:flex; align-items:center; justify-content:center; gap:8px; min-height:var(--ui-control-height); padding:8px 12px; border:1px solid var(--color-gray-200); color:var(--color-gray-700); background:var(--surface); cursor:pointer; font-size:var(--ui-text-control); }
+.accent-option:hover { background:var(--color-gray-100); }
+.accent-option.is-selected { color:var(--ui-selection-text); background:var(--ui-selection-bg); border-color:var(--ui-selection-bg); }
+.accent-option:has(input:focus-visible) { outline:2px solid var(--accent-focus); outline-offset:3px; }
+.accent-swatch { width:14px; height:14px; flex:0 0 14px; border-radius:50%; background:var(--swatch); box-shadow:inset 0 0 0 1px rgb(0 0 0 / .08); }
+.accent-option.is-selected .accent-swatch { box-shadow:0 0 0 2px currentColor; }
+.accent-option[data-accent-option="purple"] { --swatch:#4f46e5; }
+.accent-option[data-accent-option="blue"] { --swatch:#2563eb; }
+.accent-option[data-accent-option="green"] { --swatch:#15803d; }
+.accent-option[data-accent-option="black"] { --swatch:#27272a; }
+@media(max-width:479px) { .accent-options { grid-template-columns:repeat(2,minmax(0,1fr)); } }

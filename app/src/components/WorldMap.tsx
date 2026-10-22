@@ -1,0 +1,370 @@
+import { UIIcon } from "./UIIcon"
+import { Surface } from "~/components/Surface"
+import { useT } from "~/lib/i18n"
+import { useEffect, useMemo, useRef, useState } from "react"
+import * as d3 from "d3"
+import { CountryFlag } from "~/components/icons"
+import { countryName } from "~/lib/countries"
+import { numberShort } from "~/lib/format"
+import { MapboxVisitorMap } from "./MapboxVisitorMap"
+import { useMapStyle } from "~/lib/map-style-preference"
+import { readMapFlags, saveMapFlags } from "~/lib/map-flags-preference"
+import {
+  COUNTRIES_BY_TWO_LETTER_CODE,
+  loadWorldMap,
+  type WorldJsonCountryData,
+} from "~/lib/world-countries"
+
+const MAP_ROTATE: [number, number] = [-150, 0]
+const WIDE_WIDTH = 960
+const WIDE_HEIGHT = 420
+const OCEAN = "var(--map-ocean)"
+const EMPTY_FILL = "var(--map-empty)"
+const BORDER = "var(--map-border)"
+const COLOR_STOPS = [1, 2, 3, 4].map(index => `--map-accent-${index}`)
+
+type CountryData = {
+  alpha_3: string
+  name: string
+  visitors: number
+  code: string
+}
+
+function iso2(code: string) {
+  return (code || "").replace(/\0/g, "").trim().toUpperCase()
+}
+
+function setupProjection(width: number, height: number) {
+  const projection = d3.geoMercator()
+    .rotate(MAP_ROTATE)
+    .scale(width * 0.158)
+    .translate([width / 2, height / 1.5])
+  return { projection, path: d3.geoPath().projection(projection) }
+}
+
+let centroidCache: Map<string, [number, number]> | null = null
+function countryCentroids(features: WorldJsonCountryData[]) {
+  if (centroidCache) return centroidCache
+  const out = new Map<string, [number, number]>()
+  for (const feature of features) {
+    const c = d3.geoCentroid(feature as unknown as d3.GeoPermissibleObjects)
+    if (Number.isFinite(c[0]) && Number.isFinite(c[1])) out.set(feature.properties.a3, c)
+  }
+  centroidCache = out
+  return out
+}
+
+function WorldMap({
+  rows,
+  live = [],
+  showFlags = true,
+  onCountryClick,
+}: {
+  rows: Array<{ name: string, value: number, label?: string }>
+  live?: Array<{ country: string }>
+  showFlags?: boolean
+  onCountryClick?: (code: string) => void
+}) {
+  const { t, locale } = useT()
+  const svgRef = useRef<SVGSVGElement | null>(null)
+  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
+  const [features, setFeatures] = useState<WorldJsonCountryData[] | null>(null)
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const [tooltip, setTooltip] = useState<{ x: number, y: number, hovered: string | null }>({
+    x: 0,
+    y: 0,
+    hovered: null,
+  })
+
+  const { maxValue, dataByAlpha3Code } = useMemo(() => {
+    const dataByAlpha3Code = new Map<string, CountryData>()
+    let maxValue = 0
+    for (const row of rows) {
+      const code = iso2(row.name)
+      if (!code || code === "(NONE)") continue
+      const entry = COUNTRIES_BY_TWO_LETTER_CODE[code]
+      if (!entry?.alpha_3) continue
+      const visitors = Number(row.value) || 0
+      if (visitors > maxValue) maxValue = visitors
+      dataByAlpha3Code.set(entry.alpha_3, {
+        alpha_3: entry.alpha_3,
+        visitors,
+        name: row.label || countryName(code, locale),
+        code,
+      })
+    }
+    return { maxValue, dataByAlpha3Code }
+  }, [rows, locale])
+
+  const liveByAlpha3 = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const item of live) {
+      const a3 = COUNTRIES_BY_TWO_LETTER_CODE[iso2(item.country)]?.alpha_3
+      if (!a3) continue
+      counts.set(a3, (counts.get(a3) || 0) + 1)
+    }
+    return counts
+  }, [live])
+
+  useEffect(() => {
+    let active = true
+    let observer: IntersectionObserver | undefined
+    setLoadFailed(false)
+    function load() {
+      observer?.disconnect()
+      loadWorldMap().then((data) => {
+        if (active) setFeatures(data)
+      }).catch(() => {
+        if (active) setLoadFailed(true)
+      })
+    }
+    // Keep the overview usable without downloading geography below the viewport.
+    if (svgRef.current && typeof IntersectionObserver !== "undefined") {
+      observer = new IntersectionObserver((entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) load()
+      }, { rootMargin: "200px" })
+      observer.observe(svgRef.current)
+    } else load()
+    return () => { active = false; observer?.disconnect() }
+  }, [attempt])
+
+  useEffect(() => {
+    const el = svgRef.current
+    if (!el || !features) return
+    const svg = d3.select(el)
+    svg.selectAll("*").remove()
+
+    const root = svg.append("g").attr("class", "map-root").attr("transform", d3.zoomTransform(el).toString())
+    const { path, projection } = setupProjection(WIDE_WIDTH, WIDE_HEIGHT)
+
+    root.append("rect")
+      .attr("width", WIDE_WIDTH)
+      .attr("height", WIDE_HEIGHT)
+      .attr("fill", OCEAN)
+      .attr("pointer-events", "none")
+
+    const countries = root.append("g").attr("class", "countries")
+      .selectAll("path.country")
+      .data(features)
+      .enter()
+      .append("path")
+      .attr("class", "country")
+      .attr("stroke", BORDER)
+      .attr("stroke-width", 0.55)
+      .attr("stroke-linejoin", "round")
+      .attr("d", path as never)
+      .attr("cursor", (d) => dataByAlpha3Code.get(d.properties.a3)?.visitors ? "pointer" : "default")
+
+    // D3 interpolates actual colors, not CSS variables. Repaint on preference
+    // changes without rebuilding geography or resetting the user's zoom.
+    const colorScale = d3.scaleSqrt().domain([0, maxValue || 1]).range([0.12, 1]).clamp(true)
+    const applyColors = () => {
+      const styles = getComputedStyle(el)
+      const ramp = d3.interpolateRgbBasis(COLOR_STOPS.map(token => styles.getPropertyValue(token).trim()))
+      countries.attr("fill", country => {
+        const row = dataByAlpha3Code.get(country.properties.a3)
+        return row?.visitors ? ramp(colorScale(row.visitors)) : EMPTY_FILL
+      })
+    }
+    applyColors()
+    const paletteObserver = new MutationObserver(applyColors)
+    paletteObserver.observe(document.documentElement, {attributes: true, attributeFilter: ["data-accent", "data-theme"]})
+
+    const highlight = root.append("path")
+      .attr("fill", "none")
+      .attr("stroke", "var(--accent-text)")
+      .attr("stroke-width", 1.8)
+      .attr("stroke-linejoin", "round")
+      .attr("pointer-events", "none")
+
+    countries
+      .on("mouseover", function (event, country) {
+        const [x, y] = d3.pointer(event, svg.node()?.parentNode)
+        setTooltip({ x, y, hovered: country.properties.a3 })
+        highlight.attr("d", this.getAttribute("d"))
+        d3.select(this).attr("stroke", "var(--accent-text)").attr("stroke-width", 1.1)
+      })
+      .on("mousemove", function (event) {
+        const [x, y] = d3.pointer(event, svg.node()?.parentNode)
+        setTooltip((cur) => ({ ...cur, x, y }))
+      })
+      .on("mouseout", function () {
+        setTooltip({ x: 0, y: 0, hovered: null })
+        highlight.attr("d", null)
+        d3.select(this).attr("stroke", BORDER).attr("stroke-width", 0.55)
+      })
+      .on("click", (event, country) => {
+        if (event.defaultPrevented) return
+        const row = dataByAlpha3Code.get((country as WorldJsonCountryData).properties.a3)
+        if (row?.code) onCountryClick?.(row.code)
+      })
+
+    const flags = root.append("g").attr("class", "country-flags")
+    for (const row of dataByAlpha3Code.values()) {
+      if (!row.visitors) continue
+      const center = countryCentroids(features).get(row.alpha_3)
+      const xy = center ? projection(center) : null
+      if (!xy) continue
+      const marker = flags.append("g").attr("transform", `translate(${xy[0]},${xy[1]})`).attr("cursor", "pointer")
+      marker.append("image").attr("href", `/images/flags/1x1/${row.code.toLowerCase()}.svg`).attr("x", -12).attr("y", -12).attr("width", 24).attr("height", 24)
+      marker.append("title").text(`${row.name} · ${row.visitors}`)
+      marker.on("click", () => onCountryClick?.(row.code))
+    }
+
+    const dots = root.append("g").attr("class", "live-dots").attr("pointer-events", "none")
+    const centroids = countryCentroids(features)
+    for (const [a3, count] of liveByAlpha3) {
+      const ll = centroids.get(a3)
+      if (!ll) continue
+      const xy = projection(ll)
+      if (!xy) continue
+      const n = Math.min(count, 8)
+      for (let i = 0; i < n; i++) {
+        const angle = (i / n) * Math.PI * 2
+        const dist = n === 1 ? 0 : 3.2 + i * 0.7
+        const x = xy[0] + Math.cos(angle) * dist
+        const y = xy[1] + Math.sin(angle) * dist
+        dots.append("circle").attr("class", "live-dot-pulse").attr("cx", x).attr("cy", y).attr("r", 7)
+        dots.append("circle").attr("class", "live-dot").attr("cx", x).attr("cy", y).attr("r", 2.8)
+      }
+    }
+
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.45, 8])
+      .on("zoom", (ev) => {
+        root.attr("transform", ev.transform.toString())
+      })
+    zoomRef.current = zoom
+    svg.call(zoom)
+
+    return () => {
+      paletteObserver.disconnect()
+      zoomRef.current = null
+      svg.on(".zoom", null)
+      svg.selectAll("*").remove()
+    }
+  }, [features, maxValue, dataByAlpha3Code, liveByAlpha3, onCountryClick])
+
+  function zoomBy(k: number) {
+    const el = svgRef.current
+    if (!el || !zoomRef.current) return
+    d3.select(el).transition().duration(180).call(zoomRef.current.scaleBy, k)
+  }
+
+  function resetZoom() {
+    const el = svgRef.current
+    if (!el || !zoomRef.current) return
+    d3.select(el).transition().duration(180).call(zoomRef.current.transform, d3.zoomIdentity)
+  }
+
+  const hovered = tooltip.hovered ? dataByAlpha3Code.get(tooltip.hovered) : undefined
+  const hoveredLive = tooltip.hovered ? liveByAlpha3.get(tooltip.hovered) || 0 : 0
+
+  return (
+    <div className="relative w-full">
+      <div className="squircle map-stage relative overflow-hidden" data-show-flags={showFlags}>
+        <div className="squircle map-controls absolute top-2.5 right-2.5 z-10 flex overflow-hidden rounded-sm border border-white/70 bg-white/90 shadow-sm backdrop-blur-sm">
+          <button type="button" disabled={!features} className="squircle px-2.5 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40" onClick={() => zoomBy(1.35)} aria-label={t("放大")}><UIIcon name="plus" className="size-3"/></button>
+          <button type="button" disabled={!features} className="squircle border-l border-gray-200 px-2.5 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-40" onClick={() => zoomBy(1 / 1.35)} aria-label={t("缩小")}><UIIcon name="minus" className="size-3"/></button>
+          <button type="button" disabled={!features} className="squircle border-l border-gray-200 px-2 py-1 text-xs text-gray-500 hover:bg-gray-50 disabled:opacity-40" onClick={resetZoom}>{t("重置")}</button>
+        </div>
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${WIDE_WIDTH} ${WIDE_HEIGHT}`}
+          className="map-viewport h-auto w-full cursor-grab active:cursor-grabbing"
+        />
+        {!features ? (
+          <div className="absolute inset-0 flex items-center justify-center gap-2 text-xs text-gray-500" role="status">
+            {loadFailed ? <>{t("地图加载失败")}<button type="button" className="squircle control-compact underline" onClick={() => setAttempt((value) => value + 1)}>{t("重试")}</button></> : t("正在加载地图…")}
+          </div>
+        ) : null}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-400">
+        <span>{t("滚轮缩放 · 拖动移动")}</span>
+        <span className="inline-flex items-center gap-1">{t("少")}{COLOR_STOPS.map((c) => (
+            <span key={c} className="squircle inline-block h-2 w-3.5 rounded-sm" style={{ background: `var(${c})` }} />
+          ))}{t("多")}</span>
+      </div>
+      {hovered ? (
+        <div
+          className="squircle pointer-events-none absolute z-50 translate-x-2 translate-y-2 rounded-md bg-white p-2 shadow-lg ring-1 ring-black/5"
+          style={{ left: tooltip.x, top: tooltip.y }}
+        >
+          <div className="flex items-center gap-1.5 text-sm font-semibold">
+            <CountryFlag code={hovered.code} />
+            {hovered.name}
+          </div>
+          <div className="flex items-center gap-x-1 text-sm">
+            <strong>{numberShort(hovered.visitors)}</strong>{t("访客")}</div>
+          {hoveredLive ? (
+            <div className="mt-0.5 flex items-center gap-x-1 text-sm text-green-600">
+              <strong>{hoveredLive}</strong>{t("当前在线")}</div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function VisitorMap({token, ...props}: {token: string} & Parameters<typeof WorldMap>[0]) {
+  const {t} = useT()
+  const styleId = useMapStyle()
+  const [failed, setFailed] = useState(false)
+  if (token && !failed) return <MapboxVisitorMap token={token} styleId={styleId} rows={props.rows} live={props.live || []} showFlags={props.showFlags} onCountryClick={props.onCountryClick} onFailure={() => setFailed(true)}/>
+  return <>
+    {failed ? <p role="status" className="map-fallback-note">{t("Mapbox 暂时无法加载，已显示备用地图。")}
+      <button type="button" className="squircle control-compact underline" onClick={() => setFailed(false)}>{t("重试")}</button>
+    </p> : null}
+    <WorldMap {...props}/>
+  </>
+}
+
+export function MapCard({
+  mapboxToken = "",
+  rows,
+  live = [],
+  liveCount = 0,
+  onCountryClick,
+}: {
+  mapboxToken?: string
+  rows: Array<{ name: string, value: number, label?: string }>
+  live?: Array<{ country: string }>
+  liveCount?: number
+  onCountryClick?: (code: string) => void
+}) {
+  const { t } = useT()
+  const [showFlags, setShowFlags] = useState(true)
+  useEffect(() => { setShowFlags(readMapFlags()) }, [])
+
+  function changeFlags(show: boolean) {
+    setShowFlags(show)
+    saveMapFlags(show)
+  }
+
+  return (
+    <section className="geography-section col-span-full">
+      <div className="geography-grid geography-with-ranking">
+        <Surface className="geography-map analytics-panel">
+          <div className="analytics-heading">
+            <h3 className="text-sm font-bold text-gray-900">{t("访客分布")}</h3>
+            <div className="map-heading-controls">
+              <label className="map-flags-toggle">
+                <span>{t("国旗")}</span>
+                <input className="sr-only" type="checkbox" role="switch" checked={showFlags} onChange={event => changeFlags(event.target.checked)}/>
+                <span className="squircle map-flags-track" aria-hidden="true"><span className="squircle map-flags-thumb"/></span>
+              </label>
+              <div className="map-live-count flex items-center gap-1.5 text-xs font-medium text-gray-500">
+                <span className="inline-block size-2 rounded-full bg-green-500" />
+                {liveCount} {t("当前访客")}</div>
+            </div>
+          </div>
+          <p className="analytics-description">{t("查看访客来自哪里，点击国家可筛选报表。")}</p>
+          <VisitorMap key={mapboxToken} token={mapboxToken} rows={rows} live={live} showFlags={showFlags} onCountryClick={onCountryClick} />
+          <p className="map-note">{t("按国家/地区汇总，标记不是访客的精确位置。占比按已记录的地区访客数计算。")}</p>
+
+        </Surface>
+      </div>
+    </section>
+  )
+}

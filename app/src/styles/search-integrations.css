@@ -1,0 +1,38 @@
+/* Search connections use one spacing contract for help, fields and actions. */
+.search-integrations { display:grid; gap:24px; min-width:0; }
+.search-integrations-intro { max-width:76ch; margin:0; font-size:13px; line-height:1.75; color:var(--color-gray-500); }
+.search-integration-section { display:grid; gap:20px; min-width:0; }
+.search-integration-section + .search-integration-section { padding-top:24px; border-top:1px solid var(--color-gray-200); }
+.search-integration-heading { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:16px; }
+.search-integration-title { display:flex; align-items:flex-start; gap:10px; min-width:0; }
+.search-integration-title > .brand-icon { width:20px; height:20px; flex:0 0 20px; margin-top:2px; }
+.search-integration-title > div { min-width:0; }
+.search-integration-title h2 { margin:0; font-size:var(--ui-text-card); line-height:24px; font-weight:600; color:var(--color-gray-900); overflow-wrap:anywhere; }
+.search-integration-title p { margin-top:4px; font-size:13px; line-height:1.7; color:var(--color-gray-500); overflow-wrap:anywhere; }
+.search-integration-heading .integration-status { --sq-r:11px; justify-self:start; margin:0; line-height:18px; white-space:nowrap; }
+.search-integration-body { display:grid; gap:20px; min-width:0; }
+.search-integration-help { display:grid; gap:8px; max-width:76ch; margin:0; font-size:13px; line-height:1.75; color:var(--color-gray-500); overflow-wrap:anywhere; }
+.search-integration-help > p { margin:0; }
+.search-integration-help .search-integration-docs { justify-self:start; margin-top:4px; font-size:13px; line-height:1.7; }
+.search-integration-docs .ui-icon { width:14px; height:14px; flex:0 0 14px; }
+.search-integrations .integration-form { margin:0; min-width:0; }
+.search-integrations .integration-form > fieldset.contents { display:grid; gap:20px; width:100%; min-width:0; margin:0; padding:0; border:0; }
+.search-integrations .integration-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:20px; }
+.management-shell .search-integrations .integration-form .settings-field { display:flex; flex-direction:column; gap:0; min-width:0; max-width:none; margin:0; }
+.search-integrations .settings-field .settings-label { order:0; margin:0 0 8px; }
+.search-integrations .settings-field .input { order:1; min-width:0; max-width:100%; }
+.management-shell .search-integrations .integration-form .settings-hint { order:2; margin:8px 0 0; font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+.management-shell .search-integrations .integration-form .settings-actions { margin:0; padding:0; border:0; gap:12px; }
+.search-integration-connection { padding-top:20px; border-top:1px solid var(--color-gray-200); min-width:0; }
+.search-integration-account { margin:0; color:var(--color-gray-600); font-size:13px; line-height:1.7; overflow-wrap:anywhere; }
+.search-integrations [role="alert"] { min-width:0; overflow-wrap:anywhere; }
+html[data-theme="dark"] .search-integrations [role="alert"].text-red-600,
+html[data-theme="dark"] .search-integrations [role="alert"].text-red-500 { color:#fca5a5; }
+
+@media(max-width:767px) {
+  .search-integrations .integration-fields { grid-template-columns:minmax(0,1fr); }
+}
+@media(max-width:639px) {
+  .search-integration-heading { grid-template-columns:minmax(0,1fr); gap:12px; }
+  .search-integration-heading .integration-status { margin-left:30px; }
+}

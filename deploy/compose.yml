@@ -1,0 +1,49 @@
+name: litestats
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: litestats
+      POSTGRES_DB: litestats
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U litestats']
+      interval: 5s
+      retries: 20
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_USER: litestats
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - ch:/var/lib/clickhouse
+    ulimits:
+      nofile: {soft: 262144, hard: 262144}
+  app:
+    image: node:22-bookworm-slim
+    restart: unless-stopped
+    working_dir: /app
+    command: [node, start.mjs]
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3100
+      SEED_DEMO: 'false'
+    ports:
+      - '127.0.0.1:3100:3100'
+    volumes:
+      - ./release:/app:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_started
+volumes:
+  pg:
+  ch:

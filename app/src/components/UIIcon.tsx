@@ -1,0 +1,100 @@
+const icons: Record<string, string> = {
+  settings: "gear",
+  cog: "gear",
+  sliders: "sliders",
+  user: "user",
+  users: "users",
+  lock: "lock",
+  key: "key",
+  warn: "triangle-exclamation",
+  mail: "envelope",
+  cloud: "cloud-arrow-down",
+  grid: "grid-2",
+  globe: "globe",
+  rocket: "rocket",
+  map: "map",
+  activity: "wave-pulse",
+  eye: "eye",
+  copy: "copy",
+  check: "check",
+  funnel: "filter",
+  tag: "tag",
+  code: "code",
+  plug: "plug",
+  puzzle: "puzzle-piece",
+  download: "download",
+  shield: "shield",
+  save: "floppy-disk",
+  plus: "plus",
+  minus: "minus",
+  trash: "trash-can",
+  arrow: "arrow-right",
+  "arrow-left": "arrow-left",
+  external: "arrow-up-right-from-square",
+  refresh: "arrows-rotate",
+  clock: "clock",
+  search: "magnifying-glass",
+  "chevron-down": "chevron-down",
+  "chevron-up": "chevron-up",
+  "chevron-left": "chevron-left",
+  "chevron-right": "chevron-right",
+  "arrows-up-down": "arrows-up-down",
+  "chevrons-up-down": "sort",
+  calendar: "calendar-days",
+  close: "xmark",
+  list: "list",
+  sort: "sort",
+  "arrow-up-right": "arrow-up-right",
+  "arrow-down-right": "arrow-down-right",
+  sun: "sun-bright",
+  moon: "moon",
+  circle: "circle",
+  "device-mobile": "mobile-screen-button",
+  "device-tablet": "tablet-screen-button",
+  "device-laptop": "laptop",
+  "device-desktop": "desktop",
+  "device-ultrawide": "display",
+  browser: "browser",
+  link: "link",
+  unknown: "circle-question",
+  "bar-chart": "chart-simple",
+  logout: "arrow-right-from-bracket",
+  home: "house",
+  expand: "expand",
+  "ellipsis-vertical": "ellipsis-vertical",
+}
+
+const brands: Record<string, string> = {
+  "brand-google": "google",
+  "brand-cloudflare": "cloudflare",
+  "brand-chrome": "chrome",
+  "brand-safari": "safari",
+  "brand-firefox": "firefox-browser",
+  "brand-edge": "edge",
+  "brand-opera": "opera",
+  "brand-yandex": "yandex",
+  "brand-qq": "qq",
+  "brand-apple": "apple",
+  "brand-windows": "windows",
+  "brand-android": "android",
+  "brand-linux": "linux",
+  "brand-ubuntu": "ubuntu",
+  "brand-debian": "debian",
+  "brand-fedora": "fedora",
+  "brand-freebsd": "freebsd",
+  "brand-playstation": "playstation",
+}
+
+export function UIIcon({ name, className = "" }: { name: string, className?: string }) {
+  const brand = brands[name]
+  const style = name === "circle" ? "fa-solid" : "fa-regular"
+  return <i className={`ui-icon ${brand ? `fa-brands fa-${brand}` : `${style} fa-${icons[name] || icons.unknown}`} ${className}`.trim()} aria-hidden="true" />
+}
+
+export type BrandName = "google" | "bing" | "cloudflare"
+
+export function BrandIcon({ name, className = "" }: { name: BrandName, className?: string }) {
+  const classes = `brand-icon brand-${name} ${className}`.trim()
+  if (name === "bing") return <img src="/brands/bing.svg" alt="" aria-hidden="true" className={classes} />
+  return <UIIcon name={`brand-${name}`} className={classes} />
+}

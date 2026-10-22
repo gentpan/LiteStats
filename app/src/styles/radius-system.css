@@ -1,0 +1,80 @@
+/* Native superellipse geometry only. Colors, spacing, borders and shadows stay
+   with each component. Four optional corner variables support joined surfaces. */
+.squircle,
+.mapbox-stage :is(.mapboxgl-ctrl-attrib, .mapboxgl-ctrl-attrib-button).squircle {
+  --sq-r: 18px;
+  --sq-tl: var(--sq-r);
+  --sq-tr: var(--sq-r);
+  --sq-br: var(--sq-r);
+  --sq-bl: var(--sq-r);
+  border-radius: calc(var(--sq-tl) * .54) calc(var(--sq-tr) * .54) calc(var(--sq-br) * .54) calc(var(--sq-bl) * .54);
+}
+@supports (corner-shape: squircle) {
+  .squircle,
+  .mapbox-stage :is(.mapboxgl-ctrl-attrib, .mapboxgl-ctrl-attrib-button).squircle {
+    border-radius: var(--sq-tl) var(--sq-tr) var(--sq-br) var(--sq-bl);
+    corner-shape: squircle;
+  }
+}
+
+/* Control radii follow the shared size, including compact variants. */
+.squircle:is(.btn, .ui-action, .ui-icon-button) { --sq-r: calc(var(--control-size) * .46); }
+.squircle:is(.h-8, .size-8) { --sq-r: 14.72px; }
+.squircle.input.input { --sq-r: calc(var(--ui-input-height) * .46); }
+.squircle.rounded-sm, .squircle.rounded { --sq-r: 8px; }
+.squircle.rounded-md { --sq-r: 15px; }
+.squircle.rounded-lg { --sq-r: 20px; }
+.squircle:is(.h-8, .size-8).rounded-md { --sq-r: 14.72px; }
+.squircle.ui-icon-button { --sq-r: calc(var(--control-size) * .46); }
+.management-shell .settings-content :is(.ui-action, .btn),
+.management-shell .management-heading .btn,
+.settings-modal-foot .ui-action { --sq-r: calc(var(--control-size) * .46); }
+.squircle.theme-toggle { --sq-r: calc(var(--control-height) * .46); }
+.squircle:is(.activity-entry, .control-trigger) { --sq-r: calc(var(--ui-control-height) * .46); }
+.squircle.site-header-user { --sq-r: calc(var(--ui-control-height) * .46); }
+
+/* Large surfaces and detached menus. */
+.ui-surface.squircle[data-radius="small"] { --sq-r: 8px; }
+.ui-surface.squircle[data-radius="medium"] { --sq-r: 15px; }
+.ui-surface.squircle[data-radius="large"] { --sq-r: 20px; }
+.ui-surface.squircle[data-radius="xlarge"] { --sq-r: 22px; }
+.squircle:is(.settings-modal-card, .recent-visitors-dialog, .management-create-form, .management-site-list) { --sq-r: 20px; }
+.squircle:is(.site-header-menu, .absolute.shadow-lg, .absolute.shadow-2xl) { --sq-r: 20px; }
+.squircle.site-header-menu .site-header-menu-item { --sq-r: calc(20px - .35rem); }
+.squircle.absolute.p-1 > .squircle,
+.squircle.absolute.p-1 > div > .squircle { --sq-r: 16px; }
+.squircle.p-0\.5 { --sq-r: 13px; }
+.squircle.p-0\.5 > .squircle { --sq-r: 11px; }
+.squircle.absolute.p-1 .squircle.p-0\.5 { --sq-r: 13px; }
+.squircle.absolute.p-1 > .squircle.mx-1 { --sq-r: 12px; }
+.squircle:is(.metric-item > button) { --sq-r: 16px; }
+.squircle.traffic-cell { --sq-r: 6px; }
+.squircle.site-card-menu-trigger { --sq-r: 14.72px; }
+.squircle.api-doc-badge { --sq-r: 10px; }
+.squircle.settings-status { --sq-r: 11px; }
+.squircle.map-controls { --sq-r: calc(var(--ui-control-compact) * .46); }
+.map-controls > .squircle { --sq-r: 0px; }
+.map-controls > .squircle:first-child { --sq-tl: calc(var(--ui-control-compact) * .46 - 1px); --sq-bl: calc(var(--ui-control-compact) * .46 - 1px); }
+.map-controls > .squircle:last-child { --sq-tr: calc(var(--ui-control-compact) * .46 - 1px); --sq-br: calc(var(--ui-control-compact) * .46 - 1px); }
+
+/* Joined workspaces: only the outside corners curve. No clipping is added. */
+.management-shell .site-settings-workspace.squircle { --sq-r: 20px; }
+.management-shell .site-settings-workspace > .management-heading.squircle { --sq-r: 19px; --sq-bl: 0px; --sq-br: 0px; }
+.management-shell .site-settings-workspace > .settings-layout.squircle { --sq-r: 19px; --sq-tl: 0px; --sq-tr: 0px; }
+.management-shell .settings-content .settings-card.squircle { --sq-r: 0px; }
+.squircle.tracking-snippet { --sq-r: 20px; }
+.squircle.tracking-snippet-toolbar { --sq-r: 19px; --sq-bl: 0px; --sq-br: 0px; }
+.tracking-snippet pre.squircle { --sq-r: 19px; --sq-tl: 0px; --sq-tr: 0px; }
+.squircle.segmented-control { --sq-r: 16px; }
+.squircle.segmented-control > button.squircle { --sq-r: 12px; }
+.squircle.site-layout-switch { --sq-r:calc(var(--ui-control-compact) * .46 + 4px); }
+
+.management-shell .settings-content .snippet-copy.squircle { --sq-r: calc(var(--ui-control-compact) * .46); }
+.management-shell .settings-nav .settings-nav-link.squircle { --sq-r: 20.24px; }
+.management-shell .activity-type-tabs button.squircle { --sq-r: calc(var(--ui-control-height) * .46); }
+
+.dash-toolbar .control-trigger.squircle { --sq-r: calc(var(--ui-control-height) * .46); }
+
+.mapbox-stage :is(.mapboxgl-ctrl-attrib, .mapboxgl-ctrl-attrib-button).squircle { --sq-r:11px; }
+
+.squircle.report-tab-trigger { --sq-r:calc(var(--ui-control-compact) * .46); }

@@ -1,0 +1,89 @@
+import { getDomain } from "tldts"
+import { domainToASCII } from "node:url"
+import { followPublic, inspectCertificate, checkError, type CertificateResult } from "./site-check-network"
+import { inspectCnWhois } from "./site-check-whois"
+
+export type DomainExpiry = {domain: string | null; expiresAt: string | null; error: string | null; retryable?: boolean}
+type CachedExpiry = {stale?: boolean; lastSuccessAt?: string}
+export type ExpirySnapshot = {checkedAt: string; domain: DomainExpiry & CachedExpiry; certificate: CertificateResult & CachedExpiry}
+export type HttpCheck = {checkedAt: string; ok: boolean; status: number | null; durationMs: number | null; error: string | null}
+
+export function siteCheckUrl(domain: string, path = "/") {
+  const base = new URL(`https://${domain}/`)
+  const url = new URL(path, base)
+  if (!path.startsWith("/") || path.startsWith("//") || url.origin !== base.origin || url.username || url.password || url.port || url.hash || path.length > 2048) {
+    throw new Error("请输入本站的检查路径，例如 / 或 /health")
+  }
+  return url
+}
+
+export function rdapExpiry(data: unknown): string | null {
+  const events = (data as {events?: Array<{eventAction?: string; eventDate?: string}>})?.events
+  if (!Array.isArray(events)) return null
+  const dates = events.filter(event => event.eventAction === "expiration").map(event => Date.parse(event.eventDate || "")).filter(Number.isFinite)
+  return dates.length ? new Date(Math.min(...dates)).toISOString() : null
+}
+
+type Bootstrap = {services: [string[], string[]][]}
+let bootstrap: {value: Bootstrap; expires: number} | null = null
+let pendingBootstrap: Promise<Bootstrap> | null = null
+async function rdapBootstrap(): Promise<Bootstrap> {
+  if (bootstrap && bootstrap.expires > Date.now()) return bootstrap.value
+  if (!pendingBootstrap) pendingBootstrap = (async () => {
+    const response = await followPublic(new URL("https://data.iana.org/rdap/dns.json"), AbortSignal.timeout(10_000), 1_000_000)
+    if (response.status !== 200) throw new Error("域名到期信息暂时不可用")
+    const value = JSON.parse(response.body) as Bootstrap
+    if (!Array.isArray(value.services)) throw new Error("域名到期信息格式无效")
+    bootstrap = {value, expires: Date.now() + 86400_000}
+    return value
+  })().finally(() => {pendingBootstrap = null})
+  return pendingBootstrap
+}
+
+const domainLookup = {bootstrap: rdapBootstrap, fetch: followPublic, whois: inspectCnWhois}
+
+export async function inspectDomain(hostname: string, lookup = domainLookup): Promise<DomainExpiry> {
+  const registered = getDomain(hostname, {allowPrivateDomains: false})
+  const domain = registered ? domainToASCII(registered).toLowerCase() : null
+  if (!domain) return {domain: null, expiresAt: null, error: "无法识别可注册域名", retryable: false}
+  let unavailable: DomainExpiry
+  try {
+    const {services} = await lookup.bootstrap()
+    const tld = domain.split(".").at(-1)!
+    const servers = services.find(entry => entry[0]?.includes(tld))?.[1] || []
+    const endpoint = servers.find(url => url.startsWith("https://"))
+    if (endpoint) {
+      const result = await lookup.fetch(new URL(`domain/${encodeURIComponent(domain)}`, endpoint.endsWith("/") ? endpoint : endpoint + "/"), AbortSignal.timeout(10_000), 1_000_000)
+      if (result.status !== 200) throw new Error("域名到期信息暂时不可用")
+      const expiresAt = rdapExpiry(JSON.parse(result.body))
+      if (expiresAt) return {domain, expiresAt, error: null, retryable: false}
+      unavailable = {domain, expiresAt: null, error: "查询服务未返回该域名的到期时间，请到注册商查看", retryable: false}
+    } else {
+      unavailable = {domain, expiresAt: null, error: "暂不支持该域名后缀的到期查询，请到注册商查看", retryable: false}
+    }
+  } catch (error) { unavailable = {domain, expiresAt: null, error: checkError(error)} }
+  // .com.cn and other .cn registrations share CNNIC's official WHOIS service.
+  // RDAP remains preferred if the registry publishes it in the future.
+  return domain.endsWith(".cn")
+    ? {domain, ...await lookup.whois(domain, AbortSignal.timeout(10_000))}
+    : unavailable
+}
+
+export async function checkHttp(url: URL): Promise<HttpCheck> {
+  const checkedAt = new Date().toISOString()
+  const start = performance.now()
+  try {
+    const result = await followPublic(url, AbortSignal.timeout(10_000))
+    return {checkedAt, ok: result.status === 200, status: result.status, durationMs: Math.round(performance.now() - start), error: result.status === 200 ? null : `HTTP ${result.status}`}
+  } catch (error) {
+    return {checkedAt, ok: false, status: null, durationMs: null, error: checkError(error)}
+  }
+}
+
+export async function checkExpiry(hostname: string): Promise<ExpirySnapshot> {
+  const [domain, certificate] = await Promise.all([
+    inspectDomain(hostname),
+    inspectCertificate(hostname, AbortSignal.timeout(10_000)).catch(error => ({expiresAt: null, valid: false, error: checkError(error)})),
+  ])
+  return {checkedAt: new Date().toISOString(), domain, certificate}
+}
