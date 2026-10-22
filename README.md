@@ -1,51 +1,29 @@
 # LiteStats
 
-轻量、隐私友好的自托管网站访问统计，聚焦访客、流量来源、页面和转化。访客采集无 Cookie，数据留在你自己的 PostgreSQL 和 ClickHouse 里。
+简单、美观、可自托管的网站统计。
 
-**仓库：** [github.com/gentpan/LiteStats](https://github.com/gentpan/LiteStats)
+LiteStats 是一个类似 Umami 的独立网站分析产品。用一段脚本了解访客从哪里来、浏览了哪些页面，以及发生了哪些事件；访问数据保存在你自己的 PostgreSQL 和 ClickHouse 中。
 
-## 目录
+由 [gentpan](https://github.com/gentpan) 维护，采用 [MIT 许可证](./LICENSE)。
 
-- [特性](#特性)
-- [技术栈](#技术栈)
-- [快速开始](#快速开始)
-- [嵌入追踪脚本](#嵌入追踪脚本)
-- [站点检查](#站点检查)
-- [目标、属性和漏斗](#目标属性和漏斗)
-- [项目结构](#项目结构)
-- [环境变量](#环境变量)
-- [许可证](#许可证)
+## 能做什么
 
-更细的文件地图见 [TOC.md](./TOC.md)。
+| 功能 | 说明 |
+| --- | --- |
+| 访问统计 | 访客、访问次数、浏览量、跳出率、访问时长与趋势对比 |
+| 流量分析 | 来源、推广活动、页面、国家/地区、浏览器、系统、设备与语言 |
+| 实时与事件 | 实时访客、活动日志、自定义事件及属性采集，支持 SPA、外链点击和文件下载 |
+| 多站点管理 | 卡片与列表布局、站点切换、站点权限、公开统计与分享链接 |
+| 访客地图 | 本地备用地图；可选 Mapbox，支持标准、街道、深色底图及国旗开关 |
+| 搜索关键词 | Google Search Console、Bing Webmaster 接入，CSV 导入及可选 AI SEO 建议 |
+| 站点检查 | 可选域名到期、SSL 证书到期和 HTTP 200 检查，无需安装探针 |
+| 账号与备份 | 密码、TOTP、Passkey；实例管理员可配置 R2/S3 手动与定时备份、扫描和恢复 |
 
-当前以站点访问统计为主，另提供可按站点开启的域名到期、SSL 证书到期和 HTTP 200 检查。服务器资源采集、Linux Agent、三网探测和多节点监控已移除；历史统计及旧监控表保留。
-
-## 特性
-
-- **轻量脚本** — `/script.js` 自动报 pageview，兼容 SPA；可跟自定义事件、外链和文件下载
-- **单页看板** — 访客、访问、浏览、来源、页面、地区、设备、实时
-- **站点布局** — 三列卡片或单列列表，当前浏览器记住选择；卡片在平板两列、手机一列
-- **事件** — 自定义事件与属性采集，可在活动日志查看；目标配置、属性分析与漏斗报表尚未完成
-- **分享** — 公开站点或分享链接
-- **账号** — 邮箱密码、TOTP、Passkey，中英文和浅色/深色
-- **界面偏好** — 四种配色同步应用图标；个人账号可选择标准、街道、深色 3 款 Mapbox 底图，附真实预览；地图国旗可开关
-- **站点检查** — 域名与证书剩余天数、网站响应曲线及检查状态；无需安装探针
-- **备份** — 支持 R2/S3，提供不保存设置的只读连接测试、定时备份、扫描与恢复
-
-## 技术栈
-
-| 层级 | 技术 |
-|------|------|
-| 运行时 | [Bun](https://bun.sh) ≥ 1.4 |
-| 应用 | TanStack Start + React + Vite + Tailwind 4 |
-| 关系库 | PostgreSQL |
-| 事件库 | ClickHouse |
-
-首次启动会自动建表并补齐必要字段。正式升级前应备份已有数据库。
+界面支持中文、英文、手机布局、浅色/深色模式，以及紫、蓝、绿、黑四种配色。
 
 ## 快速开始
 
-依赖：Bun 1.4+、Docker（或自备 PostgreSQL 与 ClickHouse）。
+准备 [Bun](https://bun.sh/) 1.4+ 和 Docker Compose。应用使用 TanStack Start、React、Vite 与 Tailwind CSS；数据库为 PostgreSQL 和 ClickHouse。
 
 ```bash
 git clone https://github.com/gentpan/LiteStats.git
@@ -53,122 +31,105 @@ cd LiteStats
 cp .env.example app/.env
 docker compose up -d
 cd app
-bun install
+bun install --frozen-lockfile
 bun run dev
 ```
 
-默认开发地址是 [http://127.0.0.1:3100](http://127.0.0.1:3100)。只有显式设置 `SEED_DEMO=true` 且不是生产环境才创建演示账号 `demo@litestats.dev` / `12345678`；已有账号密码不会被重置。
+启动前在 `app/.env` 中设置自己的 `SESSION_KEY`，建议使用至少 32 字符的随机值。本地 Compose 仅将数据库端口绑定到回环地址；如果已有数据库，修改 `DATABASE_URL` 与 `CLICKHOUSE_URL` 即可。
 
-生产需要设置至少 32 位随机 `SESSION_KEY`。`ADMIN_EMAILS` 指定已验证邮箱的实例管理员，全局备份只允许实例管理员访问。普通注册不会自动验证邮箱。团队创建、邀请和成员管理已移除；现有站点归属记录仅用于兼容历史数据和访问权限。生产管理员应通过受信任的数据库管理流程确认其邮箱所有权。
+打开 [http://127.0.0.1:3100](http://127.0.0.1:3100)：
 
-本地开发与测试步骤见 [本地测试说明](./LOCAL-TEST.md)。开发用 compose 提供数据库，应用需要单独启动。
+1. `/` 为产品官网，`/register` 创建账号，`/login` 登录。
+2. 在 `/dashboard` 添加网站，填写站点域名和时区。
+3. 复制安装脚本到被统计网站，在 `/sites/你的域名` 查看统计。
 
-如果本机已经有 Postgres / ClickHouse，改 `DATABASE_URL` 和 `CLICKHOUSE_URL` 即可，不必起 compose。
+首次使用会自动初始化必要表和字段。`SEED_DEMO` 默认关闭，不会自动创建演示账号。普通注册账号可以管理自己的站点；系统地图与备份设置还要求账号邮箱已验证，并列入 `ADMIN_EMAILS`。当前不提供邮件验证流程，实例管理员需通过可信的数据库管理流程确认邮箱所有权。
 
-## 嵌入追踪脚本
+## 安装统计脚本
 
-站点创建后，把下面这段放到网站 `</head>` 前：
+将脚本放在被统计网站的 `<head>` 中，替换为你的统计服务地址和站点域名：
 
 ```html
-<script defer data-domain="example.com" src="https://你的域名/script.js"></script>
+<script defer data-domain="example.com" src="https://stats.example.com/script.js"></script>
 ```
 
-自定义事件：
+`defer` 允许脚本并行下载，在 HTML 解析完成后执行。脚本自动记录首次浏览和 SPA 路径、查询参数变化；仅锚点变化或同地址的历史状态更新不会重复计数。
+
+脚本加载后，可发送自定义事件：
 
 ```js
-litestats.track("Signup", { plan: "pro" })
+window.litestats?.track("Signup", { plan: "pro" })
 ```
 
-## 站点检查
+站点设置中的“安装脚本”提供网页集成和 `POST /api/event` 使用文档。采集使用缓冲批量写入：网络中断、脚本拦截、浏览器关闭或服务异常仍可能造成数据缺失，HTTP 202 表示请求已接收，不代表已持久化。访客数使用按站点和日期生成的匿名标识估算；访问时长也不是精确计时。
 
-添加网站后可直接进入“站点检查”，也可从统计看板页头打开。默认关闭，站点管理员点击“开启检查”后开始记录，无须先安装统计脚本。只读成员可查看，只有站点管理员可开启、暂停和修改；公开统计与分享链接不公开检查信息。
+## 可选功能
 
-- **域名到期**：显示可注册域名的到期日期和剩余天数。优先查询 [IANA RDAP 服务目录](https://data.iana.org/rdap/dns.json)；`.cn`（包括 `.com.cn`）没有可用 RDAP 日期时，自动使用 CNNIC 官方 `whois.cnnic.cn:43` 兜底，无需 API Key。运行网络须允许出站 TCP 43；超时、受限、未返回记录或日期会分别提示，不猜测日期。WHOIS 时间未注明时区时只保留公开日期，按日期估算剩余天数。子域名显示其所属可注册域名的日期，不展示 IP、归属地、服务商或 WHOIS 联系人信息。
-- **证书到期**：显示站点 HTTPS 证书的到期日期和剩余天数；不足 30 天提示，过期或校验失败标记异常。域名和证书到期信息每日至多自动刷新一次。
-- **HTTP 检查**：通常每 5 分钟请求一次站点 HTTPS 地址，可配置 `/`、`/health` 等本站路径。最多跟随 3 次安全跳转，最终 HTTP 200 为正常，10 秒超时。响应时间计到响应头，页面正文不会保存；这不验证页面内容或浏览器脚本。
-- **图表**：展示近 24 小时的响应曲线和状态条；缺失记录保持空白。成功率仅统计实际检查样本，不把未检查时段当作正常。检查从应用所在服务器发出，结果代表该服务器的访问情况。
+### 地图与图标
 
-生产构建 `bun run build` 后以 `bun run start` 启动，后台定时任务随应用运行，无需保持网页打开。开发模式不启动定时任务；设置 `LITESTATS_HEALTH_WORKER=false` 可关闭自动执行，管理员手动检查仍可使用。多进程通过数据库争抢任务，避免重复检查。
+实例管理员在“设置 → 系统设置 → 访客地图”配置自己的 Mapbox `pk.` 公开 Token。未配置、加载失败或浏览器不支持时使用本地地图；账号可选择底图。公开 Token 会在浏览器使用，应限制允许的站点地址，不要填写 `sk.` 私密 Token。Mapbox 请求及额度归自己的 Mapbox 账号管理。
 
-只允许标准 HTTPS 公网站点；请求和每次跳转都会校验地址，拒绝内网及保留地址。新记录使用独立的 `site_check_settings`、`site_check_results` 表，不读取或改写旧监控记录，也不删除统计或检查历史。暂停后保留已有记录。此功能不发送邮件或消息通知。
+公网站点和未识别来源的图标统一从 favicon.la 获取，失败时显示本地兜底图标。常见搜索引擎、社交网站、社区与 AI 来源使用内置品牌图标。图标查询会向 favicon.la 提供被查询的域名。
 
-## 目标、属性和漏斗
+浏览器与系统使用本地品牌图稿，以 [The SVG](https://github.com/glincker/thesvg) 原色 SVG 为主；缺少对应图稿时保留正确的现有资源。来源和授权见 [第三方图标说明](./app/public/brands/THIRD-PARTY.md)。语言行显示名称、地区代码和方形旗帜；旗帜只是语言区域标识，不用于判断访客位置。
 
-目前支持自定义事件及属性采集，活动日志可查看事件。目标管理、属性分析与漏斗统计尚未形成完整流程，不应按已实现能力使用。已有目标、漏斗和属性数据及相关表结构保留。
+### 搜索关键词、CSV 与 AI
 
-## 搜索关键词
+在“站点设置 → 集成”连接 Google 或 Bing，在统计页的“关键词”进入工作台。配置、导入和 AI 操作要求站点管理员；工作台不对公开统计或分享链接开放。
 
-统计页的“来源”卡片 → “搜索词”提供三种数据：
+- **Google**：启用 Search Console API，创建 Web 应用 OAuth 客户端，登记 `https://stats.example.com/api/auth/google` 回调地址，再保存 Client ID/Secret、执行只读授权并选择本站已验证资源。普通 API Key 无法读取私有 Search Console 数据。
+- **Bing**：填写 Bing Webmaster API Key 和平台中已验证的完整站点地址。当前使用的 GetQueryStats 按周更新，不提供看板日期的精确过滤。
+- **CSV**：支持 Google/Bing 按关键词汇总的 UTF-8 CSV、中英文表头和导入预览，最多 1 MB、5000 行。按独立批次保存，不覆盖已有统计，也不自动合并重叠日期。
+- **AI SEO**：配置兼容 Chat Completions 的公网 HTTPS 接口、模型和 API Key；手动生成时发送当前报告中最多 50 个关键词、汇总指标及站点域名，不发送访客明细、不抓取页面、不自动修改网站。建议需人工判断，模型服务可能收费。
 
-- **引荐搜索词**：只解析搜索引擎来源链接实际携带的词，按本地独立访客计数。Google 等搜索引擎通常不会传递自然搜索关键词；缺失的词无法从埋点或服务器日志还原，也不会根据页面内容猜测。推广链接的 `utm_term` 不当作自然搜索词。
-- **Google 搜索词**：在“站点设置 → 集成”配置 Google OAuth、授权 Search Console 并选择已验证资源后，按所选日期查询整站搜索点击量。按 Google 的太平洋时间日界限统计，不跟随本地访客筛选；实时/滚动 24 小时需改选按日区间。部分低频词会隐藏，最近的数据可能延迟。
-- **Bing 搜索词**：在同一设置页填写 Bing Webmaster API Key 和已验证站点地址，汇总接口可用的搜索点击量。现用 GetQueryStats 接口按周更新，不能精确对应看板所选日期；界面明确标注其不跟随上方日期与访客筛选。
+搜索平台的点击量不是独立访客，不能对应某位访客；数据可能延迟、隐藏低频词，也可能与本地日期口径不同。Google 等搜索引擎通常不在引荐链接中公开自然搜索关键词，埋点无法还原未提供的词。
 
-官方关键词最多显示前 50 个词，数值是搜索结果点击次数，不是独立访客，也不能与某位访客一一对应。未连接、需选择资源、授权失败、超时和无结果分别提示。详细口径见 [Google Search Console 数据说明](https://support.google.com/webmasters/answer/96568?hl=zh-Hans) 和 [Bing 搜索表现说明](https://www.bing.com/webmasters/help/search-performance-c680da36)。
+### 域名、证书与 HTTP 检查
 
-### 关键词接入、CSV 与 AI SEO 建议
+站点管理员可在“站点检查”中开启，默认关闭。检查从应用服务器发出，无需客户端或服务器探针；只读成员可查看，公开与分享统计不展示检查信息。
 
-统计页工具栏的“关键词”进入独立工作台，展示 Google/Bing 的点击、展现、点击率和平均排名；只对本站成员开放，不放入公开或分享页。接入配置、CSV 导入及 AI 操作要求站点管理员。
+- 域名到期优先使用 RDAP；`.cn`、`.com.cn` 无可用日期时通过 CNNIC 官方 WHOIS 兜底，运行环境需允许出站 TCP 43。查不到时明确提示，不猜测日期。
+- 展示 HTTPS 证书到期时间和剩余天数。
+- HTTP 通常每 5 分钟检查一次，最多跟随 3 次安全跳转，10 秒超时，最终返回 200 视为正常。它不验证页面正文或浏览器脚本，也不代表所有地区的可达性。
 
-- **Google**：在 Google Cloud 启用 Search Console API，创建 Web 应用 OAuth 客户端，将本站 `/api/auth/google` 的完整地址登记为回调；在站点集成中保存 Client ID/Secret，执行只读授权，再选择本站对应的已验证资源。普通 API Key 不能读取私有 Search Console 数据。
-- **Bing**：填写 Webmaster Tools 提供的 API Key 和平台中已验证的完整站点地址。GetQueryStats 按周更新，工作台不提供虚假的日期过滤。平均排名使用 `AvgImpressionPosition`；重复词按展现量加权，缺失指标保留空值。
-- **CSV**：导入搜索平台按关键词汇总的 UTF-8 CSV，支持中英文表头、引号和千分位，最多 1 MB / 5000 行。预览后填写来源和导出日期再确认。每次独立保存为 `site_keyword_imports` 批次，不覆盖历史、不自动合并重叠日期；列表展示最近 30 份，重复词或非法指标给出行号。百分比表头（如 `CTR (%)`）中的 `0.8` 按 `0.8%` 读取；零排名与缺失排名显示为 `—`。
-- **AI SEO**：在关键词页填写完整 HTTPS Chat Completions 接口、模型名和 API Key，支持 `max_completion_tokens` / `max_tokens`。手动点击“生成建议”才发送当前报告中最多 50 个关键词及汇总指标和站点域名；不发送访客记录、不抓取页面、不自动改网站。报告标明来源/范围/模型，建议仅作待人工验证的方向，不保证排名。
+自动检查随生产应用运行；开发模式仅支持手动检查。`LITESTATS_HEALTH_WORKER=false` 可关闭自动执行。只检查标准 HTTPS 公网站点，不包含服务器性能、多节点或资源监控。
 
-搜索平台资源必须属于本站域名或 `www` 别名，Google 资源还需当前授权账号拥有访问权限；同域名的 URL 前缀资源保持其实际范围。更换 Google 账号不会继承旧账号的令牌或资源。新保存的 Google Token、Bing Key 和 OAuth 配置使用绑定站点及字段的 AES-GCM 加密；旧记录兼容读取，不自动迁移或写回。公开与分享统计保持原有关键词点击字段，不返回工作台新增的详细指标和资源地址。
+### 备份与恢复
 
-AI 配置和建议历史分别保存在新的 `site_seo_ai_config` / `site_seo_ai_reports`，用 `SESSION_KEY` 派生密钥加密。请保留此密钥；轮换后需重新保存受影响的服务配置。无法解密的旧建议保留原记录并提示，不阻止生成新的建议。可以移除配置和密钥，历史仍保留。生成请求核对当前已保存的接口、模型和参数；有未保存修改或其他页面已更改服务时，须先保存或刷新确认。请求限制公网 HTTPS、验证 TLS 和全部 DNS 地址、禁止跳转，45 秒超时；每站点一分钟最多一次。模型服务可能收费，费用由用户所配置的服务商收取。首次访问相应功能会创建新表，不修改已有统计记录。
+实例管理员可在系统设置中连接 Cloudflare R2 或 Amazon S3，测试连接、配置定时备份或手动备份，并扫描和恢复已有备份。连接测试仅验证读取能力，不上传文件。备份包含 PostgreSQL 站点/账号数据和 ClickHouse 事件。
 
-## 项目结构
+恢复会覆盖当前数据库，应先确认备份与恢复目标。请在安全位置单独保留运行配置，尤其是 `SESSION_KEY`；它也用于加密集成密钥，丢失或更换后可能需要重新配置相应服务。
 
+## 配置与隐私
+
+完整模板见 [.env.example](./.env.example)。
+
+| 变量 | 用途 |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL 连接 |
+| `CLICKHOUSE_URL` | ClickHouse HTTP 连接，URL 路径为数据库名 |
+| `SESSION_KEY` | 会话签名与服务凭据加密，生产要求至少 32 字符的随机密钥 |
+| `ADMIN_EMAILS` | 已验证邮箱的实例管理员列表，逗号分隔 |
+| `SEED_DEMO` | 仅非生产环境可显式开启演示数据，默认 `false` |
+| `LITESTATS_HEALTH_WORKER` | 设为 `false` 关闭生产站点自动检查 |
+
+访客采集不使用 Cookie 或浏览器本地存储，遵守 `DNT: 1` 与 `Sec-GPC: 1`。服务器处理 IP 和 User-Agent 以生成匿名访客标识，事件表不保存原始 IP；反向代理仍需正确配置可信的来源地址。后台登录使用会话 Cookie，界面偏好与访客埋点分开保存。
+
+页面路径、查询参数、来源链接、标题和事件属性会进入统计；不要在其中放入密码、令牌或个人敏感信息。启用外部地图、图标、搜索平台或 AI 时，会向对应服务发送完成功能所需的信息。自托管并不等于自动满足所有隐私法规，部署者应根据实际采集配置告知访客。
+
+真实 `.env`、密钥、数据库、日志和备份不应提交到 Git。升级前先备份数据库与运行配置，避免覆盖已有凭据。
+
+## 开发与部署
+
+在 `app/` 中运行：
+
+```bash
+bun run typecheck
+bun test
+bun run check:unused
+bun run build
 ```
-LiteStats/
-├── app/                 # 网站、API、采集、看板
-│   ├── public/          # 国旗、图标与静态资源
-│   ├── server/plugins/  # 站点检查定时任务
-│   └── src/
-│       ├── routes/      # 页面与 /api/*
-│       ├── components/
-│       └── lib/         # Postgres、ClickHouse、会话、统计查询
-├── docker-compose.yml   # 本地 Postgres + ClickHouse
-├── README.md
-└── TOC.md
-```
 
-## 环境变量
+构建输出在 `app/.output/`，生产使用 Node.js 22，通过 `bun run start` 或 `node .output/start.mjs` 启动。正式部署还需配置 HTTPS、数据库凭据和持久化存储，步骤见 [部署参考](./deploy/README.md)；开发用根目录 Compose 仅包含数据库。
 
-| 变量 | 说明 |
-|------|------|
-| `DATABASE_URL` | PostgreSQL 连接串 |
-| `CLICKHOUSE_URL` | ClickHouse HTTP，含数据库名 |
-| `SESSION_KEY` | 会话 HMAC，生产必须更换 |
-| `LITESTATS_HEALTH_WORKER` | 生产默认启用定时检查；`false` 关闭自动执行 |
-| `GOOGLE_CLIENT_ID` 等 | 可选，Search Console 关键词 |
-
-完整模板见 [.env.example](./.env.example)。不要提交真实 `.env`。
-
-## 许可证
-
-MIT，见 [LICENSE](./LICENSE)。
-
-### 统一设置入口
-
-页头“设置”进入 `/account`，左侧按权限分组：
-
-- 账号设置：个人资料和安全（密码、TOTP、Passkey）。
-- 系统设置（实例管理员）：访客地图、备份与恢复。旧 `/backup` 自动进入 `/account?tab=system/backup`。
-- 站点设置：常规、可见性、安装脚本、Google/Bing 搜索集成和危险操作。安装页提供脚本、自定义事件和 HTTP 采集文档；统计导出保留在看板“更多”菜单。
-
-访客地图支持 Mapbox。管理员进入“设置 → 系统设置 → 访客地图”（`/account?tab=system/mapbox`），填写自己的 `pk.` 公开 Access Token 并保存，重新打开统计页后生效。配置统一应用于站点看板和分享页，保留国家筛选、缩放、拖动、实时标记和深浅主题。SDK 和样式在地图接近可视区域时才加载；未配置、停用、授权失败或不支持 WebGL 时显示本地备用地图。
-
-Token 加密保存，设置页不回显，留空保留已有值。浏览器使用公开 Token 获取 Mapbox 底图，因此应按 [Mapbox 安全建议](https://docs.mapbox.com/help/dive-deeper/how-to-use-mapbox-securely/) 限制为本站访问域名，开启 `styles:read`、`fonts:read`，不要使用 `sk.` 私密密钥。访客国家统计只在本地叠加，不上传访客明细。Mapbox 在线底图的请求和额度由用户自己的账号管理。
-
-通知通道（SMTP/Telegram）、Google Maps、个人 API 密钥及冗余的服务配置索引已经移出当前版本。Mapbox 按 2026-10-22 的新要求独立接入；新配置使用 `litestats_mapbox_settings`，不读取、解密或修改旧 `site_map_settings`。旧配置表及记录原样保留，旧标签仍回到个人偏好或站点常规设置。
-
-备份仍包含历史表和新地图配置。保留原有 `SESSION_KEY`，以便解密仍在使用的地图、搜索集成和备份配置；更换此值后需要重新填写 Mapbox Token。本轮不执行已有数据库迁移、去重、恢复或生产部署。
-
-### 域名与兼容
-
-新增站点和改域名会统一处理大小写、`www.`、URL 路径和端口，并在同一事务内校验冲突、串行处理并发声明。不自动建立唯一索引或修正历史重复记录；原有重复站点允许保存其他设置。采集兼容历史中文、`www.` 和端口域名，优先匹配原域名；仍有歧义时按最早站点 ID 确定归属。
-
-`/script.js`、`/js/script.js`、`/tracker.js` 共用同一脚本响应。普通、公开和分享看板共用展示组件，读取权限与管理权限由服务端分别确定。占位的屏蔽、邮件报告和导入导出说明页已移除，旧标签回到常规设置。
+主要目录：`app/src/routes` 为页面和接口，`app/src/components` 为界面，`app/src/lib` 为统计与业务逻辑，`app/public` 为静态资源。更多说明见 [文件索引](./TOC.md) 和 [本地验证记录](./LOCAL-TEST.md)。

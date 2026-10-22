@@ -3,7 +3,7 @@ import { createMemoryHistory, createRootRoute, createRouter, Outlet, RouterProvi
 import { renderToString } from "react-dom/server"
 import { I18nProvider } from "../src/lib/i18n"
 import { Route as SettingsRoute } from "../src/routes/sites/$domain.settings"
-import { Route as HomeRoute } from "../src/routes/index"
+import { Route as DashboardRoute } from "../src/routes/dashboard"
 
 const fixture = {
   me: {id: 1, name: "Fixture", email: "fixture@example.test", theme: "light", locale: "zh-CN"},
@@ -17,11 +17,11 @@ const fixture = {
 async function render(path: string, settingsFixture: Record<string, unknown> = fixture) {
   const root = createRootRoute({component: () => <I18nProvider locale="zh-CN"><Outlet /></I18nProvider>})
   const settings: AnyRoute = SettingsRoute
-  const home: AnyRoute = HomeRoute
+  const home: AnyRoute = DashboardRoute
   const originalSettings = settings.options, originalHome = home.options
   try {
     settings.options = {...originalSettings, getParentRoute: () => root, path: "/sites/$domain/settings", loader: () => settingsFixture}
-    home.options = {...originalHome, getParentRoute: () => root, path: "/", loader: () => ({me: fixture.me, sites: []})}
+    home.options = {...originalHome, getParentRoute: () => root, path: "/dashboard", loader: () => ({me: fixture.me, sites: []})}
     const router = createRouter({routeTree: root.addChildren([settings, home]), history: createMemoryHistory({initialEntries: [path]})})
     await router.load()
     return {html: renderToString(<RouterProvider router={router} />), search: router.state.matches.at(-1)?.search as Record<string, unknown> | undefined}
@@ -49,20 +49,20 @@ test("site integration routes preserve recognized OAuth failures and render reco
   }
 })
 
-test("callback query strings cannot inject provider messages into integration or home alerts", async () => {
+test("callback query strings cannot inject provider messages into integration or site-list alerts", async () => {
   for (const value of ["private-token-message", "__proto__", "constructor"]) {
     const {html, search} = await render(`/sites/example.test/settings?tab=integrations&gsc=${value}&error_description=provider-secret`)
     expect(search?.gsc).toBeUndefined()
     expect(html).not.toContain(value)
     expect(html).not.toContain("provider-secret")
   }
-  const {html, search} = await render("/?gsc=private-token-message")
+  const {html, search} = await render("/dashboard?gsc=private-token-message")
   expect(search?.gsc).toBeUndefined()
   expect(html).not.toContain("private-token-message")
 })
 
-test("the home page explains callback failures when a safe site destination is unavailable", async () => {
-  const {html, search} = await render("/?gsc=expired")
+test("the site-list page explains callback failures when a safe site destination is unavailable", async () => {
+  const {html, search} = await render("/dashboard?gsc=expired")
   expect(search).toMatchObject({gsc: "expired"})
   expect(html).toContain('role="alert"')
   expect(html).toContain("Google 授权链接已失效")

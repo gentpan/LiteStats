@@ -7,7 +7,7 @@ import { SiteFooter } from "~/components/Shell"
 import { meFn, registerFn } from "~/lib/actions"
 
 export const Route = createFileRoute("/register")({
-  loader: async () => { if (await meFn()) throw redirect({ to: "/" }); return {} },
+  loader: async () => { if (await meFn()) throw redirect({ to: "/dashboard" }); return {} },
   component: RegisterPage,
 })
 
@@ -24,7 +24,7 @@ function RegisterPage() {
   return (
     <div className="auth-page flex w-full flex-col px-4">
       <div className="flex justify-center pt-4 sm:pt-8">
-        <Link to="/login"><BrandMark /></Link>
+        <Link to="/"><BrandMark /></Link>
       </div>
       <div className="mx-auto mt-8 flex w-full max-w-md flex-col gap-y-2 px-4 text-center">
         <h1 className="auth-heading">{t("创建账号")}</h1>
@@ -39,7 +39,7 @@ function RegisterPage() {
           try {
             await registerFn({ data: { name, email, password } })
             await router.invalidate()
-              await router.navigate({ to: "/" })
+            await router.navigate({ to: "/dashboard" })
           } catch (err) {
             setError(err instanceof Error ? err.message : t("注册失败"))
           } finally {

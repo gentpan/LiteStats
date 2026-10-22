@@ -10,6 +10,7 @@ import { KeywordReport, keywordView } from "./KeywordReport"
 import { useT } from "~/lib/i18n"
 import { countryName } from "~/lib/countries"
 import { languageName } from "~/lib/languages"
+import { isDirectSource } from "~/lib/source-icons"
 import type { dashboardFn } from "~/lib/actions"
 import type { MetricKey } from "~/lib/ch"
 import { downloadDashboardZip } from "~/lib/export"
@@ -34,7 +35,7 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
   const [locationTab, setLocationTab] = useState("countries")
   const [deviceTab, setDeviceTab] = useState("browser")
   const chips = [
-    search.source && { key: "source" as const, label: t("来源 {0}", {0: search.source}) },
+    search.source && { key: "source" as const, label: t("来源 {0}", {0: isDirectSource(search.source) ? t("直接访问") : search.source}) },
     search.page && { key: "page" as const, label: t("页面 {0}", {0: search.page}) },
     search.country && { key: "country" as const, label: t("地区 {0}", {0: countryName(search.country, locale)}) },
     search.browser && { key: "browser" as const, label: t("浏览器 {0}", {0: search.browser}) },
@@ -54,7 +55,7 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
       <DashTopBar
         domain={domain}
         live={data.overview.live}
-        filterOptions={{page:data.pages,source:data.sources,country:data.countries.map(row=>({...row,label:countryName(row.name,locale)})),device:data.devices,browser:data.browsers,os:data.os}}
+        filterOptions={{page:data.pages,source:data.sources.map(row=>({...row,label:isDirectSource(row.name) ? t("直接访问") : row.name})),country:data.countries.map(row=>({...row,label:countryName(row.name,locale)})),device:data.devices,browser:data.browsers,os:data.os}}
         search={search}
         onPeriod={go}
         readonly={readonly}

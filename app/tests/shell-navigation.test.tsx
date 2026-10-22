@@ -17,7 +17,7 @@ test("pending navigation preserves the visible page's shell in both directions",
   const homeFinished = deferred()
   let returningHome = false
   const root = createRootRoute({component: () => <I18nProvider locale="zh-CN"><Outlet /></I18nProvider>})
-  const home = createRoute({getParentRoute: () => root, path: "/", loader: async () => {
+  const home = createRoute({getParentRoute: () => root, path: "/dashboard", loader: async () => {
     if (returningHome) {
       homeStarted.resolve()
       await homeFinished.promise
@@ -27,7 +27,7 @@ test("pending navigation preserves the visible page's shell in both directions",
     statsStarted.resolve()
     await statsFinished.promise
   }, component: () => <Shell layout="analytics"><h1>Statistics</h1></Shell>})
-  const router = createRouter({routeTree: root.addChildren([home, stats]), history: createMemoryHistory({initialEntries: ["/"]}), isServer: false, origin: "https://local.test", defaultStaleTime: 0, defaultStaleReloadMode: "blocking"})
+  const router = createRouter({routeTree: root.addChildren([home, stats]), history: createMemoryHistory({initialEntries: ["/dashboard"]}), isServer: false, origin: "https://local.test", defaultStaleTime: 0, defaultStaleReloadMode: "blocking"})
   // Exercise client loading, but snapshot its current match tree without mounting
   // the DOM transition acknowledgements that a static renderer cannot run.
   const snapshot = () => {
@@ -56,10 +56,10 @@ test("pending navigation preserves the visible page's shell in both directions",
   expect(snapshot()).not.toContain("management-shell")
 
   returningHome = true
-  const returnNavigation = router.navigate({to: "/"})
+  const returnNavigation = router.navigate({to: "/dashboard"})
   try {
     await homeStarted.promise
-    expect(router.state.location.pathname).toBe("/")
+    expect(router.state.location.pathname).toBe("/dashboard")
     expect(router.state.matches.at(-1)?.routeId).toBe(stats.id)
     const pending = snapshot()
     expect(pending).toContain("Statistics")

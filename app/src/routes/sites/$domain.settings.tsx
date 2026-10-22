@@ -173,7 +173,7 @@ function SettingsPage() {
                     onClick={async () => {
                       if (!window.confirm(t("确认删除 {0}？", {0: domain}))) return
                       await removeSiteFn({ data: { domain } })
-                      await router.navigate({ to: "/" })
+                      await router.navigate({ to: "/dashboard" })
                     }}
                   >{t("删除站点")}
                   </ActionButton>

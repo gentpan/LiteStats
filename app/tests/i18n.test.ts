@@ -32,7 +32,7 @@ describe("interface localization", () => {
   })
   test("keyword workspace, integrations and fixed AI failures have complete English labels", () => {
     const files = [
-      "routes/index.tsx", "routes/sites/$domain.settings.tsx", "routes/sites/$domain.keywords.tsx",
+      "routes/dashboard.tsx", "routes/sites/$domain.settings.tsx", "routes/sites/$domain.keywords.tsx",
       "components/KeywordReport.tsx", "components/KeywordImportPanel.tsx", "components/KeywordSeoPanel.tsx", "components/KeywordTable.tsx",
     ]
     const labels = new Set(Object.values(seoAiErrorMessages))

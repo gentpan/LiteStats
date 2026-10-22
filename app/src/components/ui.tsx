@@ -1,11 +1,13 @@
 import { UIIcon, BrandIcon, type BrandName } from "./UIIcon"
 import { Surface } from "~/components/Surface"
 import { useT } from "~/lib/i18n"
-import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { CountryFlag, RowIcon, type RowIconKind } from "~/components/icons"
 import { numberShort, percentShort } from "~/lib/format"
 import { delta } from "~/lib/range"
+import { languageCode, languageFlag, languageName } from "~/lib/languages"
+import { isDirectSource } from "~/lib/source-icons"
 
 const BAR: Record<string, string> = {
   source: "bg-blue-50 group-hover/row:bg-blue-100",
@@ -151,7 +153,7 @@ export function List({
   paginate?: boolean
   expanded?: boolean
 }) {
-  const { t } = useT()
+  const { t, locale } = useT()
   const [page, setPage] = useState(1)
   const pages = Math.max(1, Math.ceil(rows.length / 10))
   const currentPage = Math.min(page, pages)
@@ -165,11 +167,11 @@ export function List({
   const flagKind = kind === "region" || kind === "city"
   const extraCols = columns || []
   const bundlePct = extraCols.length === 0
-  const valueWidth = expanded ? "w-24 min-w-24 sm:w-32 sm:min-w-32" : "w-32 min-w-32"
+  const valueWidth = expanded ? "w-24 min-w-24 sm:w-32 sm:min-w-32" : "w-16 min-w-16 md:w-32 md:min-w-32"
 
   const emptyMin = maxItems > 0 && !compact ? LIST_MIN_HEIGHT : 160
   const body = shown.length === 0 ? (
-    <div className="flex h-full w-full flex-col justify-center" style={{ minHeight: emptyMin }}>
+    <div className="report-list-empty flex h-full w-full flex-col justify-center" style={{ "--report-empty-height": `${emptyMin}px` } as CSSProperties}>
       <div className="mx-auto font-medium text-gray-500">{t("暂无数据")}</div>
     </div>
   ) : (
@@ -184,10 +186,11 @@ export function List({
           </div>
         ))}
       </div>
-      <div className="group/report" style={maxItems > 0 && !compact ? { minHeight: DATA_HEIGHT } : undefined}>
+      <div className="report-list-rows group/report" style={maxItems > 0 && !compact ? { "--report-rows-height": `${DATA_HEIGHT}px` } as CSSProperties : undefined}>
         {shown.map((r) => {
           const width = Math.max(2, (r.value / max) * 100)
           const pct = (r.value / total) * 100
+          const label = kind === "source" && isDirectSource(r.name) ? t("直接访问") : r.label || r.name
           return (
             <div key={r.name} style={{ minHeight: ROW_HEIGHT }}>
               <div
@@ -199,11 +202,11 @@ export function List({
                 <div className={`w-full min-w-0 grow ${expanded ? "" : "md:truncate"}`}>
                   <div className="relative h-full w-full">
                     <div className={`squircle absolute top-0 left-0 h-full rounded-sm ${bar}`} style={{ width: `${width}%` }} />
-                    <div className={`relative z-9 px-2 py-1.5 text-sm ${expanded ? "[overflow-wrap:anywhere]" : "break-all"}`}>
+                    <div className={`relative z-9 px-2 py-1.5 text-sm ${expanded ? "[overflow-wrap:anywhere]" : ""}`}>
                       <div className="flex w-full items-center justify-start gap-x-1.5">
-                        <span className={`flex w-full items-center gap-x-2 ${expanded ? "min-w-0 max-w-full" : "max-w-max md:overflow-hidden"}`}>
-                          {flagKind && r.code ? <CountryFlag code={r.code} /> : <RowIcon kind={iconKind} name={r.name} />}
-                          <span className={`w-full group-hover/row:underline ${expanded ? "min-w-0" : "md:truncate"}`}>{r.label || r.name}</span>
+                        <span className={`flex w-full min-w-0 max-w-full items-center gap-x-2 ${expanded || kind === "language" ? "" : "overflow-hidden"}`}>
+                          {kind === "language" ? <span className="shrink-0" title={locale === "en" ? "Locale symbol, not visitor location" : "语言地区标识，不代表访客位置"}><CountryFlag code={languageFlag(r.name)} /></span> : flagKind && r.code ? <CountryFlag code={r.code} /> : <RowIcon kind={iconKind} name={r.name} />}
+                          {kind === "language" ? <span className="language-row-copy"><span>{r.label || languageName(r.name, locale)}</span>{languageCode(r.name) ? <span className="language-row-code" lang="en">{languageCode(r.name)}</span> : null}</span> : <span title={label} className={`w-full min-w-0 group-hover/row:underline ${expanded ? "" : "truncate"}`}>{label}</span>}
                         </span>
                         {r.href ? (
                           <a
@@ -224,10 +227,10 @@ export function List({
                 {bundlePct ? (
                   <div className={`${valueWidth} shrink-0 text-right text-sm font-medium text-gray-800`}>
                     <div className="flex w-full">
-                      <div className="w-1/2">
-                        <span className={`block w-full tabular-nums ${expanded ? "" : "translate-x-[100%] transition-all duration-150 md:group-hover/report:translate-x-0"}`}>{numberShort(r.value)}</span>
+                      <div className={expanded ? "w-1/2" : "w-full md:w-1/2"}>
+                        <span className={`block w-full tabular-nums ${expanded ? "" : "transition-all duration-150 md:translate-x-[100%] md:group-hover/report:translate-x-0"}`}>{numberShort(r.value)}</span>
                       </div>
-                      <div className="w-1/2">
+                      <div className={expanded ? "w-1/2" : "hidden w-1/2 md:block"}>
                         <span className={`block w-full text-gray-500 tabular-nums ${expanded ? "" : "translate-x-[100%] opacity-0 transition-all duration-150 md:group-hover/report:translate-x-0 md:group-hover/report:opacity-100"}`}>{percentShort(pct)}</span>
                       </div>
                     </div>
@@ -286,8 +289,8 @@ function DetailsModal({
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()
     if (!needle) return spec.rows
-    return spec.rows.filter((r) => `${r.label || ""} ${r.name}`.toLowerCase().includes(needle))
-  }, [q, spec.rows])
+    return spec.rows.filter((r) => `${r.label || ""} ${r.name} ${spec.kind === "language" ? languageCode(r.name) : ""} ${spec.kind === "source" && isDirectSource(r.name) ? t("直接访问") : ""}`.toLowerCase().includes(needle))
+  }, [q, spec.rows, spec.kind, t])
 
   useEffect(() => {
     const prev = document.body.style.overflow

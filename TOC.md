@@ -35,7 +35,8 @@ app/
     │   ├── session.ts         # 登录态
     │   └── i18n.tsx           # 中 / 英
     └── routes/
-        ├── index.tsx          # 站点列表
+        ├── index.tsx          # 公开产品官网
+        ├── dashboard.tsx      # 登录后的站点列表
         ├── sites/             # 看板与站点设置
         ├── account.tsx        # 账户
         ├── backup.tsx         # 备份
@@ -48,7 +49,8 @@ app/
 
 | 路径 | 作用 |
 |------|------|
-| `/` | 站点列表 |
+| `/` | 公开产品官网 |
+| `/dashboard` | 登录后的站点管理，支持卡片与列表 |
 | `/sites/:domain` | 访问统计看板 |
 | `/sites/:domain/health` | 域名/证书到期及 HTTP 200 检查 |
 | `/sites/:domain/settings` | 常规、可见性、脚本及采集文档、搜索集成 |

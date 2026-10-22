@@ -9,7 +9,7 @@ import { passkeyAuthFn, passkeyAuthOptionsFn, verifyLogin2faFn } from "~/lib/aut
 import { useT } from "~/lib/i18n"
 
 export const Route = createFileRoute("/login")({
-  loader: async () => { if (await meFn()) throw redirect({ to: "/" }); return {} },
+  loader: async () => { if (await meFn()) throw redirect({ to: "/dashboard" }); return {} },
   component: LoginPage,
 })
 
@@ -27,7 +27,7 @@ function LoginPage() {
   return (
     <div className="auth-page flex w-full flex-col px-4">
       <div className="flex justify-center pt-4 sm:pt-8">
-        <Link to="/login"><BrandMark /></Link>
+        <Link to="/"><BrandMark /></Link>
       </div>
       <div className="mx-auto mt-8 flex w-full max-w-md flex-col gap-y-2 px-4 text-center">
         <h1 className="auth-heading">{needs2fa ? t("login.2fa_title") : t("login.title")}</h1>
@@ -45,7 +45,7 @@ function LoginPage() {
             try {
               await verifyLogin2faFn({ data: { code } })
               await router.invalidate()
-              await router.navigate({ to: "/" })
+              await router.navigate({ to: "/dashboard" })
             } catch (err) {
               setError(err instanceof Error ? err.message : t("验证失败"))
             } finally {
@@ -77,7 +77,7 @@ function LoginPage() {
                 return
               }
               await router.invalidate()
-              await router.navigate({ to: "/" })
+              await router.navigate({ to: "/dashboard" })
             } catch (err) {
               setError(err instanceof Error ? err.message : t("登录失败"))
             } finally {
@@ -107,7 +107,7 @@ function LoginPage() {
                 const response = await startAuthentication({ optionsJSON: options })
                 await passkeyAuthFn({ data: { response: response as never } })
                 await router.invalidate()
-              await router.navigate({ to: "/" })
+                await router.navigate({ to: "/dashboard" })
               } catch (err) {
                 setError(err instanceof Error ? err.message : t("Passkey 登录失败"))
               }

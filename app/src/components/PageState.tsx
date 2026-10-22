@@ -10,6 +10,6 @@ export function PageState({ title, description }: { title: string; description?:
     <span className="squircle settings-card-icon"><UIIcon name="warn" /></span>
     <h1 className="page-heading">{t(title)}</h1>
     {description ? <p>{t(description)}</p> : null}
-    <Link to="/" className="squircle btn btn-primary"><UIIcon name="arrow" />{t("返回站点")}</Link>
+    <Link to="/dashboard" className="squircle btn btn-primary"><UIIcon name="arrow" />{t("返回站点")}</Link>
   </Surface></Shell>
 }

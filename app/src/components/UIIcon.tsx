@@ -56,6 +56,7 @@ const icons: Record<string, string> = {
   "device-ultrawide": "display",
   browser: "browser",
   link: "link",
+  direct: "arrow-pointer",
   unknown: "circle-question",
   "bar-chart": "chart-simple",
   logout: "arrow-right-from-bracket",

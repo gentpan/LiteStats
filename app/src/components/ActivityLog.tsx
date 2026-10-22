@@ -5,6 +5,7 @@ import { UIIcon } from "./UIIcon"
 import { Surface } from "./Surface"
 import { ActionButton } from "./ActionButton"
 import { countryName } from "~/lib/countries"
+import { isDirectSource } from "~/lib/source-icons"
 import type { RecentEvent } from "~/lib/ch"
 
 function timestamp(value: string) {
@@ -18,7 +19,7 @@ export function ActivityLog({rows, timezone, hasMore}: {rows: RecentEvent[]; tim
   const [page, setPage] = useState(0)
   const types = [{id:"all",label:"全部记录"}, {id:"pageview",label:"页面浏览"}, {id:"session",label:"新会话"}, {id:"custom",label:"自定义事件"}]
   const matchesKind = (row: RecentEvent, value: string) => value === "all" || (value === "custom" ? !["session","pageview"].includes(row.name) : row.name === value)
-  const filtered = useMemo(()=>rows.filter(row=>matchesKind(row,kind) && [row.name,row.name === "session" ? t("新会话") : row.name === "pageview" ? t("页面浏览") : t("自定义事件"),row.pathname,row.source,row.source === "Direct" || !row.source ? t("直接访问") : "",countryName(row.country,locale),row.browser,row.os,row.device].join(" ").toLowerCase().includes(query.trim().toLowerCase())),[rows,kind,query,locale,t])
+  const filtered = useMemo(()=>rows.filter(row=>matchesKind(row,kind) && [row.name,row.name === "session" ? t("新会话") : row.name === "pageview" ? t("页面浏览") : t("自定义事件"),row.pathname,row.source,isDirectSource(row.source) ? t("直接访问") : "",countryName(row.country,locale),row.browser,row.os,row.device].join(" ").toLowerCase().includes(query.trim().toLowerCase())),[rows,kind,query,locale,t])
   const lastPage = Math.max(0, Math.ceil(filtered.length/20)-1)
   const currentPage = Math.min(page,lastPage)
   const visible = filtered.slice(currentPage*20,(currentPage+1)*20)
@@ -41,11 +42,11 @@ export function ActivityLog({rows, timezone, hasMore}: {rows: RecentEvent[]; tim
           <time className="activity-time" dateTime={Number.isNaN(date.getTime()) ? undefined : date.toISOString()}>{time}</time>
           <div className="activity-event"><span className="squircle activity-event-icon"><UIIcon name={row.name === "session" ? "user" : row.name === "pageview" ? "eye" : "code"}/></span><div><strong>{label}</strong><span title={row.pathname}>{row.pathname || "/"}</span></div></div>
           <span className="activity-country">{row.country ? <CountryFlag code={row.country}/> : <UIIcon name="globe"/>}{countryName(row.country,locale)}</span>
-          <div className="activity-device"><strong>{row.source === "Direct" || !row.source ? t("直接访问") : row.source}</strong><span>{[row.browser,row.os,row.device].filter(Boolean).join(" · ") || t("未知设备")}</span></div>
+          <div className="activity-device"><strong>{isDirectSource(row.source) ? t("直接访问") : row.source}</strong><span>{[row.browser,row.os,row.device].filter(Boolean).join(" · ") || t("未知设备")}</span></div>
           <UIIcon name="arrow" className="activity-expand"/>
         </summary>
         <dl className="activity-record-details">
-          {[ [t("事件名称"),row.name], [t("页面路径"),row.pathname || "/"], [t("来源"),row.source === "Direct" || !row.source ? t("直接访问") : row.source], [t("国家/地区"),countryName(row.country,locale)], [t("浏览器"),row.browser], [t("操作系统"),row.os], [t("设备"),row.device], [t("时间"),`${time} (${timezone})`] ].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value || "—"}</dd></div>)}
+          {[ [t("事件名称"),row.name], [t("页面路径"),row.pathname || "/"], [t("来源"),isDirectSource(row.source) ? t("直接访问") : row.source], [t("国家/地区"),countryName(row.country,locale)], [t("浏览器"),row.browser], [t("操作系统"),row.os], [t("设备"),row.device], [t("时间"),`${time} (${timezone})`] ].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value || "—"}</dd></div>)}
         </dl>
       </details></li>
     })}</ol> : <div className="activity-empty"><UIIcon name="activity"/><strong>{t(rows.length ? "没有匹配的活动记录" : "所选时间范围内没有活动")}</strong><p>{t(rows.length ? "尝试调整关键词或事件类型。" : "网站收到访问或自定义事件后，将在这里显示。")}</p>{query || kind !== "all" ? <ActionButton onClick={()=>{setQuery("");setKind("all");setPage(0)}}>{t("清除筛选")}</ActionButton> : null}</div>}

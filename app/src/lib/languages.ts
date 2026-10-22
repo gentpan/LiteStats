@@ -23,15 +23,34 @@ const NAMES: Record<string, string> = {
   uk: "乌克兰语", "he": "希伯来语", "fa": "波斯语",
 }
 
-export function languageName(code: string, locale = "zh-CN") {
+export function languageCode(code: string) {
   const raw = (code || "").replace(/\0/g, "").trim()
-  if (!raw || raw === "(none)" || raw === "(NONE)") return locale === "en" ? "Unknown" : "未知"
-  const key = raw.replace("_", "-")
+  if (!raw || raw.toLowerCase() === "(none)") return ""
+  const key = raw.replace(/_/g, "-")
+  try { return Intl.getCanonicalLocales(key)[0] || key } catch { return key }
+}
+
+/** Locale decoration only; this must never be used as a visitor country. */
+export function languageFlag(code: string) {
+  const key = languageCode(code)
+  if (!key) return "xx"
+  try {
+    const locale = new Intl.Locale(key)
+    if (["und", "mul", "zxx"].includes(locale.language) && !locale.region) return "xx"
+    const region = locale.region || locale.maximize().region
+    return region && /^[A-Z]{2}$/.test(region) ? region.toLowerCase() : "xx"
+  } catch { return "xx" }
+}
+
+export function languageName(code: string, locale = "zh-CN") {
+  const key = languageCode(code)
+  if (!key) return locale === "en" ? "Unknown" : "未知"
   const short = key.split("-")[0]
   if (locale === "en") {
     try { return new Intl.DisplayNames(["en"], { type: "language" }).of(key) || key } catch { return key }
   }
-  return NAMES[key] || NAMES[short] || key
+  if (NAMES[key] || NAMES[short]) return NAMES[key] || NAMES[short]
+  try { return new Intl.DisplayNames(["zh-CN"], { type: "language" }).of(key) || key } catch { return key }
 }
 
 export function parseAcceptLanguage(header: string) {

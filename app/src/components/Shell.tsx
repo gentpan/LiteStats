@@ -49,7 +49,7 @@ function FooterPulse({ user }: { user?: ShellUser }) {
   if (!user || !pulse) return <span />
 
   return (
-    <Link to="/" className="site-footer-pulse">
+    <Link to="/dashboard" className="site-footer-pulse">
       <span>{fill(t("footer.sites"), pulse.sites.count)}</span>
       <span className="site-footer-pulse-dot" aria-hidden="true">·</span>
       <span>{fill(t("footer.today_visitors"), pulse.sites.visitors)}</span>
@@ -66,7 +66,7 @@ export function SiteFooter({ user }: { user?: ShellUser }) {
   return (
     <footer className="site-footer">
       <div className="container-ls site-footer-inner">
-        <Link to={user ? "/" : "/login"} className="site-footer-brand">
+        <Link to={user ? "/dashboard" : "/"} className="site-footer-brand">
           <LogoMark />
           <span className="logo-wordmark">
             <span className="logo-wordmark-lite">Lite</span>
@@ -106,14 +106,14 @@ export function Shell({
 
 function headerNav(t: (key: string) => string): HeaderNavItem[] {
   const items: HeaderNavItem[] = [
-    { key: "sites", to: "/", label: t("nav.sites") },
+    { key: "sites", to: "/dashboard", label: t("nav.sites") },
     { key: "account", to: "/account", search: { tab: "preferences" }, label: t("settings.title") },
   ]
   return items
 }
 
 function navActive(key: string, pathname: string) {
-  if (key === "sites") return pathname === "/" || pathname.startsWith("/sites") || pathname.startsWith("/share")
+  if (key === "sites") return pathname === "/dashboard" || pathname.startsWith("/sites/") || pathname === "/sites" || pathname.startsWith("/share/")
   if (key === "account") return pathname === "/account"
   if (key === "backup") return pathname === "/backup"
   return false
@@ -121,7 +121,7 @@ function navActive(key: string, pathname: string) {
 
 type HeaderNavItem = {
   key: string
-  to: "/" | "/account" | "/backup"
+  to: "/dashboard" | "/account" | "/backup"
   search?: { tab: string }
   label: string
 }
@@ -219,7 +219,7 @@ function SiteHeader({ user }: { user?: ShellUser }) {
     <header className="site-header">
       <div className="container-ls">
         <div className="site-header-bar">
-          <Link to={user ? "/" : "/login"} className="site-header-brand">
+          <Link to={user ? "/dashboard" : "/"} className="site-header-brand">
             <BrandMark />
           </Link>
           {user ? <HeaderNav items={items} pathname={pathname} /> : <span className="hidden md:block" />}

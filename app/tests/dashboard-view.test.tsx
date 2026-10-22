@@ -3,7 +3,8 @@ import { renderToString } from "react-dom/server"
 import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from "@tanstack/react-router"
 import type { ComponentProps } from "react"
 import { AnalyticsDashboard } from "../src/components/AnalyticsDashboard"
-import { I18nProvider } from "../src/lib/i18n"
+import { I18nProvider, type Locale } from "../src/lib/i18n"
+import { List } from "../src/components/ui"
 import { parseDashSearch } from "../src/lib/range"
 
 const data: ComponentProps<typeof AnalyticsDashboard>["data"] = {
@@ -18,9 +19,9 @@ const data: ComponentProps<typeof AnalyticsDashboard>["data"] = {
   searchTerms: {google: {configured: false, rows: []}, bing: {configured: false, rows: []}, organic: []},
 }
 
-async function render(readonly: boolean) {
-  const root = createRootRoute({component: () => <I18nProvider locale="zh-CN"><AnalyticsDashboard data={data} domain="view.test"
-    search={parseDashSearch({period: "7d", source: "Google"})} readonly={readonly} canManage={false} onSearch={() => {}}
+async function render(readonly: boolean, source = "Google", locale: Locale = "zh-CN") {
+  const root = createRootRoute({component: () => <I18nProvider locale={locale}><AnalyticsDashboard data={{...data, sources:[{name:source,value:9}]}} domain="view.test"
+    search={parseDashSearch({period: "7d", source})} readonly={readonly} canManage={false} onSearch={() => {}}
   /></I18nProvider>})
   const router = createRouter({routeTree: root, history: createMemoryHistory({initialEntries: ["/"]})})
   await router.load()
@@ -43,5 +44,33 @@ test("member and share views retain the same metrics, report groups and active f
     expect(html).not.toContain("<iframe")
     expect(html).not.toContain("Google Maps")
     expect(html).not.toContain("Mapbox")
+  }
+})
+
+test("direct traffic uses the same translated label and pointer in member and share reports", async () => {
+  for (const readonly of [false, true]) {
+    for (const locale of ["zh-CN", "en"] as const) {
+      const html = await render(readonly, "Direct", locale)
+      expect(html).toContain(locale === "en" ? "Source: Direct traffic" : "来源 直接访问")
+      expect(html).toContain("fa-arrow-pointer")
+      expect(html).not.toContain('title="Direct"')
+    }
+  }
+})
+
+test("direct card and detail labels preserve counts and do not rename other dimensions or real domains", () => {
+  for (const expanded of [false, true]) {
+    for (const locale of ["zh-CN", "en"] as const) {
+      const label = locale === "en" ? "Direct traffic" : "直接访问"
+      const html = renderToString(<I18nProvider locale={locale}><List plain expanded={expanded} kind="source" rows={[{name:"Direct",value:7},{name:"direct.com",value:3}]} /></I18nProvider>)
+      expect(html).toContain(`title="${label}"`)
+      expect(html).toContain('title="direct.com"')
+      expect(html).toContain(">7</span>")
+      expect(html).toContain(">70%</span>")
+      expect(html).toContain("/favicon/sources/direct.com")
+      const other = renderToString(<I18nProvider locale={locale}><List plain kind="title" rows={[{name:"Direct",value:7}]} /></I18nProvider>)
+      expect(other).toContain('title="Direct"')
+      expect(other).not.toContain(label)
+    }
   }
 })

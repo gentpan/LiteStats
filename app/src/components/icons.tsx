@@ -1,54 +1,95 @@
 import { UIIcon } from "./UIIcon"
 import { ImageWithFallback } from "./ImageWithFallback"
+import { isDirectSource, sourceIconSrc } from "~/lib/source-icons"
 
-const BROWSER_BRANDS: Record<string, string> = {
-  Chrome: "chrome",
-  Chromium: "chrome",
-  Safari: "safari",
-  Firefox: "firefox",
-  "Microsoft Edge": "edge",
-  Edge: "edge",
-  Opera: "opera",
-  "Yandex Browser": "yandex",
-  "QQ Browser": "qq",
-}
+// Original-color SVGs are pinned to The SVG; unsupported products retain their
+// existing local artwork instead of borrowing a different product's brand.
+const platform = (file: string) => `/brands/platforms/${file}.svg`
 
 const BROWSER_ICONS: Record<string, string> = {
-  curl: "curl.svg",
-  Vivaldi: "vivaldi.svg",
-  "Samsung Browser": "samsung-internet.svg",
-  "UC Browser": "uc.svg",
-  "DuckDuckGo Privacy Browser": "duckduckgo.svg",
-  "MIUI Browser": "miui.webp",
-  "Huawei Browser Mobile": "huawei.png",
-  Ecosia: "ecosia.png",
-  "vivo Browser": "vivo.png",
-}
-
-const OS_BRANDS: Record<string, string> = {
-  iOS: "apple",
-  iPadOS: "apple",
-  macOS: "apple",
-  Mac: "apple",
-  Windows: "windows",
-  "Windows Phone": "windows",
-  Android: "android",
-  "GNU/Linux": "linux",
-  Linux: "linux",
-  Ubuntu: "ubuntu",
-  Debian: "debian",
-  "Arch Linux": "linux",
-  "Chrome OS": "chrome",
-  PlayStation: "playstation",
-  Fedora: "fedora",
-  FreeBSD: "freebsd",
+  Chrome: platform("chrome"),
+  "Google Chrome": platform("chrome"),
+  "Chrome Mobile": platform("chrome"),
+  "Chrome Mobile iOS": platform("chrome"),
+  "Chrome Headless": platform("chrome"),
+  Chromium: platform("chromium"),
+  Safari: platform("safari"),
+  "Mobile Safari": platform("safari"),
+  "Safari Mobile": platform("safari"),
+  Firefox: platform("firefox"),
+  "Firefox Mobile": platform("firefox"),
+  "Firefox iOS": platform("firefox"),
+  "Microsoft Edge": platform("edge"),
+  Edge: platform("edge"),
+  "Edge Mobile": platform("edge"),
+  Opera: platform("opera"),
+  "Opera Mobile": platform("opera"),
+  "Opera Mini": platform("opera"),
+  Brave: platform("brave-browser"),
+  "Brave Browser": platform("brave-browser"),
+  "Internet Explorer": platform("internetexplorer"),
+  IE: platform("internetexplorer"),
+  Vivaldi: platform("vivaldi"),
+  "Samsung Browser": platform("samsung-browser"),
+  "Samsung Internet": platform("samsung-browser"),
+  "DuckDuckGo Privacy Browser": platform("duckduckgo"),
+  "DuckDuckGo Browser": platform("duckduckgo"),
+  DuckDuckGo: platform("duckduckgo"),
+  curl: platform("curl"),
+  Ecosia: platform("ecosia"),
+  "Yandex Browser": "/images/icon/browser/yandex.png",
+  "QQ Browser": "/images/icon/browser/qq.png",
+  "UC Browser": "/images/icon/browser/uc.svg",
+  "MIUI Browser": "/images/icon/browser/miui.webp",
+  "Huawei Browser Mobile": "/images/icon/browser/huawei.png",
+  "Huawei Browser": "/images/icon/browser/huawei.png",
+  "vivo Browser": "/images/icon/browser/vivo.png",
 }
 
 const OS_ICONS: Record<string, string> = {
-  "Fire OS": "fire_os.png",
-  HarmonyOS: "harmony_os.png",
-  Tizen: "tizen.png",
-  KaiOS: "kai_os.png",
+  Windows: platform("windows"),
+  "Windows 11": platform("windows11"),
+  Windows11: platform("windows11"),
+  Windows10: platform("windows"),
+  "Windows Phone": platform("windows"),
+  Android: platform("android"),
+  "GNU/Linux": platform("linux"),
+  Linux: platform("linux"),
+  Ubuntu: platform("ubuntu"),
+  Debian: platform("debian"),
+  "Arch Linux": platform("arch-linux"),
+  ArchLinux: platform("arch-linux"),
+  Arch: platform("arch-linux"),
+  Fedora: platform("fedora"),
+  FreeBSD: platform("freebsd"),
+  PlayStation: platform("playstation"),
+  KaiOS: platform("kaios"),
+  iOS: "/images/icon/os/ios.png",
+  iPadOS: "/images/icon/os/ipad_os.png",
+  "iPad OS": "/images/icon/os/ipad_os.png",
+  macOS: "/images/icon/os/mac.png",
+  Mac: "/images/icon/os/mac.png",
+  "Mac OS X": "/images/icon/os/mac.png",
+  "Mac OS": "/images/icon/os/mac.png",
+  "Chrome OS": "/images/icon/os/chrome_os.png",
+  ChromeOS: "/images/icon/os/chrome_os.png",
+  "Fire OS": "/images/icon/os/fire_os.png",
+  FireOS: "/images/icon/os/fire_os.png",
+  HarmonyOS: "/images/icon/os/harmony_os.png",
+  Tizen: "/images/icon/os/tizen.png",
+}
+
+function platformIconSrc(icons: Record<string, string>, name: string) {
+  const normalized = name.trim().toLowerCase().replace(/\s+/g, " ")
+  // Longest alias first keeps e.g. Windows 11 and Chrome Mobile distinct from
+  // the generic family. Require a version boundary, not an arbitrary prefix.
+  const alias = Object.keys(icons).sort((a, b) => b.length - a.length).find((key) => {
+    const lower = key.toLowerCase()
+    if (normalized === lower) return true
+    const suffix = normalized.slice(lower.length)
+    return normalized.startsWith(lower) && /^(?:[ /]+v?\d|[ /]+(?:xp|vista|nt)(?:[ /]|$))/.test(suffix)
+  })
+  return alias ? icons[alias] : undefined
 }
 
 function countryFlagSrc(code: string, shape: "square" | "rect" = "square") {
@@ -85,25 +126,22 @@ export function CountryFlag({ code, className = "", shape = "square" }: { code: 
 
 const rowIconClassName = "mr-2 h-4 w-4 shrink-0"
 
-function AssetIcon({ src, fallback }: { src: string, fallback: string }) {
-  return <ImageWithFallback src={src} className={`${rowIconClassName} object-contain`} fallback={<UIIcon name={fallback} className={rowIconClassName}/>}/>
+function AssetIcon({ src, fallback, className = "" }: { src: string, fallback: string, className?: string }) {
+  return <ImageWithFallback src={src} className={`${rowIconClassName} object-contain ${className}`.trim()} fallback={<UIIcon name={fallback} className={rowIconClassName}/>}/>
 }
 
 function BrowserIcon({ name }: { name: string }) {
-  const brand = BROWSER_BRANDS[name]
-  if (brand) return <UIIcon name={`brand-${brand}`} className={rowIconClassName} />
-  const filename = BROWSER_ICONS[name]
-  if (filename) return <AssetIcon src={`/images/icon/browser/${filename}`} fallback="browser" />
+  const src = platformIconSrc(BROWSER_ICONS, name)
+  if (src) return <AssetIcon src={src} fallback="browser" />
   return <UIIcon name="browser" className={rowIconClassName} />
 }
 
 function OsIcon({ name }: { name: string }) {
-  const brand = OS_BRANDS[name]
-    || Object.entries(OS_BRANDS).find(([key]) => name.startsWith(key))?.[1]
-  if (brand) return <UIIcon name={`brand-${brand}`} className={rowIconClassName} />
-  const filename = OS_ICONS[name]
-    || Object.entries(OS_ICONS).find(([key]) => name.startsWith(key))?.[1]
-  if (filename) return <AssetIcon src={`/images/icon/os/${filename}`} fallback="unknown" />
+  const src = platformIconSrc(OS_ICONS, name)
+  // The retained Apple mark is black; a neutral surface keeps its original
+  // artwork readable in dark mode without recoloring a third-party logo.
+  const surface = src === "/images/icon/os/mac.png" ? "platform-icon-neutral" : ""
+  if (src) return <AssetIcon src={src} fallback="unknown" className={surface} />
   return <UIIcon name="unknown" className={rowIconClassName} />
 }
 
@@ -119,11 +157,13 @@ function DeviceIcon({ name }: { name: string }) {
   return <UIIcon name={DEVICE_ICONS[name] || "unknown"} className="-mt-px h-5 w-5" />
 }
 
-function SourceFavicon({ name }: { name: string }) {
+function SourceIcon({ name }: { name: string }) {
   const key = (name || "").trim()
-  if (!key || key === "Direct" || key === "(none)" || key === "Direct / None") {
-    return <UIIcon name="link" className={rowIconClassName} />
+  if (isDirectSource(key)) {
+    return <UIIcon name="direct" className={rowIconClassName} />
   }
+  const src = sourceIconSrc(key)
+  if (src) return <AssetIcon src={src} fallback="link" className="source-brand-icon" />
   return <AssetIcon src={`/favicon/sources/${encodeURIComponent(key)}`} fallback="link" />
 }
 
@@ -131,7 +171,7 @@ export type RowIconKind = "source" | "country" | "browser" | "os" | "device"
 
 export function RowIcon({ kind, name }: { kind?: RowIconKind, name: string }) {
   if (!kind) return null
-  if (kind === "source") return <SourceFavicon name={name} />
+  if (kind === "source") return <SourceIcon name={name} />
   if (kind === "country") return <CountryFlag code={name} />
   if (kind === "browser") return <BrowserIcon name={name} />
   if (kind === "os") return <OsIcon name={name} />

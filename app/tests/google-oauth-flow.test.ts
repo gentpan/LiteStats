@@ -111,7 +111,7 @@ test("invalid signatures, absent sites and non-admin users cannot exchange or ch
     if (condition === "permission") dependencies.canManage = async () => false
     const url = await run("code=fixture-code&state=fixture-state&domain=other.test&redirect=https://outside.test")
     expect(url.origin).toBe("https://stats.example.test")
-    expect(url.pathname).toBe("/")
+    expect(url.pathname).toBe("/dashboard")
     expect(url.searchParams.get("gsc")).toBe("expired")
     expect(calls).toEqual([])
   }

@@ -78,7 +78,7 @@ export function SiteSwitcher({
         <div className="squircle dashboard-popover absolute left-0 z-20 mt-2 flex w-[min(calc(100vw-2rem),20rem)] origin-top-left flex-col gap-0.5 rounded-md bg-white p-1 font-medium text-gray-800 shadow-lg ring-1 ring-black/5">
           <div className="flex">
             <Link
-              to="/"
+              to="/dashboard"
               className="squircle mx-1 my-1 flex flex-1 items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-gray-400/70 hover:text-gray-900"
               onClick={() => setOpen(false)}
             >

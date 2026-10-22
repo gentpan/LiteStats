@@ -51,7 +51,7 @@ export async function googleOAuthCallback(request: Request, dependencies: Callba
   const state = dependencies.verifyState(url.searchParams.get("state") || "")
   const user = await dependencies.currentUser()
   if (!user) return Response.redirect(new URL("/login", url.origin), 302)
-  const fallback = new URL("/", url.origin)
+  const fallback = new URL("/dashboard", url.origin)
   const site = state ? await dependencies.findSite(state.siteId) : null
   // Neither a supplied domain nor an invalid signature may choose the destination.
   if (!site || !await dependencies.canManage(user.id, site.domain)) {

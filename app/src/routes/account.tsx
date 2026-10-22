@@ -43,7 +43,7 @@ function AccountPage() {
         <SettingsHeader
           title={t("settings.title")}
           back={(
-            <Link to="/" className="squircle btn btn-secondary btn-sm settings-back">
+            <Link to="/dashboard" className="squircle btn btn-secondary btn-sm settings-back">
               <BackArrow />
               {t("settings.back_sites")}
             </Link>

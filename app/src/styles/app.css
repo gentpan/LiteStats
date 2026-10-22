@@ -106,6 +106,12 @@ a {
   max-width: var(--ui-page-width);
 }
 
+.language-row-copy { display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 7px; min-width:0; overflow-wrap:anywhere; }
+.language-row-code { color:var(--color-gray-500); font-size:11px; font-variant-numeric:tabular-nums; }
+.platform-icon-neutral { background-color:#fff; }
+/* Preserve original brand artwork, including black logos, on dark report rows. */
+html[data-theme="dark"] .source-brand-icon { background-color:#fff; border-radius:2px; }
+
 .logo {
   display: inline-flex;
   align-items: center;
@@ -879,11 +885,22 @@ html[data-theme="dark"] { --map-ocean: #242630; --map-empty: #3d4151; --map-bord
 .report-tab-trigger:hover { background:var(--color-gray-100); }
 .report-tab-trigger > span { color:inherit; font-size:inherit; font-weight:inherit; letter-spacing:normal; text-transform:none; }
 .report-card { min-width:0; min-height:460px; padding:var(--ui-card-padding); }
+.report-list-rows { min-height:var(--report-rows-height,0); }
+.report-list-empty { min-height:var(--report-empty-height,160px); }
 .report-card h2, .report-heading h3 { font-size:var(--ui-text-card); line-height:24px; font-weight:600; }
 .report-heading h3 { padding-block:4px; }
 .report-tabs [data-report-dropdown] { position:static; }
 .report-menu { width:min(14rem,100%); min-width:0; }
 .report-heading > div:last-child { flex-shrink:0; }
+@media(max-width:767px) {
+  .report-card { min-height:0; }
+  .report-list-rows { min-height:0; }
+  .report-list-empty { min-height:160px; }
+  .report-tabs { flex:1 1 0; flex-wrap:nowrap; align-items:center; overflow-x:auto; overscroll-behavior-inline:contain; scrollbar-width:none; }
+  .report-tabs::-webkit-scrollbar { display:none; }
+  .report-tabs > * { flex-shrink:0; }
+  .report-tab-trigger { white-space:nowrap; }
+}
 .analytics-panel { background: var(--surface); border: 1px solid var(--color-gray-200); --sq-r:20px; padding: var(--ui-card-padding); min-width: 0; }
 .analytics-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .analytics-heading h3 { font-size: var(--ui-text-card); line-height: 1.5; font-weight: 600; color: var(--color-gray-900); }
@@ -904,9 +921,25 @@ html[data-theme="dark"] { --map-ocean: #242630; --map-empty: #3d4151; --map-bord
 .traffic-day-label { font-size: 10px; color: var(--color-gray-500); align-self: center; }
 .traffic-cell { min-width: 0; height: 20px; --sq-r:8px; transition: opacity 120ms; }
 .traffic-cell:hover, .traffic-cell:focus-visible { outline: 2px solid var(--analytics-accent); outline-offset: 1px; }
-.traffic-caption { min-height: 38px; margin-top: 12px; font-size: var(--ui-text-caption); line-height: 1.6; color: var(--color-gray-500); }
+.traffic-meta { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 12px; margin-top:12px; }
+.traffic-caption { min-height:20px; font-size: var(--ui-text-caption); line-height: 1.6; color: var(--color-gray-500); }
 .traffic-legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 10px; color: var(--color-gray-500); }
 .traffic-legend i { width: 11px; height: 8px; --sq-r:8px; }
+.traffic-hourly { margin-top:18px; padding-top:14px; border-top:1px solid var(--color-gray-100); }
+.traffic-hourly-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.traffic-hourly-heading h4 { font-size:12px; line-height:20px; font-weight:500; color:var(--color-gray-700); }
+.traffic-hourly-heading select { --sq-r:8px; min-height:28px; padding:2px 8px; border:1px solid var(--color-gray-200); background:var(--surface); font-size:11px; color:var(--color-gray-600); }
+.traffic-hourly-chart { display:grid; grid-template-columns:28px minmax(0,1fr); column-gap:3px; row-gap:6px; }
+.traffic-hourly-axis { display:flex; flex-direction:column; justify-content:space-between; font-size:10px; line-height:1; color:var(--color-gray-400); }
+.traffic-hourly-bars { position:relative; display:grid; grid-template-columns:repeat(24,minmax(0,1fr)); gap:3px; height:78px; border-bottom:1px solid var(--color-gray-200); background:repeating-linear-gradient(to top,transparent 0,transparent calc(50% - 1px),var(--color-gray-100) calc(50% - 1px),var(--color-gray-100) 50%); }
+.traffic-hourly-slot { display:flex; align-items:flex-end; min-width:0; height:100%; border-radius:3px 3px 0 0; }
+.traffic-hourly-bar { display:block; width:100%; border-radius:3px 3px 0 0; background:var(--analytics-accent); opacity:.55; }
+.traffic-hourly-slot:is(:hover,:focus-visible,[data-selected="true"]) { background:var(--analytics-tint); }
+.traffic-hourly-slot:is(:hover,:focus-visible,[data-selected="true"]) .traffic-hourly-bar { opacity:1; }
+.traffic-hourly-slot:focus-visible { outline:2px solid var(--analytics-accent); outline-offset:2px; }
+.traffic-hourly-ticks { grid-column:2; display:grid; grid-template-columns:repeat(24,minmax(0,1fr)); gap:3px; font-size:10px; line-height:14px; color:var(--color-gray-400); }
+.traffic-hourly-ticks > span:last-child { text-align:right; }
+.traffic-hourly-empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-size:12px; color:var(--color-gray-400); }
 .analytics-config-link { color: var(--analytics-accent); white-space: nowrap; font-weight: 500; }
 @media (max-width: 1100px) { .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .geography-grid { grid-template-columns: 1fr; } }
 @media (max-width: 639px) {
@@ -917,6 +950,8 @@ html[data-theme="dark"] { --map-ocean: #242630; --map-empty: #3d4151; --map-bord
   .trend-section { --trend-inset:var(--ui-card-padding); padding-inline:var(--ui-card-padding); }
   .traffic-grid { gap: 2px; grid-template-columns: 26px repeat(24, minmax(0, 1fr)); }
   .traffic-cell { height: 18px; }
+  .traffic-hourly-chart { grid-template-columns:26px minmax(0,1fr); column-gap:2px; }
+  .traffic-hourly-bars, .traffic-hourly-ticks { gap:2px; }
 }
 html[data-theme="dark"] :is(.bg-orange-50, .bg-orange-100) { background-color: #383247; }
 html[data-theme="dark"] [class*="group-hover/row:bg-orange-"]:hover { background-color: #443b58; }
