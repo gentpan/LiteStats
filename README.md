@@ -63,6 +63,21 @@ window.litestats?.track("Signup", { plan: "pro" })
 
 站点设置中的“安装脚本”提供网页集成和 `POST /api/event` 使用文档。采集使用缓冲批量写入：网络中断、脚本拦截、浏览器关闭或服务异常仍可能造成数据缺失，HTTP 202 表示请求已接收，不代表已持久化。访客数使用按站点和日期生成的匿名标识估算；访问时长也不是精确计时。
 
+## 读取统计 API
+
+访问实例的 `/docs/api` 查看完整文档，`/api/v1/openapi.json` 提供 OpenAPI 3.1 规范，可用于生成客户端或交给 AI 编程助手。
+
+在“站点设置 → 可见性”创建一个专用分享链接，取 `/share/` 后的凭证保存到服务端环境变量 `LITESTATS_TOKEN`。它也能访问该站点的分享报表；删除分享链接即可撤销调用，不要在公开网页 JS 或 URL 中放入凭证。
+
+```bash
+curl --fail-with-body 'https://stats.example.com/api/v1/stats?period=summary' \
+  -H "Authorization: Bearer $LITESTATS_TOKEN"
+```
+
+`period` 支持 `summary`（默认，一次返回在线、今天和昨天）、`live`、`today`、`yesterday`。在线人数是最近 5 分钟有事件的去重访客；自然日遵循站点时区，UV、会话和 PV 分开返回。接口只读，每应用进程、每凭证 60 次/分钟；推荐 30–60 秒轮询，遇到 429 遵守 `Retry-After`，503 表示暂时无法读取而非零访问量。网页展示请通过自己的后端代理并缓存。
+
+埋点仍使用 `/script.js` 与 `POST /api/event`，查询 API 无需更新已有网站的安装代码。客户端也会遵守浏览器的 DNT 与 GPC 选项；脚本最多缓存 5 分钟。
+
 ## 可选功能
 
 ### 地图与图标

@@ -241,6 +241,7 @@
   "把统计公开，或者继续保持私密。": "Choose whether to make your analytics public.",
   "公开这个站点的仪表盘": "Make this dashboard public",
   "共享链接": "Shared links",
+  "在线人数": "Online visitors",
   "生成不需登录就能打开的报表链接。": "Create a report link that can be opened without signing in.",
   "创建": "Create",
   "定义你希望用户完成的动作，比如访问某个页面或提交表单。": "Define actions you want visitors to complete, such as visiting a page or submitting a form.",

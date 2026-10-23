@@ -1,5 +1,4 @@
 import { UIIcon } from "~/components/UIIcon"
-import { ManagementHeader } from "~/components/ManagementHeader"
 import { Surface } from "~/components/Surface"
 import { ActionButton } from "~/components/ActionButton"
 import { SiteFavicon } from "~/components/SiteFavicon"
@@ -79,15 +78,9 @@ function DashboardPage() {
   return (
     <Shell user={me}>
       <div>
-        <ManagementHeader
-          title={t("nav.sites")}
-          description={t("footer.sites", { n: sites.length })}
-        />
-
-        {gsc === "expired" ? <Surface radius="medium" role="alert" className="mb-6 bg-gray-100 p-3 text-sm leading-relaxed text-gray-700">{t("Google 授权链接已失效，或你已没有该站点的管理权限。请打开对应站点的集成设置，重新连接。")}</Surface> : null}
-
-        <div className="management-toolbar">
-          <div className="relative w-full max-w-80">
+        <h1 className="sr-only">{t("nav.sites")}</h1>
+        <header className="management-toolbar management-overview-toolbar">
+          <div className="management-search relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-800">
               <UIIcon name="search" className="size-4" />
             </div>
@@ -104,19 +97,20 @@ function DashboardPage() {
           </div>
           <div className="management-site-tools">
             <div className="squircle site-layout-switch" role="group" aria-label={t("站点显示方式")}>
-              <button className="squircle btn" data-layout="grid" type="button" aria-pressed={layout === "grid"} onClick={() => changeLayout("grid")}>
+              <button className="squircle btn" data-layout="grid" type="button" aria-label={t("卡片")} title={t("卡片")} aria-pressed={layout === "grid"} onClick={() => changeLayout("grid")}>
                 <UIIcon name="grid" className="size-4" />
-                {t("卡片")}
+                <span className="management-tool-label">{t("卡片")}</span>
               </button>
-              <button className="squircle btn" data-layout="list" type="button" aria-pressed={layout === "list"} onClick={() => changeLayout("list")}>
+              <button className="squircle btn" data-layout="list" type="button" aria-label={t("列表")} title={t("列表")} aria-pressed={layout === "list"} onClick={() => changeLayout("list")}>
                 <UIIcon name="list" className="size-4" />
-                {t("列表")}
+                <span className="management-tool-label">{t("列表")}</span>
               </button>
             </div>
-          <Link to="/sites/new" className="squircle btn btn-primary">
-            <UIIcon name="plus" className="size-4" />{t("添加网站")}</Link>
+          <Link to="/sites/new" className="squircle btn btn-primary" aria-label={t("添加网站")} title={t("添加网站")}>
+            <UIIcon name="plus" className="size-4" /><span className="management-tool-label">{t("添加网站")}</span></Link>
           </div>
-        </div>
+        </header>
+        {gsc === "expired" ? <Surface radius="medium" role="alert" className="mb-6 bg-gray-100 p-3 text-sm leading-relaxed text-gray-700">{t("Google 授权链接已失效，或你已没有该站点的管理权限。请打开对应站点的集成设置，重新连接。")}</Surface> : null}
         {layoutSaveFailed ? <p className="text-xs text-gray-500" role="status">{t("已切换，当前浏览器无法保存显示方式。")}</p> : null}
 
         {q && filtered.length === 0 ? (

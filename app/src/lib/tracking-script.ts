@@ -1,21 +1,22 @@
 export const trackingScript = `(() => {
   const s = document.currentScript;
   if (!s || !s.src) return;
-  const domain = s && s.getAttribute("data-domain");
+  const domain = s.getAttribute("data-domain");
   let endpoint;
   try { endpoint = new URL(s.getAttribute("data-api") || "/api/event", s.src).href; } catch (e) { return; }
   const installed = window.__litestatsTrackers || (window.__litestatsTrackers = Object.create(null));
   const trackerKey = JSON.stringify([endpoint, domain]);
   if (installed[trackerKey]) return;
   installed[trackerKey] = true;
-  const trackOutbound = !s || s.getAttribute("data-outbound") !== "false";
-  const trackFiles = !s || s.getAttribute("data-file-downloads") !== "false";
+  const trackOutbound = s.getAttribute("data-outbound") !== "false";
+  const trackFiles = s.getAttribute("data-file-downloads") !== "false";
   let pageKey = "";
   const entryReferrer = document.referrer;
   function beacon(body) {
     try { if (navigator.sendBeacon) navigator.sendBeacon(endpoint, new Blob([body], { type: "text/plain;charset=UTF-8" })); } catch (e) {}
   }
   function deliver(body, attempt) {
+    if (navigator.doNotTrack === "1" || navigator.globalPrivacyControl === true) return;
     if (typeof fetch !== "function") { beacon(body); return; }
     try {
       fetch(endpoint, { method: "POST", body, headers: { "Content-Type": "text/plain;charset=UTF-8" }, credentials: "omit", keepalive: true }).then(function (response) {
@@ -59,7 +60,7 @@ export const trackingScript = `(() => {
   });
   window.addEventListener("popstate", function () { pageview(); });
   window.addEventListener("pageshow", function (ev) { if (ev.persisted) pageview(true); });
-  document.addEventListener("click", function (ev) {
+  if (trackOutbound || trackFiles) document.addEventListener("click", function (ev) {
     const a = ev.target && ev.target.closest ? ev.target.closest("a") : null;
     if (!a || !a.href) return;
     let url;

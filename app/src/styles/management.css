@@ -14,7 +14,9 @@
 .management-shell .input { font-size:var(--ui-text-input); box-shadow:none; }
 .management-shell .ui-action, .management-shell .btn { --sq-r:15px; font-weight:500; }
 .management-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:16px 0; border-top:1px solid var(--color-gray-200); margin-bottom:8px; }
-.management-search { width:320px; max-width:100%; }
+.management-search { display:flex; align-items:center; width:320px; max-width:100%; min-width:0; }
+.management-search .input { display:block; height:var(--ui-control-height); }
+.management-search .input:focus { outline:none; outline-offset:0; box-shadow:none; border-color:var(--analytics-accent); }
 .management-search > span { display:none; }
 .management-create-form { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:20px; margin-bottom:20px; background:var(--surface); border:1px solid var(--color-gray-200); --sq-r:15px; }
 .management-create-form .input { flex:1 1 240px; }
@@ -68,7 +70,7 @@
   .management-shell .activity-type-tabs { gap:4px; }
   .management-shell .activity-page-toolbar { padding:14px; }
   .management-toolbar { gap:12px; }
-  .management-toolbar > .relative { max-width:none; }
+  .management-search { width:100%; max-width:none; }
 }
 .management-shell .settings-layout { position:relative; }
 .management-shell .settings-layout::before { content:""; position:absolute; top:0; bottom:0; left:215px; width:1px; background:var(--color-gray-200); pointer-events:none; }
@@ -92,8 +94,18 @@
 
 /* Site overview: one data set, with a remembered row or card presentation. */
 .management-site-tools { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
-.site-layout-switch { display:flex; flex:none; gap:4px; padding:4px; background:var(--color-gray-100); }
-.management-shell .site-layout-switch > .btn { --control-size:var(--ui-control-compact); padding:4px 10px; border:0; background:transparent; gap:6px; color:var(--color-gray-500); }
+.site-layout-switch { display:flex; flex:none; align-items:center; height:var(--ui-control-height); gap:4px; padding:0; background:var(--color-gray-100); }
+.management-shell .site-layout-switch > .btn { --control-size:var(--ui-control-height); padding-inline:10px; border:0; background:transparent; gap:6px; color:var(--color-gray-500); }
+.management-site-tools > .btn { --control-size:var(--ui-control-height); }
+.management-overview-toolbar { flex-wrap:nowrap; border:0; padding:0; margin:32px 0 24px; }
+.management-overview-toolbar > .management-search { flex:0 1 320px; }
+.management-overview-toolbar > .management-site-tools { flex:none; flex-wrap:nowrap; width:auto; }
+@media(max-width:639px) {
+  .management-overview-toolbar { gap:8px; margin:24px 0 20px; }
+  .management-overview-toolbar > .management-search { flex:1 1 0; width:0; }
+  .management-overview-toolbar .management-tool-label { display:none; }
+  .management-overview-toolbar .management-site-tools .btn { width:var(--ui-control-height); min-width:var(--ui-control-height); padding-inline:0; }
+}
 .management-shell .site-layout-switch > .btn:hover { background:var(--color-gray-200); color:var(--color-gray-900); }
 /* The early preference script also controls selection before React hydrates. */
 html[data-site-layout="grid"] .management-shell .site-layout-switch > button[data-layout="grid"],

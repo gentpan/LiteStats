@@ -5,7 +5,7 @@ import { trackingScript } from "../src/lib/tracking-script"
 type Listener = { callback: (event: Record<string, unknown>) => void, once: boolean }
 type Payload = { n: string, d: string, u: string, r: string, w: number, t: string, l: string, s: string, p?: Record<string, string> }
 
-function tracker(options: { attrs?: Record<string, string>, prerendering?: boolean, fetch?: ((url: string, init: RequestInit) => Promise<Response>) | null, script?: boolean } = {}) {
+function tracker(options: { attrs?: Record<string, string>, prerendering?: boolean, fetch?: ((url: string, init: RequestInit) => Promise<Response>) | null, script?: boolean, dnt?:string, gpc?:boolean } = {}) {
   const documentEvents = new Map<string, Listener[]>()
   const windowEvents = new Map<string, Listener[]>()
   const requests: { url: string, init: RequestInit, payload: Payload }[] = []
@@ -45,7 +45,7 @@ function tracker(options: { attrs?: Record<string, string>, prerendering?: boole
   const context = {
     document, window, location,
     history: { pushState: navigate, replaceState: navigate },
-    navigator: { language: "zh-CN", sendBeacon: (url: string, body: Blob) => { beacons.push({ url, body }); return true } },
+    navigator: { language: "zh-CN", doNotTrack:options.dnt, globalPrivacyControl:options.gpc, sendBeacon: (url: string, body: Blob) => { beacons.push({ url, body }); return true } },
     innerWidth: 320, screen: { width: 320, height: 800 }, Blob, URL,
     fetch: options.fetch === null ? undefined : ((url: string, init: RequestInit) => {
       requests.push({ url, init, payload: JSON.parse(String(init.body)) })
@@ -159,6 +159,28 @@ describe("browser tracker navigation and installation", () => {
 })
 
 describe("browser tracker delivery", () => {
+  test.each([{dnt:"1"},{gpc:true}])("privacy preferences prevent pageviews and custom events, including Beacon", options => {
+    for (const fetch of [undefined,null]) {
+      const app=tracker({...options,fetch})
+      app.window.litestats!.track("Signup")
+      app.history.pushState(null,"","/pricing")
+      app.click("https://outside.example.com/report.pdf")
+      expect(app.requests).toHaveLength(0)
+      expect(app.beacons).toHaveLength(0)
+    }
+  })
+
+  test("a privacy change also suppresses an already scheduled retry", async () => {
+    const app=tracker({fetch:()=>Promise.resolve(Response.json({error:"event_buffer_full"},{status:503}))})
+    await settle()
+    expect(app.timers).toHaveLength(1)
+    app.navigator.globalPrivacyControl=true
+    app.timers.shift()!.run()
+    app.window.litestats!.track("Signup")
+    await settle()
+    expect(app.requests).toHaveLength(1)
+  })
+
   test("only a definite unqueued event retries twice, with the original payload", async () => {
     const app = tracker({ fetch: () => Promise.resolve(Response.json({ error: "event_buffer_full" }, { status: 503 })) })
     await settle()

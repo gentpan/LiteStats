@@ -108,6 +108,7 @@ function headerNav(t: (key: string) => string): HeaderNavItem[] {
   const items: HeaderNavItem[] = [
     { key: "sites", to: "/dashboard", label: t("nav.sites") },
     { key: "account", to: "/account", search: { tab: "preferences" }, label: t("settings.title") },
+    { key: "api", to: "/docs/api", label: "API" },
   ]
   return items
 }
@@ -116,12 +117,13 @@ function navActive(key: string, pathname: string) {
   if (key === "sites") return pathname === "/dashboard" || pathname.startsWith("/sites/") || pathname === "/sites" || pathname.startsWith("/share/")
   if (key === "account") return pathname === "/account"
   if (key === "backup") return pathname === "/backup"
+  if (key === "api") return pathname === "/docs/api"
   return false
 }
 
 type HeaderNavItem = {
   key: string
-  to: "/dashboard" | "/account" | "/backup"
+  to: "/dashboard" | "/account" | "/backup" | "/docs/api"
   search?: { tab: string }
   label: string
 }
