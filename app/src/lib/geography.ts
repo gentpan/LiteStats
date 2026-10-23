@@ -1,0 +1,40 @@
+import subdivisions from "../assets/subdivisions.json"
+import { countryName } from "./countries"
+
+const names: Record<string, string[]> = subdivisions
+const aliases = new Map<string, string>()
+const clean = (value: string) => value.normalize("NFKC").trim().toLowerCase()
+
+function alias(country: string, value: string) {
+  return `${country}:${clean(value)}`
+}
+
+for (const [code, translations] of Object.entries(names)) {
+  for (const text of translations) {
+    if (!text) continue
+    const country = code.slice(0, 2).toUpperCase()
+    aliases.set(alias(country, text), code)
+    if (country === "CN") aliases.set(alias(country, text.replace(/(?:壮族自治区|回族自治区|维吾尔自治区|自治区|特别行政区|省|市)$/, "")), code)
+  }
+}
+
+/** Resolve imported ISO codes and provider names without rewriting stored groups. */
+export function subdivisionCode(country: string, region: string): string {
+  country = country.trim().toUpperCase()
+  const key = clean(region).replace(/[-_]/g, "")
+  const code = (key.startsWith(country.toLowerCase()) && names[key] ? key : names[country.toLowerCase() + key] ? country.toLowerCase() + key : undefined)
+    || aliases.get(alias(country, region))
+  return code ? `${code.slice(0, 2).toUpperCase()}-${code.slice(2).toUpperCase()}` : ""
+}
+
+export function geographyLabel(kind: "region" | "city", name: string, country: string, locale: string): string {
+  const explicitCountry = name.match(/^([a-z]{2})[-_]/i)?.[1]
+  const nation = (country || explicitCountry || "").trim().toUpperCase()
+  const code = subdivisionCode(nation, name)
+  const translations = code ? names[code.replace("-", "").toLowerCase()] : undefined
+  const unknown = locale === "en" ? (kind === "city" ? "Unknown city" : "Unknown region") : (kind === "city" ? "未知城市" : "未知地区")
+  const raw = name.trim()
+  const text = translations?.[locale === "en" ? 0 : 1] || translations?.[0]
+    || (!raw || /^\d+$/.test(raw) || /^\(?none\)?$/i.test(raw) || /^[A-Z]{2}[-_][A-Z0-9]{1,4}$/.test(raw) ? unknown : raw)
+  return nation ? `${countryName(nation, locale)} · ${text}` : text
+}

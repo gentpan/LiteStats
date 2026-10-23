@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Surface } from "./Surface"
 import { TrafficHeatmap } from "./TrafficHeatmap"
 import { DashTopBar } from "./DashTopBar"
+import { RecentVisitors } from "./RecentVisitors"
 import { VisitorGraph } from "./VisitorGraph"
 import { MapCard } from "./WorldMap"
 import { List, ReportCard, ReportMenu } from "./ui"
@@ -32,6 +33,7 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
 }) {
   const { t, locale } = useT()
   const [metric, setMetric] = useState<MetricKey>("visitors")
+  const [visitorsOpen, setVisitorsOpen] = useState(false)
   const [sourceTab, setSourceTab] = useState("source")
   const [pageTab, setPageTab] = useState("pages")
   const [pageMode, setPageMode] = useState("path")
@@ -58,7 +60,16 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
     <div className="analytics-dashboard mb-16 grid min-w-0 grid-cols-1 md:grid-cols-2">
       <DashTopBar
         domain={domain}
-        live={data.overview.live}
+        filters={chips.length ? <div className="dash-active-filters" role="group" aria-label={t("筛选")}>
+          {chips.map((c) => (
+            <button key={c.key} type="button" title={c.label} className="squircle active-filter-chip flex min-h-8 items-center gap-1.5 rounded-md px-2.5 py-1 text-sm" onClick={() => go({ [c.key]: "" })}>
+              {c.key !== "page" ? <span className="report-value-icon"><RowIcon kind={c.key} name={String(search[c.key] || "")}/></span> : null}
+              <span className="filter-chip-label">{c.label}</span>
+              <UIIcon name="close" className="ml-1.5 size-3"/>
+            </button>
+          ))}
+          <button type="button" className="squircle control-compact text-sm text-gray-500 hover:text-gray-900" onClick={() => go({ source: "", page: "", country: "", browser: "", os: "", device: "" })}>{t("清除筛选")}</button>
+        </div> : null}
         filterOptions={{page:data.pages,source:data.sources.map(row=>({...row,label:isDirectSource(row.name) ? t("直接访问") : row.name})),country:data.countries.map(row=>({...row,label:countryName(row.name,locale)})),device:data.devices,browser:data.browsers,os:data.os}}
         search={search}
         onPeriod={go}
@@ -88,19 +99,6 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
         })}
       />
 
-      {chips.length ? (
-        <div className="col-span-full flex flex-wrap gap-2">
-          {chips.map((c) => (
-            <button key={c.key} type="button" className="squircle active-filter-chip flex min-h-8 max-w-full items-center gap-1.5 rounded-md px-2.5 py-1 text-sm" onClick={() => go({ [c.key]: "" })}>
-              {c.key !== "page" ? <span className="report-value-icon"><RowIcon kind={c.key} name={String(search[c.key] || "")}/></span> : null}
-              <span className="min-w-0 [overflow-wrap:anywhere]">{t(c.label)}</span>
-              <UIIcon name="close" className="ml-1.5 size-3"/>
-            </button>
-          ))}
-          <button type="button" className="squircle control-compact text-sm text-gray-500 hover:text-gray-900" onClick={() => go({ source: "", page: "", country: "", browser: "", os: "", device: "" })}>{t("清除筛选")}</button>
-        </div>
-      ) : null}
-
       <VisitorGraph
         overview={data.overview}
         compare={data.compare}
@@ -128,11 +126,13 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
         rows={countries}
         live={data.liveGeo || []}
         liveCount={data.overview.live}
+        onViewVisitors={readonly ? undefined : () => setVisitorsOpen(true)}
         onCountryClick={(code) => {
           setLocationTab("regions")
           go({ country: code })
         }}
       />
+      {visitorsOpen && !readonly ? <RecentVisitors domain={domain} onClose={() => setVisitorsOpen(false)} /> : null}
 
       <ReportCard className="location-report col-span-full"
         tabs={[{ id: "countries", label: "国家/地区" }, { id: "regions", label: "地区" }, { id: "cities", label: "城市" }]}

@@ -209,7 +209,7 @@ export function List({
                       <div className="flex w-full items-center justify-start gap-x-1.5">
                         <span className={`flex w-full min-w-0 max-w-full items-center gap-x-2 ${expanded || kind === "language" ? "" : "overflow-hidden"}`}>
                           {flagKind && r.code ? <CountryFlag code={r.code}/> : null}
-                          <ReportValue kind={kind} name={r.name} label={r.label} wrap={expanded}/>
+                          <ReportValue kind={kind} name={r.name} label={r.label} code={r.code} wrap={expanded}/>
                         </span>
                         {r.href ? (
                           <a

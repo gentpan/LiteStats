@@ -16,5 +16,5 @@ export function countryName(code: string, locale = "zh-CN") {
   const key = (code || "").trim().toUpperCase()
   if (!key || key === "(NONE)") return locale === "en" ? "Unknown" : "未知"
   if (locale === "en" && /^[A-Z]{2}$/.test(key)) return new Intl.DisplayNames(["en"], { type: "region" }).of(key) || key
-  return zh[key] || key
+  return zh[key] || (/^[A-Z]{2}$/.test(key) ? new Intl.DisplayNames(["zh-CN"], { type: "region" }).of(key) : undefined) || key
 }

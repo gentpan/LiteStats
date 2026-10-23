@@ -51,6 +51,18 @@ async function withQueue(run: (state: {
   }
 }
 
+test("queued events retain country, region and city without storing the client IP", async () => {
+  await withQueue(async ({batches, succeed}) => {
+    queueEvent({...event(1),country:"CN",region:"北京",subdivision:"CN-BJ",city:"北京市"})
+    const flush = flushEventQueue()
+    await waitFor(() => batches.length === 1)
+    expect(batches[0][0]).toMatchObject({country_code:"CN",region_name:"北京",subdivision1_code:"CN-BJ",city_name:"北京市"})
+    expect(batches[0][0]).not.toHaveProperty("ip")
+    succeed()
+    await flush
+  })
+})
+
 test("failed batch is retained at exactly 10,000 outstanding events", async () => {
   await withQueue(async ({batches, reject, succeed, failures, warnings}) => {
     for (let id = 0; id < 10_000; id++) expect(queueEvent(event(id))).toBe(true)

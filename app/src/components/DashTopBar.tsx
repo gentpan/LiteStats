@@ -1,9 +1,8 @@
-import { RecentVisitors } from "./RecentVisitors"
 import { isCalendarDate, isDateRange } from "~/lib/date-time"
 import { Link } from "@tanstack/react-router"
 import { UIIcon } from "~/components/UIIcon"
 import { useT } from "~/lib/i18n"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { SiteSwitcher } from "~/components/SiteSwitcher"
 import { ReportFilter } from "./ReportFilter"
 import { INTERVAL_LABEL, PERIOD_LABEL, availableIntervals, intervalStorageKey, periodLabel, type DashSearch, type Interval, type Period } from "~/lib/range"
@@ -43,7 +42,7 @@ const FILTERS: Array<{ key: keyof DashSearch, label: string }> = [
 
 export function DashTopBar({
   domain,
-  live,
+  filters,
   search,
   onPeriod,
   readonly,
@@ -52,7 +51,7 @@ export function DashTopBar({
   filterOptions = {},
 }: {
   domain: string
-  live: number
+  filters?: ReactNode
   search: DashSearch
   onPeriod: (next: Partial<DashSearch>) => void
   readonly?: boolean
@@ -62,7 +61,6 @@ export function DashTopBar({
 }) {
   const { t } = useT()
   const [open, setOpen] = useState<"filter" | "period" | "more" | null>(null)
-  const [visitorsOpen, setVisitorsOpen] = useState(false)
   const [custom, setCustom] = useState(false)
   const [customFrom, setCustomFrom] = useState("")
   const [customTo, setCustomTo] = useState("")
@@ -85,7 +83,7 @@ export function DashTopBar({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (visitorsOpen || e.isComposing || e.keyCode === 229 || document.querySelector('dialog[open], [aria-modal="true"]')) return
+      if (e.isComposing || e.keyCode === 229 || document.querySelector('dialog[open], [aria-modal="true"]')) return
       if (e.key === "Escape") {
         setOpen(null)
         setCustom(false)
@@ -118,29 +116,16 @@ export function DashTopBar({
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [onPeriod, search.period, search.interval, search.from, search.to, domain, visitorsOpen])
+  }, [onPeriod, search.period, search.interval, search.from, search.to, domain])
 
   const label = periodLabel(search.period, { from: search.from, to: search.to })
 
   return (
     <div className="dash-toolbar col-span-full flex w-full min-w-0 flex-wrap items-center gap-x-1 gap-y-2 py-1 md:gap-x-2.5">
-      <div className="flex shrink-0 items-center gap-x-1 md:gap-x-2.5">
+      <div className="dash-identity">
         <SiteSwitcher domain={domain} readonly={readonly} canManage={canManage} />
-        {(
-          <button
-            type="button"
-            className="squircle control-trigger flex items-center gap-x-1.5 rounded-md px-2 text-sm font-medium text-gray-700 hover:bg-gray-150/80"
-            onClick={() => readonly ? onPeriod({ period: "realtime" }) : setVisitorsOpen(true)}
-            aria-label={t("查看最近访客")}
-            title={t("近 5 分钟活跃访客")}
-          >
-            <UIIcon name="circle" className="inline-block size-2 text-green-500" />
-            <span className="text-gray-500">{live}<span className="ml-1 hidden lg:inline">{t("当前访客")}</span></span>
-          </button>
-        )}
+        {filters}
       </div>
-      {visitorsOpen && !readonly ? <RecentVisitors domain={domain} onClose={() => setVisitorsOpen(false)} /> : null}
-      <div className="flex min-w-0 flex-1" />
       <div className="dash-actions relative ml-auto flex shrink-0 items-center gap-x-1 md:gap-x-2.5" ref={box}>
         {!readonly ? <Link to="/sites/$domain/keywords" params={{domain}} className="squircle activity-entry"><UIIcon name="search" />{t("关键词")}</Link> : null}
         {!readonly ? <Link to="/sites/$domain/health" params={{domain}} className="squircle activity-entry"><UIIcon name="shield" />{t("站点检查")}</Link> : null}

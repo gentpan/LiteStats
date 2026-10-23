@@ -61,8 +61,8 @@ function LoginPage() {
                 <input className="squircle input" value={code} onChange={(e) => setCode(e.target.value)} required autoFocus />
               </label>
               {error ? <p role="alert" className="text-sm text-red-500">{t(error || "")}</p> : null}
-              <ActionButton className="btn btn-primary w-full" icon="lock" disabled={pending} type="submit">
-                {pending ? t("验证中…") : t("login.2fa_submit")}
+              <ActionButton className="btn btn-primary w-full" icon="lock" loading={pending} type="submit">
+                {pending ? t("login.verifying") : t("login.2fa_submit")}
               </ActionButton>
               <ActionButton type="button" className="btn btn-ghost w-full" onClick={() => { setNeeds2fa(false); setCode("") }}>{t("login.back")}</ActionButton>
             </form>
@@ -97,8 +97,8 @@ function LoginPage() {
                 <input className="squircle input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </label>
               {error ? <p role="alert" className="text-sm text-red-500">{t(error || "")}</p> : null}
-              <ActionButton className="btn btn-primary w-full" icon="lock" disabled={pending} type="submit">
-                {pending ? t("登录中…") : t("login.submit")}
+              <ActionButton className="btn btn-primary w-full" icon="lock" loading={pending} type="submit">
+                {pending ? t("login.pending") : t("login.submit")}
               </ActionButton>
               {passkeyEnabled ? <ActionButton
                 type="button"

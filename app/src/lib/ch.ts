@@ -286,6 +286,10 @@ export async function ensureEventColumns() {
     ["screen_resolution", "LowCardinality(String) DEFAULT ''"],
     ["url_query", "String DEFAULT ''"],
     ["search_query", "String DEFAULT ''"],
+    ["region_name", "String DEFAULT ''"],
+    ["subdivision1_code", "LowCardinality(String) DEFAULT ''"],
+    ["city_name", "String DEFAULT ''"],
+    ["city_geoname_id", "UInt32 DEFAULT 0"],
   ]
   for (const [name, typ] of cols) {
     await ch().command({ query: `ALTER TABLE events_v2 ADD COLUMN IF NOT EXISTS ${name} ${typ}` })
@@ -526,6 +530,9 @@ export type EventPayload = {
   osVersion?: string
   device?: string
   country?: string
+  region?: string
+  subdivision?: string
+  city?: string
   title?: string
   language?: string
   screen?: string
@@ -554,6 +561,9 @@ function toClickHouseRow(ev: EventPayload) {
     operating_system_version: ev.osVersion || "",
     screen_size: ev.device || "",
     country_code: /^[A-Za-z]{2}$/.test(ev.country || "") ? ev.country!.toUpperCase() : "",
+    region_name: (ev.region || "").slice(0, 150),
+    subdivision1_code: (ev.subdivision || "").slice(0, 16),
+    city_name: (ev.city || "").slice(0, 150),
     page_title: (ev.title || "").slice(0, 300),
     browser_language: (ev.language || "").slice(0, 16),
     screen_resolution: (ev.screen || "").slice(0, 32),

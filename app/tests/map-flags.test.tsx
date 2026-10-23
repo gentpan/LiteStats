@@ -37,11 +37,11 @@ test("map flags save independently and blocked storage cannot break switching", 
   withStorage({setItem: () => {throw new Error("Blocked")}}, () => { expect(() => saveMapFlags(true)).not.toThrow() })
 })
 
-test("both map engines expose the same enabled flag switch before the unchanged live count", () => {
+test("both map engines retain the flag switch beside the title and live count", () => {
   for (const mapboxToken of ["", "pk.fixture-only"]) {
     const html = renderToString(<MapCard mapboxToken={mapboxToken} rows={[{name: "CN", value: 23}]} live={[{country: "CN"}]} liveCount={7}/>)
     expect(html).toContain('type="checkbox" role="switch" checked=""')
-    expect(html.indexOf("国旗")).toBeLessThan(html.indexOf("当前访客"))
+    expect(html.indexOf("当前访客")).toBeLessThan(html.indexOf("国旗"))
     expect(html).toContain('class="map-live-count')
     expect(html).toContain("7")
     expect(html).toContain('data-show-flags="true"')

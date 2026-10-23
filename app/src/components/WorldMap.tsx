@@ -336,12 +336,14 @@ export function MapCard({
   rows,
   live = [],
   liveCount = 0,
+  onViewVisitors,
   onCountryClick,
 }: {
   mapboxToken?: string
   rows: Array<{ name: string, value: number, label?: string }>
   live?: Array<{ country: string }>
   liveCount?: number
+  onViewVisitors?: () => void
   onCountryClick?: (code: string) => void
 }) {
   const { t } = useT()
@@ -353,28 +355,27 @@ export function MapCard({
     saveMapFlags(show)
   }
 
+  const liveStatus = <><span className="map-live-dot" aria-hidden="true"/><strong>{liveCount}</strong><span>{t("当前访客")}</span></>
+
   return (
     <section className="geography-section col-span-full">
       <div className="geography-grid geography-with-ranking">
         <Surface className="geography-map analytics-panel">
-          <div className="analytics-heading">
-            <div className="flex min-w-0 items-center gap-2">
-              <h3 className="text-sm font-bold text-gray-900">{t("访客分布")}</h3>
+          <div className="analytics-heading geography-map-heading">
+            <div className="map-heading-title">
+              <h3>{t("访客分布")}</h3>
               <HelpHint>
                 <p>{t("查看访客来自哪里，点击国家可筛选报表。")}</p>
                 <p>{t("按国家/地区汇总，标记不是访客的精确位置。占比按已记录的地区访客数计算。")}</p>
               </HelpHint>
             </div>
-            <div className="map-heading-controls">
+            {onViewVisitors ? <button type="button" className="map-live-count" aria-label={t("查看最近访客")} title={t("近 5 分钟活跃访客")} onClick={onViewVisitors}>{liveStatus}</button>
+              : <div className="map-live-count" title={t("近 5 分钟活跃访客")}>{liveStatus}</div>}
               <label className="map-flags-toggle">
                 <span>{t("国旗")}</span>
                 <input className="sr-only" type="checkbox" role="switch" checked={showFlags} onChange={event => changeFlags(event.target.checked)}/>
                 <span className="squircle map-flags-track" aria-hidden="true"><span className="squircle map-flags-thumb"/></span>
               </label>
-              <div className="map-live-count flex items-center gap-1.5 text-xs font-medium text-gray-500">
-                <span className="inline-block size-2 rounded-full bg-green-500" />
-                {liveCount} {t("当前访客")}</div>
-            </div>
           </div>
           <VisitorMap key={mapboxToken} token={mapboxToken} rows={rows} live={live} showFlags={showFlags} onCountryClick={onCountryClick} />
 

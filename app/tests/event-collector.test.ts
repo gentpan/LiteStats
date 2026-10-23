@@ -2,6 +2,7 @@ import { expect, spyOn, test } from "bun:test"
 import * as database from "../src/lib/db"
 import * as clickhouse from "../src/lib/ch"
 import { Route } from "../src/routes/api/event"
+import * as location from "../src/lib/visitor-location"
 
 // Invoke the actual HTTP route while intercepting every database/queue operation.
 // These tests never connect to a database or create real analytics events.
@@ -66,4 +67,17 @@ test("privacy opt-out, invalid payloads and unknown sites do not enqueue analyti
     expect(session).not.toHaveBeenCalled()
     expect(queue).not.toHaveBeenCalled()
   })
+})
+
+test("collector preserves provider geography and uses the proxy peer for lookup", async () => {
+  const geo = spyOn(location, "visitorLocation").mockResolvedValue({country:"CN",region:"北京",subdivision:"CN-BJ",city:"北京市"})
+  try {
+    await withCollector(async ({queue}) => {
+      const response = await collect({request: request({"x-forwarded-for":"192.168.1.1, 8.8.8.8", "cf-connecting-ip":"1.1.1.1", "cf-ipcountry":"CN"})})
+      expect(response.status).toBe(202)
+      expect(geo).toHaveBeenCalledWith("8.8.8.8", "CN")
+      expect(queue.mock.calls[0][0]).toMatchObject({country:"CN",region:"北京",subdivision:"CN-BJ",city:"北京市"})
+      expect(queue.mock.calls[0][0]).not.toHaveProperty("ip")
+    })
+  } finally {geo.mockRestore()}
 })

@@ -8,6 +8,7 @@ import { queueEvent } from "~/lib/ch"
 import { extractSearchQuery, parseAcceptLanguage } from "~/lib/languages"
 import { parseUa, screenSize } from "~/lib/ua"
 import { dateInTimezone } from "~/lib/date-time"
+import { visitorAddress, visitorLocation } from "~/lib/visitor-location"
 
 export const Route = createFileRoute("/api/event")({
   server: {
@@ -58,12 +59,7 @@ export const Route = createFileRoute("/api/event")({
         } catch {
           /* ignore */
         }
-        const ip = (
-          request.headers.get("cf-connecting-ip") ||
-          request.headers.get("x-real-ip") ||
-          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-          "0"
-        )
+        const ip = visitorAddress(request.headers)
         const ua = request.headers.get("user-agent") || ""
         const day = dateInTimezone(site.timezone)
         const visitorId = createHmac("sha256", SESSION_KEY).update(`${site.id}|${ip}|${ua}|${day}`).digest("hex")
@@ -82,6 +78,7 @@ export const Route = createFileRoute("/api/event")({
         const screen = String(body.s || body.screen || "").replace(/\s+/g, "").toLowerCase().replace("x", "x")
         const title = String(body.t || body.title || "")
         const keyword = extractSearchQuery(referrer)
+        const location = await visitorLocation(ip, request.headers.get("cf-ipcountry") || request.headers.get("x-country") || "")
 
         const accepted = queueEvent({
           siteId: site.id,
@@ -97,7 +94,7 @@ export const Route = createFileRoute("/api/event")({
           os: parsed.os,
           osVersion: parsed.osVersion,
           device: screenSize(width),
-          country: request.headers.get("cf-ipcountry") || request.headers.get("x-country") || "",
+          ...location,
           title,
           language,
           screen,

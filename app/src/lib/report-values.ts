@@ -2,13 +2,15 @@ import { countryName } from "./countries"
 import { translate, type Locale } from "./i18n"
 import { languageCode, languageName } from "./languages"
 import { isDirectSource } from "./source-icons"
+import { geographyLabel } from "./geography"
 
-type ReportValue = { name: string; label?: string }
+type ReportValue = { name: string; label?: string; code?: string }
 
 /** Resolve display text at render time so changing locale cannot leave stale labels. */
-export function reportValueLabel(kind: string | undefined, name: string, locale: Locale, label?: string): string {
+export function reportValueLabel(kind: string | undefined, name: string, locale: Locale, label?: string, country?: string): string {
   if (kind === "language") return languageName(name, locale)
   if (kind === "country") return countryName(name, locale)
+  if (kind === "region" || kind === "city") return geographyLabel(kind, label || name, country || "", locale)
   if (kind === "source" && isDirectSource(name)) return translate(locale, "直接访问")
   if ((kind === "browser" || kind === "os") && (!name.trim() || name.trim().toLowerCase() === "(none)")) {
     return translate(locale, "未知")
@@ -18,7 +20,7 @@ export function reportValueLabel(kind: string | undefined, name: string, locale:
 
 /** Retain the stored key for search while exposing the current localized display value. */
 export function reportSearchText(kind: string | undefined, row: ReportValue, locale: Locale): string {
-  return [row.name, reportValueLabel(kind, row.name, locale, row.label), kind === "language" ? languageCode(row.name) : ""]
+  return [row.name, reportValueLabel(kind, row.name, locale, row.label, row.code), kind === "language" ? languageCode(row.name) : ""]
     .filter(Boolean).join(" ")
 }
 
