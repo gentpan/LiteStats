@@ -3,6 +3,7 @@ import { CLICKHOUSE_URL } from "./env"
 import { compareRange, type Interval, type Range } from "./range"
 import { fillSeries, type MetricRow } from "./series"
 import { safeTimezone } from "./date-time"
+import { chineseCityName } from "./city-names.server"
 
 let client: ClickHouseClient | null = null
 
@@ -77,7 +78,7 @@ export type Overview = {
   visit_duration: number
   live: number
 }
-export type Row = { name: string, value: number, code?: string }
+export type Row = { name: string, value: number, code?: string, label?: string }
 export type Point = { date: string, value: number }
 export type MetricKey = "visitors" | "visits" | "pageviews" | "views_per_visit" | "bounce_rate" | "visit_duration"
 export type SeriesBy = Record<MetricKey, Point[]>
@@ -344,10 +345,12 @@ export async function breakdown(siteId: number, range: Range, field: string, fil
     return rows.map((r) => ({ name: r.name, value: Number(r.value), code: r.country }))
   }
   if (field === "city") {
-    const rows = await query<{ name: string, country: string, value: string }>(`
+    const rows = await query<{ name: string, country: string, value: string, subdivision?: string, city_id?: string }>(`
       SELECT
         if(any(city_name) = '', toString(any(city_geoname_id)), any(city_name)) AS name,
         country_code AS country,
+        if(any(subdivision1_code) != '', any(subdivision1_code), any(region_name)) AS subdivision,
+        toString(any(city_geoname_id)) AS city_id,
         toString(uniqExact(user_id)) AS value
       FROM events_v2
       WHERE ${where(siteId, range, filter)} AND (city_geoname_id != 0 OR city_name != '')
@@ -357,7 +360,7 @@ export async function breakdown(siteId: number, range: Range, field: string, fil
       ORDER BY toUInt64(value) DESC
       LIMIT ${limit}
     `)
-    return rows.map((r) => ({ name: r.name, value: Number(r.value), code: r.country }))
+    return rows.map((r) => ({ name: r.name, value: Number(r.value), code: r.country, label: chineseCityName(r.country,r.name,r.subdivision,r.city_id) }))
   }
   const extra = field === "country"
     ? "AND replaceRegexpAll(country_code, '\\0', '') != ''"

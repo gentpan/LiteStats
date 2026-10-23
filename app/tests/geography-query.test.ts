@@ -33,9 +33,9 @@ test("city breakdown includes imported names without GeoNames IDs and preserves 
   expect(sql).toContain("uniqExact(user_id)")
   expect(sql).toContain("site_id = 17")
   expect(result).toEqual([
-    { name: "Seattle", code: "US", value: 2 },
-    { name: "Perth", code: "AU", value: 1 },
-    { name: "5809844", code: "US", value: 1 },
+    { name: "Seattle", code: "US", value: 2, label: "西雅图" },
+    { name: "Perth", code: "AU", value: 1, label: "珀斯" },
+    { name: "5809844", code: "US", value: 1, label: "西雅图" },
   ])
 })
 
@@ -77,7 +77,7 @@ test.skipIf(!clickhouseTestUrl)("geography SQL keeps imported cities and country
     const cities = await run("city")
     expect(cities).toHaveLength(6)
     expect(cities.filter(row => row.name === "Springfield")).toHaveLength(2)
-    expect(cities.find(row => row.name === "Seattle")).toEqual({ name: "Seattle", country: "US", value: "1" })
+    expect(cities.find(row => row.name === "Seattle")).toMatchObject({ name: "Seattle", country: "US", value: "1" })
     expect(cities.some(row => row.name === "5809844")).toBe(true)
     expect(cities.some(row => row.name === "Paris")).toBe(true)
     const regions = await run("region")

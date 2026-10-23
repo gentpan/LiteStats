@@ -26,8 +26,8 @@ test("provider names resolve to the historical subdivision identity without chan
   expect(subdivisionCode("CN", "北京市")).toBe("CN-BJ")
   expect(subdivisionCode("US", "California")).toBe("US-CA")
   expect(subdivisionCode("UZ", "Tashkent")).toBe("UZ-TK")
-  expect(geographyLabel("city", "Tashkent", "UZ", "zh-CN")).toBe("乌兹别克斯坦 · 塔什干")
-  expect(geographyLabel("city", "Mountain View", "US", "zh-CN")).toBe("美国 · Mountain View")
+  expect(geographyLabel("city", "Tashkent", "UZ", "zh-CN")).toBe("乌兹别克斯坦 · 暂无中文名称")
+  expect(geographyLabel("city", "Mountain View", "US", "zh-CN")).toBe("美国 · 暂无中文名称")
   expect(geographyLabel("city", "5809844", "US", "zh-CN")).toBe("美国 · 未知城市")
   expect(geographyLabel("region", "US-ZZZ", "US", "zh-CN")).toBe("美国 · 未知地区")
   const row = {name: "CN-BJ", code: "CN", value: 1300}

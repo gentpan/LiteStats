@@ -32,10 +32,13 @@ export function subdivisionCode(country: string, region: string): string {
 export function geographyLabel(kind: "region" | "city", name: string, country: string, locale: string): string {
   const explicitCountry = name.match(/^([a-z]{2})[-_]/i)?.[1]
   const nation = (country || explicitCountry || "").trim().toUpperCase()
-  const code = subdivisionCode(nation, name)
+  const code = kind === "region" ? subdivisionCode(nation, name) : ""
   const translations = code ? names[code.replace("-", "").toLowerCase()] : undefined
   const unknown = locale === "en" ? (kind === "city" ? "Unknown city" : "Unknown region") : (kind === "city" ? "未知城市" : "未知地区")
   const raw = name.trim()
+  if (kind === "city" && locale !== "en" && /\p{L}/u.test(raw.replace(/\p{Script=Han}/gu,""))) {
+    return nation ? `${countryName(nation, locale)} · 暂无中文名称` : "暂无中文名称"
+  }
   const text = translations?.[locale === "en" ? 0 : 1] || translations?.[0]
     || (!raw || /^\d+$/.test(raw) || /^\(?none\)?$/i.test(raw) || /^[A-Z]{2}[-_][A-Z0-9]{1,4}$/.test(raw) ? unknown : raw)
   const fullName = nation ? `${countryName(nation, locale)} · ${text}` : text

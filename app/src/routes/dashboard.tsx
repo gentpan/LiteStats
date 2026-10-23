@@ -97,6 +97,7 @@ function DashboardPage() {
           </div>
           <div className="management-site-tools">
             <div className="squircle site-layout-switch" role="group" aria-label={t("站点显示方式")}>
+              <span className="squircle site-layout-thumb" aria-hidden="true"/>
               <button className="squircle btn" data-layout="grid" type="button" aria-label={t("卡片")} title={t("卡片")} aria-pressed={layout === "grid"} onClick={() => changeLayout("grid")}>
                 <UIIcon name="grid" className="size-4" />
                 <span className="management-tool-label">{t("卡片")}</span>

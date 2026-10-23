@@ -10,7 +10,7 @@ type ReportValue = { name: string; label?: string; code?: string }
 export function reportValueLabel(kind: string | undefined, name: string, locale: Locale, label?: string, country?: string): string {
   if (kind === "language") return languageName(name, locale)
   if (kind === "country") return countryName(name, locale)
-  if (kind === "region" || kind === "city") return geographyLabel(kind, label || name, country || "", locale)
+  if (kind === "region" || kind === "city") return geographyLabel(kind, kind === "city" && locale === "en" ? name : label || name, country || "", locale)
   if (kind === "source" && isDirectSource(name)) return translate(locale, "直接访问")
   if ((kind === "browser" || kind === "os") && (!name.trim() || name.trim().toLowerCase() === "(none)")) {
     return translate(locale, "未知")
@@ -33,7 +33,7 @@ export function resolveReportFilter(kind: string | undefined, entered: string, o
   const lower = value.toLowerCase()
   const insensitive = options.find(option => option.name.toLowerCase() === lower)
   if (insensitive) return insensitive.name
-  const displayed = options.find(option => reportValueLabel(kind, option.name, locale, option.label).toLowerCase() === lower)
+  const displayed = options.find(option => reportValueLabel(kind, option.name, locale, option.label, option.code).toLowerCase() === lower)
   if (displayed) return displayed.name
   // These are input affordances only. Other legacy direct aliases remain exact keys.
   if (kind === "source" && ["direct", "direct traffic", "直接访问"].includes(lower)) return "Direct"

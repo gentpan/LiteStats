@@ -68,7 +68,9 @@ Read database credentials from protected runtime files. For PostgreSQL command-l
 
 ### Geographic data
 
-Historical imported geography remains available. New events received directly by the origin currently have no country lookup and may show an empty region. Cloudflare geographic and client-IP headers are accepted only from configured trusted proxy IPs. The deployment does not enable a separate geographic database or relax that trust boundary; improving new-event geography is deferred.
+Historical imported geography remains available. `GEOIP_PROVIDER=cnip` opts into server-side lookup of public client IPs at api.cnip.io for domestic and international visits. Production enables this option; templates default to disabled. Lookups have bounded timeouts, concurrency and in-memory caching; raw IPs are not stored with events. Only trusted proxy headers are accepted. No MaxMind database is installed.
+
+Chinese reports display region and city labels in Simplified Chinese. The server resolves city names/GeoNames IDs using the bundled public GeoNames translation dictionary, scoped to country and subdivision. Unresolvable or ambiguous cities show “暂无中文名称”; original keys remain searchable and filterable. Historical events and newly collected events share this display path, without rewriting event data, identities or counts. See `app/src/assets/city-names-SOURCE.md` for attribution and reproduction.
 
 ## Docker Compose alternative
 
