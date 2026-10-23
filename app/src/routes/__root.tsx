@@ -31,7 +31,7 @@ export const Route = createRootRoute({
     links: [
       { rel: "stylesheet", href: "https://static.bluecdn.com/libs/fontawesome-pro-plus/7.3.1/css/all.min.css" },
       { rel: "stylesheet", href: appCss },
-      { id: "app-favicon", rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { id: "app-favicon", rel: "icon", type: "image/svg+xml", href: "/favicon.svg?v=2" },
       { rel: "preload", href: "/fonts/sora-semibold.ttf", as: "font", type: "font/ttf", crossOrigin: "anonymous" },
       { rel: "preload", href: "/fonts/sora-regular.ttf", as: "font", type: "font/ttf", crossOrigin: "anonymous" },
     ],

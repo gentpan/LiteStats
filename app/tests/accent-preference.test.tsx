@@ -36,7 +36,7 @@ test("color changes persist immediately, synchronize tabs, and still apply if st
   const descriptors = Object.fromEntries(["document", "window", "localStorage"].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
   const dataset = { accent: "purple", theme: "dark" }
   const favicon = {
-    href: "/favicon.svg",
+    href: "/favicon.svg?v=2",
     getAttribute: (name: string) => name === "href" ? favicon.href : null,
     setAttribute: (name: string, value: string) => { if (name === "href") favicon.href = value },
   }
@@ -58,37 +58,37 @@ test("color changes persist immediately, synchronize tabs, and still apply if st
     stop = subscribeAccentColor(() => { notifications++ })
     expect(setAccentColor("blue")).toBe(true)
     expect(readAccentColor()).toBe("blue")
-    expect(favicon.href).toBe("/favicon-blue.svg")
+    expect(favicon.href).toBe("/favicon-blue.svg?v=2")
     expect(values.get("litestats:accent")).toBe("blue")
     expect(notifications).toBe(1)
     dispatchStorage("litestats:accent", "black")
     expect(readAccentColor()).toBe("black")
-    expect(favicon.href).toBe("/favicon-black.svg")
+    expect(favicon.href).toBe("/favicon-black.svg?v=2")
     dispatchStorage("unrelated", "green")
     dispatchStorage("litestats:accent", "green", {})
     expect(readAccentColor()).toBe("black")
-    expect(favicon.href).toBe("/favicon-black.svg")
+    expect(favicon.href).toBe("/favicon-black.svg?v=2")
     expect(notifications).toBe(2)
     dispatchStorage("litestats:accent", "invalid")
     expect(readAccentColor()).toBe("purple")
-    expect(favicon.href).toBe("/favicon.svg")
+    expect(favicon.href).toBe("/favicon.svg?v=2")
     dispatchStorage("litestats:accent", "green")
     expect(readAccentColor()).toBe("green")
-    expect(favicon.href).toBe("/favicon-green.svg")
+    expect(favicon.href).toBe("/favicon-green.svg?v=2")
     dispatchStorage(null, null)
     expect(readAccentColor()).toBe("purple")
-    expect(favicon.href).toBe("/favicon.svg")
+    expect(favicon.href).toBe("/favicon.svg?v=2")
     blocked = true
     expect(setAccentColor("green")).toBe(false)
     expect(readAccentColor()).toBe("green")
-    expect(favicon.href).toBe("/favicon-green.svg")
+    expect(favicon.href).toBe("/favicon-green.svg?v=2")
     expect(values.get("litestats:accent")).toBe("blue")
     expect(dataset.theme).toBe("dark")
     const beforeStop = notifications
     stop()
     dispatchStorage("litestats:accent", "black")
     expect(readAccentColor()).toBe("green")
-    expect(favicon.href).toBe("/favicon-green.svg")
+    expect(favicon.href).toBe("/favicon-green.svg?v=2")
     expect(notifications).toBe(beforeStop)
   } finally {
     stop?.()

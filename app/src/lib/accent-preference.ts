@@ -11,10 +11,10 @@ const STORAGE_KEY = "litestats:accent"
 const CHANGE_EVENT = "litestats:accent-change"
 const values = ACCENT_CHOICES.map(choice => choice.value)
 const favicons: Record<AccentColor, string> = {
-  purple: "/favicon.svg",
-  blue: "/favicon-blue.svg",
-  green: "/favicon-green.svg",
-  black: "/favicon-black.svg",
+  purple: "/favicon.svg?v=2",
+  blue: "/favicon-blue.svg?v=2",
+  green: "/favicon-green.svg?v=2",
+  black: "/favicon-black.svg?v=2",
 }
 
 function accentValue(value: unknown): AccentColor {
