@@ -2,7 +2,7 @@
 
 简单、美观、可自托管的网站统计。
 
-LiteStats 是一个类似 Umami 的独立网站分析产品。用一段脚本了解访客从哪里来、浏览了哪些页面，以及发生了哪些事件；访问数据保存在你自己的 PostgreSQL 和 ClickHouse 中。
+LiteStats 是一个类似 Umami、面向单人自托管的网站统计服务。用一段脚本了解访客从哪里来、浏览了哪些页面，以及发生了哪些事件；访问数据保存在你自己的 PostgreSQL 和 ClickHouse 中。空实例首次创建管理员，此后首页直接进入登录，登录后管理站点；产品宣传内容放在主网站。
 
 由 [gentpan](https://github.com/gentpan) 维护，采用 [MIT 许可证](./LICENSE)。
 
@@ -39,11 +39,11 @@ bun run dev
 
 打开 [http://127.0.0.1:3100](http://127.0.0.1:3100)：
 
-1. `/` 为产品官网，`/register` 创建账号，`/login` 登录。
+1. 首次打开空实例时，`/` 进入 `/setup` 创建管理员；完成后自动登录，并关闭公开注册。已有实例未登录时进入 `/login`，已登录时进入 `/dashboard`。
 2. 在 `/dashboard` 添加网站，填写站点域名和时区。
 3. 复制安装脚本到被统计网站，在 `/sites/你的域名` 查看统计。
 
-首次使用会自动初始化必要表和字段。`SEED_DEMO` 默认关闭，不会自动创建演示账号。普通注册账号可以管理自己的站点；系统地图与备份设置还要求账号邮箱已验证，并列入 `ADMIN_EMAILS`。当前不提供邮件验证流程，实例管理员需通过可信的数据库管理流程确认邮箱所有权。
+首次使用会自动初始化必要表和字段。`SEED_DEMO` 默认关闭，不会自动创建演示账号。首次初始化的账号是本实例管理员，可管理站点、系统地图和备份，无需额外设置管理员邮箱。完成初始化后，`/setup` 与旧 `/register` 均只跳转到登录页或后台，不再提供普通注册表单。已有实例保留原账号及权限，不会重新初始化或更换所有者；历史已验证邮箱加 `ADMIN_EMAILS` 的管理员规则继续兼容。
 
 ## 安装统计脚本
 
@@ -124,7 +124,7 @@ curl --fail-with-body 'https://stats.example.com/api/v1/stats?period=summary' \
 | `DATABASE_URL` | PostgreSQL 连接 |
 | `CLICKHOUSE_URL` | ClickHouse HTTP 连接，URL 路径为数据库名 |
 | `SESSION_KEY` | 会话签名与服务凭据加密，生产要求至少 32 字符的随机密钥 |
-| `ADMIN_EMAILS` | 已验证邮箱的实例管理员列表，逗号分隔 |
+| `ADMIN_EMAILS` | 历史已验证邮箱管理员的兼容列表，逗号分隔；首次初始化管理员无需配置 |
 | `SEED_DEMO` | 仅非生产环境可显式开启演示数据，默认 `false` |
 | `LITESTATS_HEALTH_WORKER` | 设为 `false` 关闭生产站点自动检查 |
 
@@ -146,5 +146,7 @@ bun run build
 ```
 
 构建输出在 `app/.output/`，生产使用 Node.js 22，通过 `bun run start` 或 `node .output/start.mjs` 启动。正式部署还需配置 HTTPS、数据库凭据和持久化存储，步骤见 [部署参考](./deploy/README.md)；开发用根目录 Compose 仅包含数据库。
+
+从 Umami 迁入历史统计，先阅读 [Umami 迁移流程](./deploy/UMAMI-MIGRATION.md)：使用一致快照离线转换，核对站点映射、原事件与逐日报表后发布；历史导入与网站埋点切换分别处理，并保留源数据库。
 
 主要目录：`app/src/routes` 为页面和接口，`app/src/components` 为界面，`app/src/lib` 为统计与业务逻辑，`app/public` 为静态资源。更多说明见 [文件索引](./TOC.md) 和 [本地验证记录](./LOCAL-TEST.md)。

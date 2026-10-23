@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto"
 import { getCookie, setCookie, deleteCookie } from "@tanstack/react-start/server"
 import { SESSION_KEY, ADMIN_EMAILS } from "./env"
 import { findUserById, type User } from "./db"
+import { hasInstanceAdminAccess } from "./instance-setup"
 
 const COOKIE = "litestats_session"
 
@@ -130,7 +131,7 @@ export async function requireUser() {
 }
 
 export function isInstanceAdmin(user: User) {
-  return user.email_verified === true && ADMIN_EMAILS.includes(user.email.toLowerCase())
+  return hasInstanceAdminAccess(user, ADMIN_EMAILS)
 }
 
 export async function requireAdmin() {

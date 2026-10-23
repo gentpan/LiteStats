@@ -3,6 +3,7 @@ import { timezoneSchema } from "./validation"
 import pg from "pg"
 import bcrypt from "bcryptjs"
 import { DATABASE_URL, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD, SEED_DEMO } from "./env"
+import { createInstanceSetupStore, InstanceAlreadyInitializedError } from "./instance-setup"
 
 pg.types.setTypeParser(20, value => {
   const id = Number(value)
@@ -16,6 +17,7 @@ let ready: Promise<void> | null = null
 export type User = {
   id: number
   email: string
+  type?: string
   session_version?: number
   email_verified?: boolean
   name: string
@@ -70,6 +72,7 @@ async function ensureSchema() {
     )
   `)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version integer NOT NULL DEFAULT 0`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS type varchar(32) NOT NULL DEFAULT 'standard'`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar text`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS locale varchar(16)`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled boolean NOT NULL DEFAULT false`)
@@ -277,28 +280,17 @@ async function ensureSchema() {
 async function ensureAdmin() {
   await ensureSchema()
   if (!SEED_DEMO) return
-  const client = await pool.connect()
   try {
-    await client.query("BEGIN")
-    const user = await client.query<User>(
-      `INSERT INTO users (email, name, password_hash, email_verified)
-       VALUES ($1, 'Demo Admin', $2, true) ON CONFLICT (email) DO NOTHING RETURNING id`,
-      [DEFAULT_ADMIN_EMAIL, await bcrypt.hash(DEFAULT_ADMIN_PASSWORD, 10)],
-    )
-    if (user.rows[0]) {
-      const team = await client.query<{id: number}>(`INSERT INTO teams (name, setup_complete, setup_at) VALUES ('LiteStats Demo', true, now()) RETURNING id`)
-      await client.query(`INSERT INTO team_memberships (role, user_id, team_id) VALUES ('owner', $1, $2)`, [user.rows[0].id, team.rows[0].id])
-    }
-    await client.query("COMMIT")
+    // Seed only an empty development instance through the same lock as setup.
+    await createInstanceSetupStore(async () => pool).create({email: DEFAULT_ADMIN_EMAIL, password: DEFAULT_ADMIN_PASSWORD, name: "Demo Admin"})
   } catch (error) {
-    await client.query("ROLLBACK")
-    throw error
-  } finally { client.release() }
+    if (!(error instanceof InstanceAlreadyInitializedError)) throw error
+  }
 }
 
 export async function findUserByEmail(email: string) {
   const res = await (await db()).query<User & { password_hash: string }>(
-    `SELECT id, email, name, COALESCE(password_hash, '') AS password_hash,
+    `SELECT id, email, name, COALESCE(type, 'standard') AS type, COALESCE(password_hash, '') AS password_hash,
             COALESCE(totp_enabled, false) AS totp_enabled,
             COALESCE(avatar, '') AS avatar, COALESCE(locale, 'zh-CN') AS locale
      FROM users WHERE lower(email) = lower($1) LIMIT 1`,
@@ -309,7 +301,7 @@ export async function findUserByEmail(email: string) {
 
 export async function findUserById(id: number) {
   const res = await (await db()).query<User>(
-    `SELECT id, email, email_verified, session_version, name, COALESCE(theme, 'system') AS theme, COALESCE(totp_enabled, false) AS totp_enabled,
+    `SELECT id, email, email_verified, session_version, name, COALESCE(type, 'standard') AS type, COALESCE(theme, 'system') AS theme, COALESCE(totp_enabled, false) AS totp_enabled,
             COALESCE(avatar, '') AS avatar, COALESCE(locale, 'zh-CN') AS locale
      FROM users WHERE id = $1`,
     [id],
@@ -475,33 +467,15 @@ export async function findSharedLink(slug: string) {
   }
 }
 
+const instanceSetupStore = createInstanceSetupStore(db)
+
+export async function instanceNeedsSetup() {
+  return instanceSetupStore.needsSetup()
+}
+
+// Retained for old clients; this can only create the first instance administrator.
 export async function createUser(email: string, password: string, name: string) {
-  if (password.length < 8) throw new Error("密码至少 8 位")
-  if (!email.includes("@")) throw new Error("邮箱不正确")
-  const exists = await findUserByEmail(email)
-  if (exists) throw new Error("这个邮箱已经注册")
-  const hash = await bcrypt.hash(password, 10)
-  const res = await (await db()).query<User>(
-    `INSERT INTO users (email, name, password_hash, email_verified, theme, type, inserted_at, updated_at)
-     VALUES ($1, $2, $3, false, 'system', 'standard', now(), now())
-     RETURNING id, email, name`,
-    [email.trim().toLowerCase(), name.trim() || email.split("@")[0], hash],
-  )
-  const user = res.rows[0]
-  {
-    const team = await (await db()).query<{ id: number }>(
-      `INSERT INTO teams (name, trial_expiry_date, accept_traffic_until, allow_next_upgrade_override, setup_complete, setup_at, hourly_api_request_limit, locked, policy, inserted_at, updated_at)
-       VALUES ($1, CURRENT_DATE + 365, CURRENT_DATE + 400, false, false, NULL, 600, false, '{}', now(), now())
-       RETURNING id`,
-      [`${user.name}'s team`],
-    )
-    await (await db()).query(
-      `INSERT INTO team_memberships (role, user_id, team_id, is_autocreated, inserted_at, updated_at)
-       VALUES ('owner', $1, $2, true, now(), now())`,
-      [user.id, team.rows[0].id],
-    )
-  }
-  return user
+  return instanceSetupStore.create({email, password, name})
 }
 
 export async function deleteSite(siteId: number) {

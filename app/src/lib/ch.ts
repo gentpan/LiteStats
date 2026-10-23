@@ -328,12 +328,12 @@ export async function breakdown(siteId: number, range: Range, field: string, fil
   if (field === "region") {
     const rows = await query<{ name: string, country: string, value: string }>(`
       SELECT
-        if(any(region_name) = '', subdivision1_code, any(region_name)) AS name,
-        any(country_code) AS country,
+        if(any(region_name) = '', any(subdivision1_code), any(region_name)) AS name,
+        country_code AS country,
         toString(uniqExact(user_id)) AS value
       FROM events_v2
-      WHERE ${where(siteId, range, filter)} AND subdivision1_code != ''
-      GROUP BY subdivision1_code
+      WHERE ${where(siteId, range, filter)} AND (subdivision1_code != '' OR region_name != '')
+      GROUP BY country_code, if(subdivision1_code != '', subdivision1_code, region_name)
       ORDER BY toUInt64(value) DESC
       LIMIT ${limit}
     `)
@@ -342,12 +342,14 @@ export async function breakdown(siteId: number, range: Range, field: string, fil
   if (field === "city") {
     const rows = await query<{ name: string, country: string, value: string }>(`
       SELECT
-        if(any(city_name) = '', toString(city_geoname_id), any(city_name)) AS name,
-        any(country_code) AS country,
+        if(any(city_name) = '', toString(any(city_geoname_id)), any(city_name)) AS name,
+        country_code AS country,
         toString(uniqExact(user_id)) AS value
       FROM events_v2
-      WHERE ${where(siteId, range, filter)} AND city_geoname_id != 0
-      GROUP BY city_geoname_id
+      WHERE ${where(siteId, range, filter)} AND (city_geoname_id != 0 OR city_name != '')
+      GROUP BY country_code, if(city_geoname_id != 0,
+        concat('id:', toString(city_geoname_id)),
+        concat('name:', if(subdivision1_code != '', subdivision1_code, region_name), ':', city_name))
       ORDER BY toUInt64(value) DESC
       LIMIT ${limit}
     `)

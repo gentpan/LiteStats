@@ -35,12 +35,14 @@ app/
     │   ├── session.ts         # 登录态
     │   └── i18n.tsx           # 中 / 英
     └── routes/
-        ├── index.tsx          # 公开产品官网
+        ├── index.tsx          # 按初始化与登录状态跳转
         ├── dashboard.tsx      # 登录后的站点列表
         ├── sites/             # 看板与站点设置
         ├── account.tsx        # 账户
         ├── backup.tsx         # 备份
-        ├── login.tsx / register.tsx
+        ├── login.tsx          # 管理员登录
+        ├── setup.tsx          # 空实例首次创建管理员
+        ├── register.tsx       # 旧注册入口兼容跳转
         ├── js/script[.]js.ts  # 追踪脚本
         └── api/event.ts       # 采集
 ```
@@ -49,7 +51,9 @@ app/
 
 | 路径 | 作用 |
 |------|------|
-| `/` | 公开产品官网 |
+| `/` | 空实例跳转 `/setup`；已有实例未登录跳转 `/login`，已登录跳转 `/dashboard` |
+| `/setup` | 空实例首次创建管理员，完成后关闭初始化与公开注册 |
+| `/register` | 旧入口兼容跳转，不提供普通注册表单 |
 | `/dashboard` | 登录后的站点管理，支持卡片与列表 |
 | `/sites/:domain` | 访问统计看板 |
 | `/sites/:domain/health` | 域名/证书到期及 HTTP 200 检查 |

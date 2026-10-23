@@ -1,39 +1,111 @@
-import { expect, spyOn, test } from "bun:test"
-import { createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router"
+import { afterEach, beforeEach, expect, spyOn, test } from "bun:test"
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router"
+import { createElement } from "react"
+import { renderToString } from "react-dom/server"
 import * as actions from "../src/lib/actions"
 import { rootAppearancePreferences } from "../src/lib/theme-appearance"
 import { Route as LoginRoute } from "../src/routes/login"
 import { Route as RegisterRoute } from "../src/routes/register"
 import { Route as DashboardRoute } from "../src/routes/dashboard"
 import { Route as HomeRoute } from "../src/routes/index"
+import { Route as SetupRoute } from "../src/routes/setup"
+
+let instanceSetup: ReturnType<typeof spyOn<typeof actions, "instanceSetupFn">>
+beforeEach(() => {instanceSetup = spyOn(actions, "instanceSetupFn").mockResolvedValue({needsSetup: false})})
+afterEach(() => {instanceSetup.mockRestore()})
 
 function routerAt(path: string) {
   const root = createRootRoute({loader: async () => ({...rootAppearancePreferences(null, "zh-CN"), mapboxStyle: "standard" as import("../src/lib/mapbox-styles").MapboxStyleId})})
   const home = createRoute({...HomeRoute.options, getParentRoute: () => root, path: "/"})
   const login = createRoute({...LoginRoute.options, getParentRoute: () => root, path: "/login"})
   const register = createRoute({...RegisterRoute.options, getParentRoute: () => root, path: "/register"})
+  const setup = createRoute({...SetupRoute.options, getParentRoute: () => root, path: "/setup"})
   const sites = createRoute({...DashboardRoute.options, getParentRoute: () => root, path: "/dashboard"})
-  return createRouter({routeTree: root.addChildren([home, login, register, sites]), history: createMemoryHistory({initialEntries: [path]}), isServer: false, origin: "https://local.test"})
+  return createRouter({routeTree: root.addChildren([home, login, register, setup, sites]), history: createMemoryHistory({initialEntries: [path]}), isServer: false, origin: "https://local.test"})
 }
 
-test("anonymous homepage entries stay public and do not load private site analytics", async () => {
+test("empty instances send root, login and legacy registration entries to one-time administrator setup", async () => {
+  instanceSetup.mockResolvedValue({needsSetup: true})
+  const me = spyOn(actions, "meFn").mockResolvedValue(null)
+  const sites = spyOn(actions, "sitesFn").mockResolvedValue([])
+  try {
+    for (const path of ["/", "/login", "/register"]) {
+      const router = routerAt(path)
+      await router.load()
+      expect(router.state.location.pathname).toBe("/setup")
+      expect(router.state.matches.at(-1)?.status).toBe("success")
+    }
+    expect(sites).not.toHaveBeenCalled()
+  } finally {me.mockRestore(); sites.mockRestore()}
+})
+
+test("setup shows the sole administrator form without creating an account on page load", async () => {
+  instanceSetup.mockResolvedValue({needsSetup: true})
+  const me = spyOn(actions, "meFn").mockResolvedValue(null)
+  const createAdmin = spyOn(actions, "setupAdminFn").mockRejectedValue(new Error("Unexpected account creation"))
+  try {
+    const router = routerAt("/setup")
+    await router.load()
+    const html = renderToString(createElement(RouterProvider, {router}))
+    expect(html).toContain("创建管理员")
+    expect(html).toContain("完成后将关闭公开注册")
+    expect(html).toContain('name="email"')
+    expect(html).toContain('autoComplete="new-password"')
+    expect(html).toContain('minLength="8"')
+    expect(html.match(/<form/g)).toHaveLength(1)
+    expect(html).not.toContain('href="/register"')
+    expect(createAdmin).not.toHaveBeenCalled()
+  } finally {me.mockRestore(); createAdmin.mockRestore()}
+})
+
+test("initialized instances close setup and legacy registration to signed-out visitors", async () => {
+  const me = spyOn(actions, "meFn").mockResolvedValue(null)
+  const sites = spyOn(actions, "sitesFn").mockResolvedValue([])
+  try {
+    for (const path of ["/setup", "/register"]) {
+      const router = routerAt(path)
+      await router.load()
+      expect(router.state.location.pathname).toBe("/login")
+      expect(router.state.matches.at(-1)?.status).toBe("success")
+    }
+    expect(sites).not.toHaveBeenCalled()
+  } finally {me.mockRestore(); sites.mockRestore()}
+})
+
+test("anonymous root entries open login without loading private site analytics or forwarding unknown query values", async () => {
   const me = spyOn(actions, "meFn").mockResolvedValue(null)
   const sites = spyOn(actions, "sitesFn").mockResolvedValue([])
   const dashboard = spyOn(actions, "dashboardFn")
   const traffic = spyOn(actions, "trafficPulseFn")
   try {
-    for (const path of ["/", "/?gsc=private-provider-message"]) {
+    for (const path of ["/", "/?gsc=private-provider-message", "/?gsc=expired&error_description=private-provider-message"]) {
       const router = routerAt(path)
       await router.load()
-      expect(router.state.location.pathname).toBe("/")
-      expect(router.state.matches.at(-1)?.routeId).toBe("/")
+      expect(router.state.location.pathname).toBe("/login")
+      expect(router.state.location.searchStr).toBe("")
+      expect(router.state.matches.at(-1)?.routeId).toBe("/login")
       expect(router.state.matches.at(-1)?.status).toBe("success")
-      expect(router.state.matches.at(-1)?.search).toMatchObject({gsc: undefined})
     }
     expect(sites).not.toHaveBeenCalled()
     expect(dashboard).not.toHaveBeenCalled()
     expect(traffic).not.toHaveBeenCalled()
   } finally {me.mockRestore(); sites.mockRestore(); dashboard.mockRestore(); traffic.mockRestore()}
+})
+
+test("signed-in root entries open the authenticated site list and discard unknown query values", async () => {
+  const me = spyOn(actions, "meFn").mockResolvedValue({id: 7} as Awaited<ReturnType<typeof actions.meFn>>)
+  const sites = spyOn(actions, "sitesFn").mockResolvedValue([])
+  try {
+    for (const path of ["/", "/?gsc=private-provider-message&error_description=private-provider-message"]) {
+      const router = routerAt(path)
+      await router.load()
+      expect(router.state.location.pathname).toBe("/dashboard")
+      expect(router.state.location.searchStr).toBe("")
+      expect(router.state.matches.at(-1)?.status).toBe("success")
+      expect(router.state.matches.at(-1)?.loaderData).toMatchObject({me: {id: 7}, sites: []})
+    }
+    expect(sites).toHaveBeenCalledTimes(2)
+  } finally {me.mockRestore(); sites.mockRestore()}
 })
 
 test("the previous OAuth recovery entry reaches the site list with a bounded failure code", async () => {
@@ -50,22 +122,22 @@ test("the previous OAuth recovery entry reaches the site list with a bounded fai
   } finally {me.mockRestore(); sites.mockRestore()}
 })
 
-test("signed-in login and registration entries open the authenticated site list", async () => {
+test("signed-in login, setup and legacy registration entries open the authenticated site list", async () => {
   const me = spyOn(actions, "meFn").mockResolvedValue({id: 7} as Awaited<ReturnType<typeof actions.meFn>>)
   const sites = spyOn(actions, "sitesFn").mockResolvedValue([])
   try {
-    for (const path of ["/login", "/register"]) {
+    for (const path of ["/login", "/setup", "/register"]) {
       const router = routerAt(path)
       await router.load()
       expect(router.state.location.pathname).toBe("/dashboard")
       expect(router.state.matches.at(-1)?.status).toBe("success")
       expect(router.state.matches.at(-1)?.loaderData).toMatchObject({me: {id: 7}, sites: []})
     }
-    expect(sites).toHaveBeenCalledTimes(2)
+    expect(sites).toHaveBeenCalledTimes(3)
   } finally {me.mockRestore(); sites.mockRestore()}
 })
 
-test("the public homepage separation does not expose the site list to signed-out visitors", async () => {
+test("signed-out visitors cannot access the site list and can open login without a registration link", async () => {
   const me = spyOn(actions, "meFn").mockResolvedValue(null)
   const sites = spyOn(actions, "sitesFn").mockResolvedValue([])
   try {
@@ -74,11 +146,7 @@ test("the public homepage separation does not expose the site list to signed-out
     expect(router.state.location.pathname).toBe("/login")
     expect(router.state.matches.at(-1)?.status).toBe("success")
     expect(sites).not.toHaveBeenCalled()
-    for (const path of ["/login", "/register"]) {
-      const publicAuth = routerAt(path)
-      await publicAuth.load()
-      expect(publicAuth.state.location.pathname).toBe(path)
-      expect(publicAuth.state.matches.at(-1)?.status).toBe("success")
-    }
+    const html = renderToString(createElement(RouterProvider, {router}))
+    expect(html).not.toContain('href="/register"')
   } finally {me.mockRestore(); sites.mockRestore()}
 })

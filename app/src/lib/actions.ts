@@ -7,6 +7,7 @@ import { z } from "zod"
 import { text, dashboardSchema, timezoneSchema } from "./validation"
 import { safeTimezone } from "./date-time"
 import { createServerFn } from "@tanstack/react-start"
+import { instanceSetupSchema } from "./instance-setup"
 import bcrypt from "bcryptjs"
 import {
   createSharedLink,
@@ -18,6 +19,7 @@ import {
   findSharedLink,
   findSiteForUser,
   findUserByEmail,
+  instanceNeedsSetup,
   listPasskeys,
   listSharedLinks,
   listSites,
@@ -70,13 +72,17 @@ export const loginFn = createServerFn({ method: "POST" })
     return { id: user.id, email: user.email, name: user.name }
   })
 
-export const registerFn = createServerFn({ method: "POST" })
-  .validator((input: unknown) => z.object({email: text, password: text, name: text}).parse(input))
-  .handler(async ({ data }) => {
-    const user = await createUser(data.email, data.password, data.name)
-    await writeSession(user.id)
-    return user
-  })
+export const instanceSetupFn = createServerFn({ method: "GET" }).handler(async () => ({needsSetup: await instanceNeedsSetup()}))
+
+async function setupAdmin(data: z.infer<typeof instanceSetupSchema>) {
+  const user = await createUser(data.email, data.password, data.name)
+  await writeSession(user.id)
+  return user
+}
+
+export const setupAdminFn = createServerFn({ method: "POST" })
+  .validator((input: unknown) => instanceSetupSchema.parse(input))
+  .handler(({ data }) => setupAdmin(data))
 
 export const logoutFn = createServerFn({ method: "POST" }).handler(async () => {
   clearSession()

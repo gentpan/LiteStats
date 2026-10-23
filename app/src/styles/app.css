@@ -322,6 +322,7 @@ html[data-theme="dark"] .source-brand-icon { background-color:#fff; border-radiu
 .site-footer-inner {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: "meta pulse links";
   align-items: center;
   gap: 0.75rem 1.25rem;
   min-height: 3.15rem;
@@ -331,11 +332,12 @@ html[data-theme="dark"] .source-brand-icon { background-color:#fff; border-radiu
 .site-footer-brand {
   display: inline-flex;
   align-items: center;
-  justify-self: start;
   gap: 0.42rem;
+  flex: none;
   font-size: 1rem;
   line-height: 1;
   color: #fff;
+  white-space: nowrap;
 }
 
 .site-footer-brand .logo-mark {
@@ -344,17 +346,47 @@ html[data-theme="dark"] .source-brand-icon { background-color:#fff; border-radiu
 }
 
 .site-footer-meta {
+  grid-area: meta;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  justify-self: start;
+  gap: 0.4rem;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.75rem;
+  color: #71717a;
+  text-align: left;
+}
+
+.site-footer-links {
+  grid-area: links;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   justify-self: end;
-  gap: 0.4rem;
-  margin: 0;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.site-footer-github {
+  padding-block: 0.3rem;
   font-size: 0.75rem;
-  color: #71717a;
+  color: #a1a1aa;
+}
+
+.site-footer-github:hover {
+  color: #fff;
+}
+
+.site-footer-github:focus-visible {
+  outline: 2px solid #d4d4d8;
+  outline-offset: 4px;
 }
 
 .site-footer-pulse {
+  grid-area: pulse;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -374,22 +406,34 @@ html[data-theme="dark"] .source-brand-icon { background-color:#fff; border-radiu
   color: #52525b;
 }
 
-@media (max-width: 639px) {
+@media (max-width: 1023px) {
   .site-footer-inner {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    text-align: center;
-  }
-
-  .site-footer-brand,
-  .site-footer-meta,
-  .site-footer-pulse {
-    justify-self: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "meta links" "pulse pulse";
+    gap: 0.65rem 1rem;
   }
 
   .site-footer-pulse {
     flex-wrap: wrap;
     white-space: normal;
+  }
+}
+
+@media (max-width: 639px) {
+  .site-footer-meta {
+    gap: 0.15rem 0.4rem;
+  }
+
+  .site-footer-meta > span:last-child {
+    flex-basis: 100%;
+  }
+
+  .site-footer-meta > span[aria-hidden] {
+    display: none;
+  }
+
+  .site-footer-links {
+    gap: 0.75rem;
   }
 }
 
@@ -1101,8 +1145,10 @@ html[data-theme="dark"] .mapboxgl-ctrl-attrib-button { filter:invert(1); }
 
 /* Page-level contracts shared by the overview and authentication. */
 .page-heading { font-size: var(--ui-text-page); line-height: 1.35; font-weight: 600; color: var(--color-gray-900); letter-spacing: -.02em; }
-.auth-page { width: 100%; min-height: 100vh; padding-inline: 0; }
-.auth-page > form { width: calc(100% - 32px); }
+.auth-page { display:flex; flex-direction:column; width:100%; min-height:100vh; min-height:100dvh; }
+.auth-main { display:flex; flex:1; align-items:center; justify-content:center; padding:32px 16px; }
+.auth-panel { display:flex; flex-direction:column; gap:24px; width:100%; max-width:448px; }
+.auth-brand { display:flex; justify-content:center; }
 .auth-page > .site-footer { margin-top: auto; }
 .auth-card { row-gap:var(--ui-section-gap); border: 1px solid var(--color-gray-200); background: var(--surface); padding: var(--ui-card-padding); }
 .auth-heading { font-size: var(--ui-text-page); line-height: 1.35; font-weight: 600; color: var(--color-gray-900); }

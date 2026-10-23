@@ -66,19 +66,22 @@ export function SiteFooter({ user }: { user?: ShellUser }) {
   return (
     <footer className="site-footer">
       <div className="container-ls site-footer-inner">
-        <Link to={user ? "/dashboard" : "/"} className="site-footer-brand">
-          <LogoMark />
-          <span className="logo-wordmark">
-            <span className="logo-wordmark-lite">Lite</span>
-            <span className="logo-wordmark-stats">Stats</span>
-          </span>
-        </Link>
-        <FooterPulse user={user} />
         <p className="site-footer-meta">
           <span>© {new Date().getFullYear()} LiteStats</span>
           <span aria-hidden="true">·</span>
           <span>{t("footer.own")}</span>
         </p>
+        <FooterPulse user={user} />
+        <div className="site-footer-links">
+          <a href="https://github.com/gentpan/LiteStats" target="_blank" rel="noopener noreferrer" className="site-footer-github">GitHub</a>
+          <Link to={user ? "/dashboard" : "/"} className="site-footer-brand">
+            <LogoMark />
+            <span className="logo-wordmark">
+              <span className="logo-wordmark-lite">Lite</span>
+              <span className="logo-wordmark-stats">Stats</span>
+            </span>
+          </Link>
+        </div>
       </div>
     </footer>
   )
@@ -232,10 +235,7 @@ function SiteHeader({ user }: { user?: ShellUser }) {
                 <UserMenu user={user} items={items} pathname={pathname} />
               </>
             ) : (
-              <>
-                <Link to="/login" className="squircle site-header-link">{t("nav.login")}</Link>
-                <Link to="/register" className="squircle btn btn-primary btn-sm">{t("nav.register")}</Link>
-              </>
+              <Link to="/login" className="squircle site-header-link">{t("nav.login")}</Link>
             )}
           </div>
         </div>
