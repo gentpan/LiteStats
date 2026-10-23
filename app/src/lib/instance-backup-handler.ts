@@ -36,7 +36,13 @@ export function createInstanceBackupHandler(deps:Dependencies){
         throw new RequestError("无效的备份操作")
       }
       if(request.method!=="POST")throw new RequestError("无效的备份操作",405)
-      if(request.headers.get("Origin")!==url.origin || request.headers.get("Sec-Fetch-Site")==="cross-site")throw new RequestError("请从本后台发起操作",403)
+      const suppliedOrigin=request.headers.get("Origin")||""
+      let origin:URL
+      try{origin=new URL(suppliedOrigin)}catch{throw new RequestError("请从本后台发起操作",403)}
+      // A loopback HTTPS reverse proxy may forward HTTP to Node while retaining Host.
+      // Accept only an HTTPS upgrade of the exact same host/port, never forwarded hosts.
+      const sameOrigin=origin.origin===url.origin || (url.protocol==="http:" && origin.protocol==="https:" && origin.host===url.host)
+      if(!sameOrigin || suppliedOrigin!==origin.origin || request.headers.get("Sec-Fetch-Site")==="cross-site")throw new RequestError("请从本后台发起操作",403)
       if(action==="upload"){
         const size=Number(request.headers.get("Content-Length"))
         if(!Number.isSafeInteger(size)||size<82||size>maximum || !request.body)throw new RequestError("请选择小于 10 GB 的完整 .lsb 备份文件")

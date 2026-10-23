@@ -26,6 +26,12 @@ test("cross-origin mutations, traversal and oversized uploads are rejected",asyn
  expect((await handler(request("upload",{}, {"Content-Length":String(11*1024**3)}))).status).toBe(400)
  expect(calls.length).toBe(0)
 })
+test("HTTPS proxy to HTTP Node retains same-host CSRF protection",async()=>{
+ const {handler}=setup()
+ const proxied=(origin:string)=>new Request('http://stats.example/api/instance-backups?action=prepare',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({kind:'backup'})})
+ expect((await handler(proxied('https://stats.example'))).status).toBe(201)
+ for(const origin of ['https://evil.example','https://stats.example:444','https://stats.example/path'])expect((await handler(proxied(origin))).status).toBe(403)
+})
 test("restore and key download require current password, and only validated fields reach the broker",async()=>{
  const {handler,calls}=setup()
  expect((await handler(request("prepare",{kind:"restore",archive:"fixture.lsb",password:"wrong",confirmation:"RESTORE"}))).status).toBe(403)
