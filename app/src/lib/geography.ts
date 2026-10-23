@@ -1,9 +1,11 @@
 import subdivisions from "../assets/subdivisions.json"
 import { countryName } from "./countries"
+import { Converter } from "opencc-js/t2cn"
 
 const names: Record<string, string[]> = subdivisions
 const aliases = new Map<string, string>()
-const clean = (value: string) => value.normalize("NFKC").trim().toLowerCase()
+const simplifiedChinese = Converter({from: "t", to: "cn"})
+const clean = (value: string) => simplifiedChinese(value).normalize("NFKC").trim().toLowerCase()
 
 function alias(country: string, value: string) {
   return `${country}:${clean(value)}`
@@ -36,5 +38,6 @@ export function geographyLabel(kind: "region" | "city", name: string, country: s
   const raw = name.trim()
   const text = translations?.[locale === "en" ? 0 : 1] || translations?.[0]
     || (!raw || /^\d+$/.test(raw) || /^\(?none\)?$/i.test(raw) || /^[A-Z]{2}[-_][A-Z0-9]{1,4}$/.test(raw) ? unknown : raw)
-  return nation ? `${countryName(nation, locale)} · ${text}` : text
+  const fullName = nation ? `${countryName(nation, locale)} · ${text}` : text
+  return locale === "en" ? fullName : simplifiedChinese(fullName)
 }
