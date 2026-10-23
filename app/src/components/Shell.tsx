@@ -73,7 +73,9 @@ export function SiteFooter({ user }: { user?: ShellUser }) {
         </p>
         <FooterPulse user={user} />
         <div className="site-footer-links">
-          <a href="https://github.com/gentpan/LiteStats" target="_blank" rel="noopener noreferrer" className="site-footer-github">GitHub</a>
+          <a href="https://github.com/gentpan/LiteStats" target="_blank" rel="noopener noreferrer" className="site-footer-github" aria-label="GitHub" title="GitHub">
+            <UIIcon name="brand-github" />
+          </a>
           <Link to={user ? "/dashboard" : "/"} className="site-footer-brand">
             <LogoMark />
             <span className="logo-wordmark">

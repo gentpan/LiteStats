@@ -645,6 +645,11 @@ export async function consumeRecoveryCode(userId: number, code: string) {
   return false
 }
 
+export async function hasConfiguredPasskeys() {
+  const result = await (await db()).query<{enabled: boolean}>("SELECT EXISTS (SELECT 1 FROM user_passkeys) AS enabled")
+  return result.rows[0]?.enabled === true
+}
+
 export async function listPasskeys(userId: number) {
   const res = await (await db()).query<Passkey>(
     `SELECT id, COALESCE(name, 'Passkey') AS name, credential_id, inserted_at::text

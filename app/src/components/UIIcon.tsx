@@ -66,6 +66,7 @@ const icons: Record<string, string> = {
 }
 
 const brands: Record<string, string> = {
+  "brand-github": "github",
   "brand-google": "google",
   "brand-cloudflare": "cloudflare",
   "brand-chrome": "chrome",

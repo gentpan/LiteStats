@@ -371,8 +371,12 @@ html[data-theme="dark"] .source-brand-icon { background-color:#fff; border-radiu
 }
 
 .site-footer-github {
-  padding-block: 0.3rem;
-  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  font-size: 18px;
   color: #a1a1aa;
 }
 
@@ -559,7 +563,7 @@ html[data-theme="dark"] .source-brand-icon { background-color:#fff; border-radiu
 
 .input:focus {
   outline: none;
-  box-shadow: 0 0 0 1px var(--color-indigo-500);
+  box-shadow: none;
   border-color: var(--color-indigo-500);
 }
 
@@ -1479,4 +1483,11 @@ select:disabled { opacity:.65; cursor:not-allowed; }
 @media(forced-colors:active) {
   select:not([multiple]):not([size]) { appearance:auto; background-image:none; }
   .ui-icon.ui-chevron::before, :where(details:not(.help-hint)) > summary::after { background:CanvasText; }
+}
+
+/* One quiet focus boundary, shared by native and SVG-painted inputs. */
+.input.input:focus, .input.input:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: var(--analytics-accent);
 }

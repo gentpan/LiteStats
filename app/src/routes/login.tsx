@@ -5,19 +5,20 @@ import { useState } from "react"
 import { BrandMark } from "~/components/BrandMark"
 import { SiteFooter } from "~/components/Shell"
 import { instanceSetupFn, loginFn, meFn } from "~/lib/actions"
-import { passkeyAuthFn, passkeyAuthOptionsFn, verifyLogin2faFn } from "~/lib/auth-actions"
+import { loginCapabilitiesFn, passkeyAuthFn, passkeyAuthOptionsFn, verifyLogin2faFn } from "~/lib/auth-actions"
 import { useT } from "~/lib/i18n"
 
 export const Route = createFileRoute("/login")({
   loader: async () => {
     if (await meFn()) throw redirect({ to: "/dashboard" })
     if ((await instanceSetupFn()).needsSetup) throw redirect({ to: "/setup" })
-    return {}
+    return await loginCapabilitiesFn()
   },
   component: LoginPage,
 })
 
 function LoginPage() {
+  const { passkeyEnabled } = Route.useLoaderData()
   const router = useRouter()
   const { t } = useT()
   const [email, setEmail] = useState("")
@@ -99,7 +100,7 @@ function LoginPage() {
               <ActionButton className="btn btn-primary w-full" icon="lock" disabled={pending} type="submit">
                 {pending ? t("登录中…") : t("login.submit")}
               </ActionButton>
-              <ActionButton
+              {passkeyEnabled ? <ActionButton
                 type="button"
                 icon="key" className="btn btn-secondary w-full"
                 onClick={async () => {
@@ -116,7 +117,7 @@ function LoginPage() {
                 }}
               >
                 {t("login.passkey")}
-              </ActionButton>
+              </ActionButton> : null}
             </form>
           )}
         </section>

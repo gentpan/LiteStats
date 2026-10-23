@@ -19,6 +19,7 @@ import {
   getTotpState,
   insertPasskey,
   listPasskeyRecords,
+  hasConfiguredPasskeys,
   replaceRecoveryCodes,
   saveTotpSecret,
   bumpTotpLastUsed,
@@ -187,7 +188,10 @@ export const removePasskeyFn = createServerFn({ method: "POST" })
     return { ok: true }
   })
 
+export const loginCapabilitiesFn = createServerFn({ method: "GET" }).handler(async () => ({passkeyEnabled: await hasConfiguredPasskeys()}))
+
 export const passkeyAuthOptionsFn = createServerFn({ method: "POST" }).handler(async () => {
+  if (!(await hasConfiguredPasskeys())) throw new Error("尚未配置 Passkey")
   const { rpID } = relyingParty()
   const options = await generateAuthenticationOptions({
     rpID,

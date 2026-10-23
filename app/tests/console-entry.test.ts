@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, spyOn, test } from "bun:test"
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router"
 import { createElement } from "react"
 import { renderToString } from "react-dom/server"
+import * as authActions from "../src/lib/auth-actions"
 import * as actions from "../src/lib/actions"
 import { rootAppearancePreferences } from "../src/lib/theme-appearance"
 import { Route as LoginRoute } from "../src/routes/login"
@@ -11,8 +12,9 @@ import { Route as HomeRoute } from "../src/routes/index"
 import { Route as SetupRoute } from "../src/routes/setup"
 
 let instanceSetup: ReturnType<typeof spyOn<typeof actions, "instanceSetupFn">>
-beforeEach(() => {instanceSetup = spyOn(actions, "instanceSetupFn").mockResolvedValue({needsSetup: false})})
-afterEach(() => {instanceSetup.mockRestore()})
+let capabilities: ReturnType<typeof spyOn<typeof authActions, "loginCapabilitiesFn">>
+beforeEach(() => {capabilities = spyOn(authActions, "loginCapabilitiesFn").mockResolvedValue({passkeyEnabled: false}); instanceSetup = spyOn(actions, "instanceSetupFn").mockResolvedValue({needsSetup: false})})
+afterEach(() => {instanceSetup.mockRestore(); capabilities.mockRestore()})
 
 function routerAt(path: string) {
   const root = createRootRoute({loader: async () => ({...rootAppearancePreferences(null, "zh-CN"), mapboxStyle: "standard" as import("../src/lib/mapbox-styles").MapboxStyleId})})
@@ -149,4 +151,21 @@ test("signed-out visitors cannot access the site list and can open login without
     const html = renderToString(createElement(RouterProvider, {router}))
     expect(html).not.toContain('href="/register"')
   } finally {me.mockRestore(); sites.mockRestore()}
+})
+
+
+test("Passkey login appears only when a credential is configured", async () => {
+  const me = spyOn(actions, "meFn").mockResolvedValue(null)
+  try {
+    for (const enabled of [false, true, false]) {
+      capabilities.mockResolvedValue({passkeyEnabled: enabled})
+      const router = routerAt("/login")
+      await router.load()
+      const html = renderToString(createElement(RouterProvider, {router}))
+      expect(html.includes("使用 Passkey 登录")).toBe(enabled)
+      expect(html).toContain('type="password"')
+      expect(html).toContain('aria-label="GitHub"')
+      expect(html).toContain("fa-github")
+    }
+  } finally {me.mockRestore()}
 })
