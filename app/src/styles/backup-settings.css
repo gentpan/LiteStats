@@ -42,3 +42,16 @@
   .backup-run-actions .ui-action { flex:1 1 auto; }
   .backup-empty { justify-content:flex-start; }
 }
+.full-backup-confirm { display:grid; gap:16px; margin-top:22px; padding:20px; background:var(--color-gray-50); }
+.full-backup-confirm .settings-field { display:flex; flex-direction:column; gap:8px; }
+.full-backup-confirm .input { width:100%; min-width:0; }
+.full-backup-confirm h3 { font-size:14px; font-weight:600; }
+.full-backup-filename { overflow-wrap:anywhere; font-size:12px; color:var(--color-gray-500); }
+.full-backup-list .backup-run-actions { flex-shrink:0; margin:0; }
+.full-backup-list .backup-result-row { display:flex; align-items:center; gap:16px; justify-content:space-between; padding:18px 0; }
+.full-backup-login { display:inline-block; margin-top:10px; text-decoration:underline; }
+.full-backup-list .is-disabled { opacity:.5; pointer-events:none; }
+@media(max-width:639px) {
+  .full-backup-list .backup-result-row { flex-direction:column; align-items:stretch; }
+  .full-backup-confirm { padding:16px; }
+}

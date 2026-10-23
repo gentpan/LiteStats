@@ -22,6 +22,7 @@ import sys
 import tarfile
 import tempfile
 import time
+import xml.etree.ElementTree as ET
 from urllib.parse import parse_qs, quote, unquote, urlencode, urlsplit, urlunsplit
 from urllib.request import urlopen
 
@@ -105,13 +106,19 @@ def pg_env(url, database=None):
     env.update(PGHOST=u.hostname or "127.0.0.1", PGPORT=str(u.port or 5432),
                PGUSER=unquote(u.username or "postgres"), PGPASSWORD=unquote(u.password or ""),
                PGDATABASE=database or unquote(u.path.lstrip("/")), PGCONNECT_TIMEOUT="10")
-    for source, target in (("sslmode", "PGSSLMODE"), ("sslrootcert", "PGSSLROOTCERT")):
+    for source, target in (("host", "PGHOST"), ("sslmode", "PGSSLMODE"), ("sslrootcert", "PGSSLROOTCERT")):
         if source in parse_qs(u.query):
             env[target] = parse_qs(u.query)[source][0]
     return env
 
 def psql(url, sql, database=None):
-    return run(["psql", "--no-psqlrc", "--set", "ON_ERROR_STOP=1", "--tuples-only", "--no-align", "--command", sql],
+    prefix=[]
+    # Only the private host operator may opt into peer-authenticated database creation.
+    if os.environ.get('PGADMIN_OS_USER') and url==os.environ.get('PGADMIN_URL'):
+        user=os.environ['PGADMIN_OS_USER']
+        if os.geteuid()!=0 or not re.fullmatch(r'[a-z_][a-z0-9_-]*',user):raise OpsError('Invalid operator OS identity')
+        prefix=['runuser','-u',user,'--']
+    return run(prefix+["psql", "--no-psqlrc", "--set", "ON_ERROR_STOP=1", "--tuples-only", "--no-align", "--command", sql],
                env=pg_env(url, database)).decode().strip()
 
 class ClickHouse:
@@ -305,6 +312,22 @@ def replace_database(url, database):
     u = urlsplit(url)
     return urlunsplit((u.scheme, u.netloc, "/" + quote(database), u.query, u.fragment))
 
+def allow_native_recovery_database(path, user, database, admin):
+    """XML-managed accounts cannot receive SQL GRANTs. Extend only their exact allowlist."""
+    if os.geteuid()!=0:raise OpsError('Native database access update requires the host operator')
+    tree=ET.parse(path)
+    users=tree.getroot().find('users')
+    entry=next((item for item in users if item.tag==user),None) if users is not None else None
+    allowed=entry.find('allow_databases') if entry is not None else None
+    if allowed is None:raise OpsError('Expected a native application database allowlist')
+    if database not in [item.text for item in allowed]:
+        ET.SubElement(allowed,'database').text=database
+        mode=Path(path).stat().st_mode & 0o777
+        private_write(str(path)+'.before-recovery',Path(path).read_bytes())
+        private_write(path,ET.tostring(tree.getroot(),encoding='utf-8'))
+        os.chmod(path,mode)
+        admin.text('SYSTEM RELOAD CONFIG')
+
 def stage_restore(config_path, source, key_path):
     """Never modify current databases. Keep a private receipt for operator cleanup."""
     config = read_env(config_path)
@@ -334,7 +357,9 @@ def stage_restore(config_path, source, key_path):
             raise OpsError("Restored PostgreSQL row counts differ; current databases unchanged")
         old_ch = ClickHouse(config.get("CLICKHOUSE_ADMIN_URL") or os.environ.get("CLICKHOUSE_ADMIN_URL") or config["CLICKHOUSE_URL"])
         old_ch.text("CREATE DATABASE " + ident(target) + " ENGINE=Atomic")
-        if config.get("CLICKHOUSE_ADMIN_URL") or os.environ.get("CLICKHOUSE_ADMIN_URL"):
+        if os.environ.get('CLICKHOUSE_USERS_CONFIG'):
+            allow_native_recovery_database(os.environ['CLICKHOUSE_USERS_CONFIG'],unquote(urlsplit(config['CLICKHOUSE_URL']).username or 'default'),target,old_ch)
+        elif config.get("CLICKHOUSE_ADMIN_URL") or os.environ.get("CLICKHOUSE_ADMIN_URL"):
             app_user=unquote(urlsplit(config["CLICKHOUSE_URL"]).username or "default")
             old_ch.text("GRANT ALL ON " + ident(target) + ".* TO " + ident(app_user))
         ch = ClickHouse(ch_url)
@@ -446,9 +471,14 @@ def install(args):
         private_write(config, "\n".join(k + "=" + v for k, v in values.items()) + "\n")
     existing=read_env(config)
     missing_identity={key:str(value) for key,value in (("OPS_UID",os.getuid()),("OPS_GID",os.getgid())) if key not in existing}
+    if 'LITESTATS_OPS_TOKEN' not in existing:missing_identity['LITESTATS_OPS_TOKEN']=secrets.token_urlsafe(48)
+    missing_identity['LITESTATS_OPS_SOCKET']='/run/litestats-ops/ops.sock'
     if missing_identity:patch_env(config,missing_identity)
+    socket_dir=directory/'ops-run'
+    socket_dir.mkdir(mode=0o755,exist_ok=True)
+    os.chmod(socket_dir,0o755)
     backup_key(directory / "backup.key", create=True)
-    for name in ("compose.yml", "Ops.Dockerfile", "Ops.Dockerfile.dockerignore", "litestats.py"):
+    for name in ("compose.yml", "Ops.Dockerfile", "Ops.Dockerfile.dockerignore", "litestats.py", "ops_agent.py"):
         shutil.copyfile(root / "deploy" / name, directory / name)
     compose = [*compose_base, "--env-file", str(config), "-f", str(directory / "compose.yml")]
     old = config.read_bytes()
@@ -469,12 +499,33 @@ def install(args):
     patch_env(config, {"LITESTATS_IMAGE": tag})
     try:
         run(compose + ["up", "-d", "--wait", "--wait-timeout", "180", "postgres", "clickhouse", "app"])
+        install_agent(directory)
     except Exception:
         private_write(config, old)
         run(compose + ["up", "-d", "--no-deps", "app"])
         raise
     print("Installation ready at http://127.0.0.1:" + read_env(config).get("APP_PORT", "3100"))
     print("Keep the private backup.key separately; configure your HTTPS reverse proxy before public use.")
+
+def install_agent(directory):
+    """Linux host supervisor; the web container never receives a Docker socket."""
+    if sys.platform!='linux':
+        print('Web recovery supervisor requires a Linux systemd host; CLI operations remain available here.')
+        return
+    if os.geteuid()!=0 or not Path('/run/systemd/system').is_dir():
+        raise OpsError('Web backup installation requires root on a systemd Linux host')
+    name='litestats-ops-'+hashlib.sha256(str(directory).encode()).hexdigest()[:8]+'.service'
+    # systemd syntax, not a shell. Escape specifiers and embedded quotes in paths.
+    def arg(value):return '"'+str(value).replace('\\','\\\\').replace('"','\\"').replace('%','%%')+'"'
+    command=[sys.executable,directory/'ops_agent.py','--config',directory/'.env',
+             '--socket',directory/'ops-run/ops.sock','--backups',directory/'backups',
+             '--key-file',directory/'backup.key','--compose-file',directory/'compose.yml']
+    unit='[Unit]\nDescription=LiteStats private backup supervisor\nAfter=docker.service\nRequires=docker.service\n\n[Service]\nType=simple\nUMask=0077\nExecStart='+ ' '.join(arg(item) for item in command)+'\nRestart=on-failure\nRestartSec=3\nPrivateTmp=true\nNoNewPrivileges=true\n\n[Install]\nWantedBy=multi-user.target\n'
+    private_write(Path('/etc/systemd/system')/name,unit)
+    run(['systemctl','daemon-reload'])
+    run(['systemctl','enable',name])
+    run(['systemctl','restart',name])
+    run(['systemctl','is-active','--quiet',name])
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)

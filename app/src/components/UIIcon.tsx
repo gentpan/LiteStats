@@ -23,6 +23,7 @@ const icons: Record<string, string> = {
   plug: "plug",
   puzzle: "puzzle-piece",
   download: "download",
+  upload: "upload",
   shield: "shield",
   save: "floppy-disk",
   plus: "plus",

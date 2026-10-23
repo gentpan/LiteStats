@@ -2,6 +2,10 @@
 
 The current production layout uses native systemd services and the existing FrankenPHP/Caddy proxy. Docker Compose remains an alternative below. Set your own analytics hostname; keep database services private and preserve existing applications and proxy sites.
 
+## Backups in the dashboard
+
+Open **Settings → System settings → Backup**. The **Full backup and recovery** panel creates/downloads encrypted instance backups, downloads the recovery key after password confirmation, uploads/verifies backups, and starts staged recovery after password and `RESTORE` confirmation. Recovery automatically saves current data first and retains old databases. See [OPERATIONS.md](OPERATIONS.md#administrator-dashboard) for the workflow and supervisor requirements.
+
 ## Managed installation and unified recovery
 
 Use the [installation and recovery guide](OPERATIONS.md) for the managed Docker Compose installer, encrypted PostgreSQL + ClickHouse + runtime backup packages, verification, staged recovery and native-systemd commands.

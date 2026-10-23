@@ -1,3 +1,4 @@
+import {FullBackupPanel} from "./FullBackupPanel"
 import { useState } from "react"
 import { UIIcon } from "./UIIcon"
 import { ActionButton } from "./ActionButton"
@@ -69,6 +70,7 @@ export function BackupPanel({ initial }: { initial: Settings }) {
     : saved ? t("已保存。留空保留，填写新值可替换。") : t("填写此存储桶对应的 API 密钥。")
 
   return <div className="backup-panel" aria-busy={!!busy}>
+    <FullBackupPanel/>
     <SettingsForm onSubmit={() => perform("save", save)}>
       <fieldset disabled={!!busy} className="backup-form-fields">
         <Tile icon="cloud" brand={form.provider === "r2" ? "cloudflare" : undefined} id="storage" title={t("对象存储")}>
@@ -147,12 +149,7 @@ export function BackupPanel({ initial }: { initial: Settings }) {
     </SettingsForm>
     {msg ? <p role="status" className="squircle settings-feedback">{msg}</p> : null}
     {err ? <p role="alert" className="squircle settings-feedback is-error">{err}</p> : null}
-    <Tile icon="shield" title={t("完整备份与迁移")}>
-      <p className="settings-hint">{t("部署工具可生成一份加密备份，包含账号、站点、访问记录和运行配置。恢复时先校验并还原到新库，成功后切换，旧库保留。")}</p>
-      <p className="settings-hint">{t("请将备份文件和恢复密钥分别妥善保存。")}</p>
-      <a className="text-sm text-indigo-600" href="https://github.com/gentpan/LiteStats/blob/main/deploy/README.md" target="_blank" rel="noreferrer">{t("部署与恢复说明")}</a>
-    </Tile>
-    <Tile icon="cloud" id="restore" title={t("备份与恢复")}>
+    <Tile icon="cloud" id="restore" title={t("云端数据备份与恢复")}>
       <p className="settings-hint">{t("云端恢复期间会暂停采集与后台请求，并先自动保存当前数据。更换服务器请使用完整加密备份。")}</p>
       <dl className="squircle backup-status-grid">
         <div><dt>{t("上次成功备份")}</dt><dd>{form.last_run_at ? formatTimestamp(form.last_run_at, locale) : t("尚无成功备份")}</dd></div>

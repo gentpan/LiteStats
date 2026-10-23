@@ -5,9 +5,30 @@ The application keeps PostgreSQL for accounts/configuration and ClickHouse for e
 The default deployment runs one application process. Do not scale application replicas
 while using the coordinated cloud restore feature.
 
+## Administrator dashboard
+
+Open **Settings → System settings → Backup** (`/account?tab=system/backup`).
+The first panel, **Full backup and recovery**, needs no object storage configuration:
+
+1. **Create full backup** saves both database schemas/data and runtime configuration in one authenticated, encrypted `.lsb` archive. Download it from the resulting list.
+2. **Download recovery key** asks for the current administrator password. Save this file separately from the archive.
+3. On the target instance, initialize its administrator, open the same panel, and **Upload backup**. Upload the original recovery key when the backup came from another instance.
+4. **Verify and recover** first checks authentication, checksums and archive structure and shows site/account/event counts. Verification does not stop the application.
+5. Enter the current target administrator password and type `RESTORE`. Recovery automatically makes a protective full backup, restores new databases, checks every table count, switches connections and checks application health. Sign in again using the account/password from the backup. Previous databases remain available.
+
+The application briefly pauses for full backup/recovery. An independent host supervisor continues the job across application restarts; the browser reconnects using a status-only job ticket. The ticket cannot download archives or keys or initiate recovery. Reloading the same tab preserves its progress. Uploaded files are streamed (maximum 10 GiB), with an opaque server filename. Passwords and uploaded recovery keys are never saved in browser storage; uploaded keys are removed after the job or its preparation expires.
+
+Only restore archives from instances you trust. Database dumps contain executable schema definitions. The optional **cloud data backup and recovery** section below retains the existing R2/S3 schedule and data backups; these are separate from full instance packages.
+
+### Supervisor boundary
+
+The managed Linux installer automatically creates a root systemd supervisor with a private Unix socket and a generated authentication token. Only its socket directory is mounted read-only into the application container. Neither the Docker socket, host configuration, recovery key nor backup directory is mounted into the web container. No public supervisor port is opened. HTTP requests cannot choose shell commands, service names or filesystem paths.
+
+Managed installation requires root on a Linux systemd host. macOS development can still use the CLI; it does not install a host supervisor. Native installations use the same supervisor with a fixed application service/configuration and an operator-only environment file. PostgreSQL may use root-to-postgres peer authentication for database creation while the web role retains normal permissions. XML-managed ClickHouse users retain an exact database allowlist: the supervisor adds only each newly restored database, using a separate loopback-only identity restricted to the recovery database prefix and configuration reload. Do not place operator credentials in the web environment.
+
 ## One-command installation
 
-Requirements: Docker Engine, Docker Compose v2 or newer, Python 3.9+, OpenSSL.
+Requirements: Linux with systemd, root, Docker Engine, Docker Compose v2 or newer, Python 3.9+, OpenSSL.
 The production build includes Bun in its build stage; Bun is not needed on the host.
 
 ```sh

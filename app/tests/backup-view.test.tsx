@@ -130,7 +130,7 @@ test("backup metadata and errors are escaped and status codes are translated int
 })
 
 test("all backup field, status and connection error messages have English translations", () => {
-  for (const file of ["components/BackupPanel.tsx", "lib/backup-connection.ts"]) {
+  for (const file of ["components/BackupPanel.tsx", "lib/backup-connection.ts", "components/FullBackupPanel.tsx", "lib/instance-backup-handler.ts"]) {
     const source = readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8")
     for (const match of source.matchAll(/"((?:[^"\\\n]|\\.)*)"/g)) {
       if (!/[\u4e00-\u9fff]/.test(match[1])) continue

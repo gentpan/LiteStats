@@ -41,6 +41,8 @@ services:
       SEED_DEMO: 'false'
     ports:
       - '127.0.0.1:${APP_PORT:-3100}:3100'
+    volumes:
+      - ./ops-run:/run/litestats-ops:ro
     depends_on:
       postgres:
         condition: service_healthy

@@ -103,5 +103,21 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual(env["PGSSLMODE"],"disable")
         self.assertNotIn("PGSERVICE",env)
 
+    def test_native_peer_adapter_and_exact_clickhouse_allowlist(self):
+        admin='postgres://postgres@localhost/postgres?host=/var/run/postgresql'
+        with patch.dict(os.environ,{'PGADMIN_URL':admin,'PGADMIN_OS_USER':'postgres'}),patch.object(ops.os,'geteuid',return_value=0),patch.object(ops,'run',return_value=b'1') as run:
+            self.assertEqual(ops.psql(admin,'SELECT 1'),'1')
+            self.assertEqual(run.call_args.args[0][:4],['runuser','-u','postgres','--'])
+            self.assertEqual(run.call_args.kwargs['env']['PGHOST'],'/var/run/postgresql')
+        config=self.root/'users.xml'
+        config.write_text('<clickhouse><users><app><password_sha256_hex>fixture</password_sha256_hex><allow_databases><database>original</database></allow_databases></app><unrelated><allow_databases><database>other</database></allow_databases></unrelated></users></clickhouse>')
+        from unittest.mock import MagicMock
+        client=MagicMock()
+        with patch.object(ops.os,'geteuid',return_value=0):ops.allow_native_recovery_database(config,'app','litestats_restore_fixture',client)
+        tree=ops.ET.parse(config)
+        self.assertEqual([item.text for item in tree.findall('users/app/allow_databases/database')],['original','litestats_restore_fixture'])
+        self.assertEqual([item.text for item in tree.findall('users/unrelated/allow_databases/database')],['other'])
+        client.text.assert_called_once_with('SYSTEM RELOAD CONFIG')
+
 if __name__ == "__main__":
     unittest.main()

@@ -15,7 +15,7 @@ export function enterBackgroundJob() {
   let released=false
   return ()=>{if(!released){released=true;state.jobs--}}
 }
-export async function withMaintenance<T>(operation:()=>Promise<T>,requestAllowance=1):Promise<T>{
+export async function holdMaintenance(requestAllowance=1):Promise<()=>void>{
   if(state.paused)throw new Error("正在执行备份或恢复，请稍后重试")
   state.paused=true
   try {
@@ -24,6 +24,11 @@ export async function withMaintenance<T>(operation:()=>Promise<T>,requestAllowan
       if(Date.now()>deadline)throw new Error("仍有请求正在处理，请稍后重试")
       await new Promise(resolve=>setTimeout(resolve,25))
     }
-    return await operation()
-  } finally {state.paused=false}
+    let released=false
+    return ()=>{if(!released){released=true;state.paused=false}}
+  } catch(error) {state.paused=false;throw error}
+}
+export async function withMaintenance<T>(operation:()=>Promise<T>,requestAllowance=1):Promise<T>{
+  const release=await holdMaintenance(requestAllowance)
+  try{return await operation()}finally{release()}
 }
