@@ -122,7 +122,7 @@ function LoginPage() {
           )}
         </section>
       </main>
-      <SiteFooter />
+      <SiteFooter showBrand={false} />
     </div>
   )
 }

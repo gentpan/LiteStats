@@ -61,7 +61,7 @@ function FooterPulse({ user }: { user?: ShellUser }) {
   )
 }
 
-export function SiteFooter({ user }: { user?: ShellUser }) {
+export function SiteFooter({ user, showBrand = true }: { user?: ShellUser; showBrand?: boolean }) {
   const { t } = useT()
   return (
     <footer className="site-footer">
@@ -76,13 +76,13 @@ export function SiteFooter({ user }: { user?: ShellUser }) {
           <a href="https://github.com/gentpan/LiteStats" target="_blank" rel="noopener noreferrer" className="site-footer-github" aria-label="GitHub" title="GitHub">
             <UIIcon name="brand-github" />
           </a>
-          <Link to={user ? "/dashboard" : "/"} className="site-footer-brand">
+          {showBrand ? <Link to={user ? "/dashboard" : "/"} className="site-footer-brand">
             <LogoMark />
             <span className="logo-wordmark">
               <span className="logo-wordmark-lite">Lite</span>
               <span className="logo-wordmark-stats">Stats</span>
             </span>
-          </Link>
+          </Link> : null}
         </div>
       </div>
     </footer>
