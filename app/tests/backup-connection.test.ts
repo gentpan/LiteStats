@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { backupConnectionError, backupConnectionSchema, backupEndpoint, createBackupConnectionHandler, resolveBackupConnection, testBackupConnection, type BackupConnection, type BackupConnectionInput } from "../src/lib/backup-connection"
-import { publicBackupSettings, type BackupSettings } from "../src/lib/backup"
+import { backupOperationError, publicBackupSettings, type BackupSettings } from "../src/lib/backup"
 
 const saved: BackupConnection = {
   provider: "r2", endpoint: "https://fixtureaccount.r2.cloudflarestorage.com", region: "auto",
@@ -116,4 +116,11 @@ test("provider errors remain helpful but never expose response URLs or secrets",
     expect(destroys).toBe(1)
   }
   expect(backupConnectionError({code: `secret-${saved.secret_key}`})).not.toContain(saved.secret_key)
+})
+
+test("backup and restore errors preserve safe validation failures and redact provider material",()=>{
+ expect(backupOperationError(new Error("备份文件校验失败"))).toBe("备份文件校验失败")
+ const failure=backupOperationError(new Error("https://storage.example.com/?secret=private-fixture"))
+ expect(failure).not.toContain("storage.example.com")
+ expect(failure).not.toContain("private-fixture")
 })

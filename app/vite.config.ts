@@ -17,6 +17,6 @@ export default defineConfig({
     tailwindcss(),
     tanstackStart({ srcDirectory: "src" }),
     viteReact(),
-    nitro({plugins: ["./server/plugins/site-checks.ts"]}),
+    nitro({preset:"node-server", plugins: ["./server/plugins/maintenance.ts", "./server/plugins/site-checks.ts"]}),
   ],
 })

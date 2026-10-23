@@ -21,6 +21,20 @@ LiteStats 是一个类似 Umami、面向单人自托管的网站统计服务。�
 
 界面支持中文、英文、手机布局、浅色/深色模式，以及紫、蓝、绿、黑四种配色。
 
+## 一键部署与完整恢复
+
+保留 PostgreSQL + ClickHouse，使用 Docker、Docker Compose 和 Python 3 即可部署，构建工具在镜像内运行：
+
+```sh
+git clone https://github.com/gentpan/LiteStats.git
+cd LiteStats
+python3 deploy/litestats.py install --directory /opt/litestats-instance --port 3100
+```
+
+安装器自动生成独立密码和恢复密钥，等待两套数据库及应用就绪；经 HTTPS 反向代理访问后创建第一个管理员。实例文件保存在源码目录外，重复执行可升级，已有密码和数据卷保留。
+
+统一加密备份包含两套数据库、表结构、运行配置及校验清单；恢复先还原到新库并核对，再切换连接，保留旧库。备份文件与恢复密钥应分别保存到服务器之外。现有原生 systemd 部署也可以使用同一恢复工具。完整命令及限制见 [部署与恢复说明](deploy/OPERATIONS.md)。
+
 ## 快速开始
 
 准备 [Bun](https://bun.sh/) 1.4+ 和 Docker Compose。应用使用 TanStack Start、React、Vite 与 Tailwind CSS；数据库为 PostgreSQL 和 ClickHouse。

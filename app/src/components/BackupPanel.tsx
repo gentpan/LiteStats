@@ -147,7 +147,13 @@ export function BackupPanel({ initial }: { initial: Settings }) {
     </SettingsForm>
     {msg ? <p role="status" className="squircle settings-feedback">{msg}</p> : null}
     {err ? <p role="alert" className="squircle settings-feedback is-error">{err}</p> : null}
+    <Tile icon="shield" title={t("完整备份与迁移")}>
+      <p className="settings-hint">{t("部署工具可生成一份加密备份，包含账号、站点、访问记录和运行配置。恢复时先校验并还原到新库，成功后切换，旧库保留。")}</p>
+      <p className="settings-hint">{t("请将备份文件和恢复密钥分别妥善保存。")}</p>
+      <a className="text-sm text-indigo-600" href="https://github.com/gentpan/LiteStats/blob/main/deploy/README.md" target="_blank" rel="noreferrer">{t("部署与恢复说明")}</a>
+    </Tile>
     <Tile icon="cloud" id="restore" title={t("备份与恢复")}>
+      <p className="settings-hint">{t("云端恢复期间会暂停采集与后台请求，并先自动保存当前数据。更换服务器请使用完整加密备份。")}</p>
       <dl className="squircle backup-status-grid">
         <div><dt>{t("上次成功备份")}</dt><dd>{form.last_run_at ? formatTimestamp(form.last_run_at, locale) : t("尚无成功备份")}</dd></div>
         <div><dt>{t("备份状态")}</dt><dd>{t(form.last_status === "error" ? "最近一次备份失败" : form.last_run_at ? "备份成功" : "尚未执行备份")}</dd></div>
@@ -156,24 +162,24 @@ export function BackupPanel({ initial }: { initial: Settings }) {
       {form.last_status === "error" && form.last_error ? <p className="squircle settings-feedback is-error">{t("最近一次错误：{0}", {0: form.last_error})}</p> : null}
       {dirty ? <p className="backup-unsaved-hint">{t("请先保存修改，再执行备份、扫描或恢复。连接测试可以直接使用当前填写的信息。")}</p> : null}
       <div className="backup-run-actions">
-        <ActionButton icon="cloud" disabled={!!busy || dirty || !form.configured} onClick={() => perform("run", async () => {
+        <ActionButton icon="cloud" loading={busy === "run"} disabled={!!busy || dirty || !form.configured} onClick={() => perform("run", async () => {
           const manifest = await runBackupFn()
           const result = {last_run_at: manifest.createdAt, last_status: "manual", last_error: null, last_backup_id: manifest.id}
           setForm(cur => ({...cur, ...result})); setSavedForm(cur => ({...cur, ...result}))
           setMsg(t("备份完成 {0}，事件 {1} 条", {0: manifest.id, 1: manifest.clickhouse.rows}))
-        })}>{t(busy === "run" ? "备份中…" : "立即备份")}</ActionButton>
-        <ActionButton icon="search" disabled={!!busy || dirty || !form.configured} onClick={() => perform("scan", async () => {
+        })}>{t(busy === "run" ? "备份中" : "立即备份")}</ActionButton>
+        <ActionButton icon="search" loading={busy === "scan"} disabled={!!busy || dirty || !form.configured} onClick={() => perform("scan", async () => {
           const rows = await scanBackupFn({data: {}})
           setItems(rows); setScanned(true)
           setMsg(rows.length ? t("找到 {0} 份备份", {0: rows.length}) : t("这个桶里还没有 LiteStats 备份"))
-        })}>{t(busy === "scan" ? "扫描中…" : "扫描备份")}</ActionButton>
+        })}>{t(busy === "scan" ? "扫描中" : "扫描备份")}</ActionButton>
       </div>
       {items.length ? <ul className="backup-result-list">
         {items.map(item => <li key={item.id} className="backup-result-row"><div><strong>{item.id}</strong><p>{formatTimestamp(item.createdAt, locale)} · {t("{0} 条事件", {0: item.clickhouse.rows})}</p></div>
-          <ActionButton icon="refresh" className="btn btn-danger" disabled={!!busy || dirty} onClick={() => {
+          <ActionButton icon="refresh" className="btn btn-danger" loading={busy === item.id} disabled={!!busy || dirty} onClick={() => {
             if (!window.confirm(t("确认用 {0} 覆盖当前数据库？", {0: item.id}))) return
             void perform(item.id, async () => {await restoreBackupFn({data: {id: item.id}}); setMsg(t("已恢复 {0}，请刷新页面", {0: item.id}))})
-          }}>{t(busy === item.id ? "恢复中…" : "恢复此备份")}</ActionButton>
+          }}>{t(busy === item.id ? "恢复中" : "恢复此备份")}</ActionButton>
         </li>)}
       </ul> : <div className="backup-empty"><UIIcon name="cloud"/><p>{t(scanned ? "这个目录下还没有 LiteStats 备份" : "扫描后，这里会列出可恢复的备份。")}</p></div>}
       <p className="backup-restore-note"><UIIcon name="warn"/>{t("恢复会覆盖当前数据库。请确认备份后再操作。")}</p>

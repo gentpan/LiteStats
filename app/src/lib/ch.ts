@@ -621,6 +621,16 @@ export async function flushEventQueue(): Promise<void> {
   }
 }
 
+/** Flush all already-accepted events before a coordinated backup or restore. */
+export async function drainEventQueue(): Promise<void> {
+  const deadline=Date.now()+20_000
+  while(eventBuffer.length || isFlushing){
+    if(Date.now()>deadline)throw new Error("访问记录尚未写入完成，请稍后重试")
+    if(!isFlushing)await flushEventQueue()
+    await new Promise(resolve=>setTimeout(resolve,25))
+  }
+}
+
 export function queueEvent(ev: EventPayload): boolean {
   if (eventBuffer.length + inFlightCount >= MAX_QUEUE_SIZE) {
     console.warn("[LiteStats] Event buffer full, rejecting event until capacity is available")

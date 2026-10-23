@@ -54,7 +54,7 @@ import {
 } from "./keywords"
 import { rangeFromSearch } from "./range"
 import { clearSession, currentUser, requireUser, requireAdmin, isInstanceAdmin, write2faPending, writeLocaleCookie, writeSession } from "./session"
-import { getBackupSettings, publicBackupSettings, readBackupSettings, restoreBackup, runBackup, saveBackupSettings, scanBackups, startBackupScheduler } from "./backup"
+import { backupOperationError, getBackupSettings, publicBackupSettings, readBackupSettings, restoreBackup, runBackup, saveBackupSettings, scanBackups, startBackupScheduler } from "./backup"
 import { backupConnectionSchema, createBackupConnectionHandler, resolveBackupConnection, testBackupConnection } from "./backup-connection"
 
 export const loginFn = createServerFn({ method: "POST" })
@@ -411,7 +411,7 @@ export const saveBackupFn = createServerFn({ method: "POST" })
 
 export const runBackupFn = createServerFn({ method: "POST" }).handler(async () => {
   await requireAdmin()
-  return runBackup("manual")
+  return runBackup("manual").catch(error=>{throw new Error(backupOperationError(error))})
 })
 
 export const scanBackupFn = createServerFn({ method: "POST" })
@@ -419,14 +419,14 @@ export const scanBackupFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await requireAdmin()
     const cur = await getBackupSettings()
-    return scanBackups(resolveBackupConnection({...cur, ...data, access_key: data.access_key, secret_key: data.secret_key}, cur))
+    return scanBackups(resolveBackupConnection({...cur, ...data, access_key: data.access_key, secret_key: data.secret_key}, cur)).catch(error=>{throw new Error(backupOperationError(error))})
   })
 
 export const restoreBackupFn = createServerFn({ method: "POST" })
   .validator((input: unknown) => z.object({id: text}).parse(input))
   .handler(async ({ data }) => {
     await requireAdmin()
-    return restoreBackup(data.id)
+    return restoreBackup(data.id).catch(error=>{throw new Error(backupOperationError(error))})
   })
 
 export const activityFn = createServerFn({ method: "GET" })

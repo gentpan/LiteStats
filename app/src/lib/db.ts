@@ -352,7 +352,7 @@ export async function findSiteById(id: number) {
 const SITE_CACHE_TTL_MS = 60_000
 const siteCache = new Map<string, { site: Site | null, expiresAt: number }>()
 
-function invalidateSiteCache() {
+export function invalidateSiteCache() {
   // A changed site can have legacy Unicode, www or port aliases cached under other keys.
   siteCache.clear()
 }

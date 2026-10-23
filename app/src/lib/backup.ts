@@ -1,9 +1,19 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto"
+import { createCipheriv, createDecipheriv, createHash, createHmac, timingSafeEqual, randomBytes } from "node:crypto"
 import { gzipSync, gunzipSync } from "node:zlib"
-import { db } from "./db"
-import { ch } from "./ch"
+import { db, invalidateSiteCache } from "./db"
+import { ch, drainEventQueue } from "./ch"
+import {withMaintenance} from "./maintenance"
 import { SESSION_KEY } from "./env"
 import { backupConnectionError, backupConnectionSchema, backupPrefix, requireBackupConnection, resolveBackupConnection } from "./backup-connection"
+
+/** Keep provider response URLs and signing material out of server-function errors. */
+export function backupOperationError(error:unknown):string {
+  const message=error instanceof Error?error.message:""
+  const safe=new Set(["正在执行备份或恢复，请稍后重试","仍有请求正在处理，请稍后重试","访问记录尚未写入完成，请稍后重试",
+    "非法备份 ID","不支持的备份格式","非法备份分片","备份事件数量校验失败","备份文件校验失败","备份清单校验失败","备份表清单不完整",
+    "恢复此备份需要原实例的 SESSION_KEY，请使用统一加密备份恢复","备份表存在循环依赖，无法恢复"])
+  return safe.has(message)?message:backupConnectionError(error)
+}
 
 type BackupProvider = "r2" | "s3"
 type BackupSchedule = "off" | "hourly" | "daily" | "weekly"
@@ -57,7 +67,10 @@ export function publicBackupSettings(settings: BackupSettings): BackupPublicSett
 
 type BackupManifest = {
   app: "litestats"
-  version: 1
+  version: 1 | 2
+  signature?: string
+  keyFingerprint?: string
+  checksums?: Record<string,string>
   id: string
   createdAt: string
   postgres: { tables: string[], bytes: number }
@@ -180,21 +193,19 @@ function prefixOf(s: BackupSettings) {
 async function put(s: BackupSettings, keyPath: string, body: Buffer, contentType: string) {
   const { PutObjectCommand } = await s3Sdk()
   const client = await clientOf(s)
-  await client.send(new PutObjectCommand({
-    Bucket: s.bucket,
-    Key: keyPath,
-    Body: body,
-    ContentType: contentType,
-  }))
+  try {await client.send(new PutObjectCommand({Bucket:s.bucket,Key:keyPath,Body:body,ContentType:contentType}))}
+  finally {client.destroy()}
 }
 
 async function getBuf(s: BackupSettings, keyPath: string) {
   const { GetObjectCommand } = await s3Sdk()
   const client = await clientOf(s)
-  const res = await client.send(new GetObjectCommand({ Bucket: s.bucket, Key: keyPath }))
-  const bytes = await res.Body?.transformToByteArray()
-  if (!bytes) throw new Error("备份文件为空")
-  return Buffer.from(bytes)
+  try {
+    const res=await client.send(new GetObjectCommand({Bucket:s.bucket,Key:keyPath}))
+    const bytes=await res.Body?.transformToByteArray()
+    if(!bytes)throw new Error("备份文件为空")
+    return Buffer.from(bytes)
+  } finally {client.destroy()}
 }
 
 async function dumpPostgres() {
@@ -230,53 +241,59 @@ function serializeRow(row: Record<string, unknown>) {
   return next
 }
 
-async function dumpClickhouse() {
-  const parts: Array<{ name: string, body: Buffer, rows: number }> = []
-  let batch: string[] = []
-  let total = 0
-  const pack = () => {
-    if (!batch.length) return
-    parts.push({ name: `clickhouse/events_v2.${String(parts.length).padStart(4, "0")}.jsonl.gz`, body: gzipSync(Buffer.from(batch.join("\n"))), rows: batch.length })
-    batch = []
+const checksum=(body:Buffer)=>createHash("sha256").update(body).digest("hex")
+const keyFingerprint=()=>createHash("sha256").update("litestats-backup-key:").update(SESSION_KEY).digest("hex")
+
+async function withBackupLock<T>(operation:()=>Promise<T>, allowance=1):Promise<T>{
+  const connection=await(await db()).connect()
+  let locked=false
+  try {
+    const result=await connection.query<{locked:boolean}>("SELECT pg_try_advisory_lock(817325) AS locked")
+    locked=result.rows[0]?.locked===true
+    if(!locked)throw new Error("正在执行备份或恢复，请稍后重试")
+    return await withMaintenance(async()=>{await drainEventQueue();return operation()},allowance)
+  } finally {
+    try {if(locked)await connection.query("SELECT pg_advisory_unlock(817325)")} finally {connection.release()}
   }
-  // A single query reads one ClickHouse snapshot; OFFSET pagination can skip concurrent rows.
-  const result = await ch().query({ query: "SELECT * FROM events_v2", format: "JSONEachRow" })
-  for await (const rows of result.stream()) {
-    for (const row of rows) {
-      batch.push(row.text)
-      total++
-      if (batch.length === 20000) pack()
-    }
-  }
-  pack()
-  return { parts, rows: total }
 }
 
-export async function runBackup(reason = "manual") {
-  const s = await getBackupSettings()
-  const id = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z")
-  const base = `${prefixOf(s)}/backups/${id}`
-  const pg = await dumpPostgres()
-  const chDump = await dumpClickhouse()
-  const pgBuf = gzipSync(Buffer.from(pg.json))
-  await put(s, `${base}/postgres.json.gz`, pgBuf, "application/gzip")
-  for (const part of chDump.parts) {
-    await put(s, `${base}/${part.name}`, part.body, "application/gzip")
+async function writeBackup(reason:string) {
+  const s=await getBackupSettings()
+  // Milliseconds + random suffix avoid colliding manual/scheduled object names.
+  const id=new Date().toISOString().replace(/[-:.]/g,"")+"_"+randomBytes(4).toString("hex")
+  const base=`${prefixOf(s)}/backups/${id}`
+  const pg=await dumpPostgres()
+  const pgBuf=gzipSync(Buffer.from(pg.json))
+  const checksums:Record<string,string>={"postgres.json.gz":checksum(pgBuf)}
+  await put(s,`${base}/postgres.json.gz`,pgBuf,"application/gzip")
+  const parts:string[]=[]
+  let batch:string[]=[],total=0
+  const pack=async()=>{
+    if(!batch.length)return
+    const name=`clickhouse/events_v2.${String(parts.length).padStart(4,"0")}.jsonl.gz`
+    const body=gzipSync(Buffer.from(batch.join("\n")))
+    checksums[name]=checksum(body)
+    await put(s,`${base}/${name}`,body,"application/gzip")
+    parts.push(name);batch=[]
   }
-  const manifest: BackupManifest = {
-    app: "litestats",
-    version: 1,
-    id,
-    createdAt: new Date().toISOString(),
-    postgres: { tables: pg.tables, bytes: pgBuf.length },
-    clickhouse: { tables: ["events_v2"], rows: chDump.rows, parts: chDump.parts.map((p) => p.name) },
+  const result=await ch().query({query:"SELECT * FROM events_v2",format:"JSONEachRow"})
+  for await(const rows of result.stream())for(const row of rows){
+    batch.push(row.text);total++
+    if(batch.length===20000)await pack()
   }
-  await put(s, `${base}/manifest.json`, Buffer.from(JSON.stringify(manifest, null, 2)), "application/json")
-  await (await db()).query(
-    `UPDATE litestats_backup_settings SET last_run_at = now(), last_status = $1, last_error = NULL, last_backup_id = $2, updated_at = now() WHERE id = 1`,
-    [reason, id],
-  )
+  await pack()
+  const manifest:BackupManifest={app:"litestats",version:2,id,createdAt:new Date().toISOString(),
+    keyFingerprint:keyFingerprint(),checksums,
+    postgres:{tables:pg.tables,bytes:pgBuf.length},clickhouse:{tables:["events_v2"],rows:total,parts}}
+  manifest.signature=createHmac("sha256",key()).update(JSON.stringify(manifest)).digest("hex")
+  // Completion marker is written last: failed/partial backups never appear recoverable.
+  await put(s,`${base}/manifest.json`,Buffer.from(JSON.stringify(manifest,null,2)),"application/json")
+  await(await db()).query(`UPDATE litestats_backup_settings SET last_run_at=now(),last_status=$1,last_error=NULL,last_backup_id=$2,updated_at=now() WHERE id=1`,[reason,id])
   return manifest
+}
+
+export async function runBackup(reason="manual") {
+ return withBackupLock(()=>writeBackup(reason),reason==="schedule"?0:1)
 }
 
 export async function scanBackups(override?: Partial<BackupSettings>) {
@@ -284,11 +301,16 @@ export async function scanBackups(override?: Partial<BackupSettings>) {
   const s = override ? {...saved, ...resolveBackupConnection({...saved, ...override, access_key: override.access_key, secret_key: override.secret_key}, saved)} : saved
   const { ListObjectsV2Command } = await s3Sdk()
   const client = await clientOf(s)
-  const listed = await client.send(new ListObjectsV2Command({
-    Bucket: s.bucket,
-    Prefix: `${prefixOf(s)}/backups/`,
-  }))
-  const keys = (listed.Contents || []).map((o) => o.Key || "").filter((k) => k.endsWith("/manifest.json"))
+  const keys:string[]=[]
+  let continuation:string|undefined
+  do {
+    const listed=await client.send(new ListObjectsV2Command({Bucket:s.bucket,Prefix:`${prefixOf(s)}/backups/`,ContinuationToken:continuation}))
+    keys.push(...(listed.Contents||[]).map(object=>object.Key||"").filter(key=>key.endsWith("/manifest.json")))
+    continuation=listed.IsTruncated?listed.NextContinuationToken:undefined
+    if(listed.IsTruncated&&!continuation)throw new Error("备份目录分页读取失败")
+  } while(continuation)
+  client.destroy()
+  keys.sort()
   const items: BackupManifest[] = []
   for (const keyPath of keys.slice(-40)) {
     try {
@@ -304,38 +326,65 @@ export async function scanBackups(override?: Partial<BackupSettings>) {
 }
 
 export async function restoreBackup(id: string) {
+ return withBackupLock(async()=>{
   if (!/^[a-zA-Z0-9_-]+$/.test(id)) throw new Error("非法备份 ID")
   const s = await getBackupSettings()
   const base = `${prefixOf(s)}/backups/${id}`
   const manifest = JSON.parse((await getBuf(s, `${base}/manifest.json`)).toString("utf8")) as BackupManifest
-  if (manifest.app !== "litestats" || manifest.version !== 1 || !manifest.clickhouse?.tables?.includes("events_v2")) throw new Error("不支持的备份格式")
-  const tables = JSON.parse(gunzipSync(await getBuf(s, `${base}/postgres.json.gz`)).toString("utf8")) as Record<string, Array<Record<string, unknown>>>
+  if (manifest.app !== "litestats" || ![1,2].includes(manifest.version) || !manifest.clickhouse?.tables?.includes("events_v2")) throw new Error("不支持的备份格式")
+  if(manifest.id!==id || !Array.isArray(manifest.clickhouse.parts) || new Set(manifest.clickhouse.parts).size!==manifest.clickhouse.parts.length)throw new Error("不支持的备份格式")
+  if(manifest.version===2){
+    if(manifest.keyFingerprint!==keyFingerprint())throw new Error("恢复此备份需要原实例的 SESSION_KEY，请使用统一加密备份恢复")
+    const {signature,...unsigned}=manifest
+    const expected=createHmac("sha256",key()).update(JSON.stringify(unsigned)).digest("hex")
+    if(!signature || !/^[a-f0-9]{64}$/.test(signature) || !timingSafeEqual(Buffer.from(signature,"hex"),Buffer.from(expected,"hex")))throw new Error("备份清单校验失败")
+  }
+  const verified=async(path:string)=>{
+    const body=await getBuf(s,`${base}/${path}`)
+    if(manifest.version===2 && (!manifest.checksums?.[path] || checksum(body)!==manifest.checksums[path]))throw new Error("备份文件校验失败")
+    return body
+  }
+  const tables=JSON.parse(gunzipSync(await verified("postgres.json.gz")).toString("utf8")) as Record<string,Array<Record<string,unknown>>>
+  if(!tables.users || !tables.sites || JSON.stringify(Object.keys(tables).sort())!==JSON.stringify([...manifest.postgres.tables].sort()))throw new Error("备份表清单不完整")
+  for(const [name,rows] of Object.entries(tables)) {quoteIdent(name);if(!Array.isArray(rows))throw new Error("非法备份表数据")}
+
   // A fresh restore target may have its background worker disabled.
   if (tables.site_check_settings || tables.site_check_results) await (await import("./site-checks")).siteCheckDb()
   if (tables.litestats_mapbox_settings) await (await import("./mapbox-settings")).mapboxSettingsDb()
   const stage = `events_restore_${randomBytes(8).toString("hex")}`
   await ch().command({query: `CREATE TABLE ${stage} AS events_v2`})
   let exchanged = false
-  let committed = false
   try {
     // Validate and stage all event parts before changing either live database.
     let count = 0
     for (const part of manifest.clickhouse.parts) {
       if (!/^clickhouse\/events_v2\.\d+\.jsonl\.gz$/.test(part)) throw new Error("非法备份分片")
-      const rows = gunzipSync(await getBuf(s, `${base}/${part}`)).toString("utf8").split("\n").filter(Boolean).map(line => JSON.parse(line))
+      const rows = gunzipSync(await verified(part)).toString("utf8").split("\n").filter(Boolean).map(line => JSON.parse(line))
       count += rows.length
       if (rows.length) await ch().insert({table: stage, format: "JSONEachRow", values: rows})
     }
     if (count !== manifest.clickhouse.rows) throw new Error("备份事件数量校验失败")
+    // Keep a complete cloud recovery point before changing live rows.
+    await writeBackup("manual")
     const client = await (await db()).connect()
     try {
       await client.query("BEGIN")
-      await client.query("SELECT pg_advisory_xact_lock(817325)")
-      await client.query("SET LOCAL session_replication_role = replica")
-      for (const [table, rows] of Object.entries(tables)) {
+      // Truncate related tables together, then restore parents before children.
+      // This works for the normal application role, without superuser-only trigger bypass.
+      const names=Object.keys(tables).filter(name=>!SKIP_RESTORE.has(name))
+      const dependencies=await client.query<{child:string,parent:string}>(`SELECT c.relname AS child,p.relname AS parent FROM pg_constraint f JOIN pg_class c ON c.oid=f.conrelid JOIN pg_class p ON p.oid=f.confrelid WHERE f.contype='f' AND c.relnamespace='public'::regnamespace`)
+      const ordered:string[]=[]
+      const remaining=new Set(names)
+      while(remaining.size){
+        const next=[...remaining].find(name=>!dependencies.rows.some(dep=>dep.child===name&&dep.parent!==name&&remaining.has(dep.parent)))
+        if(!next)throw new Error("备份表存在循环依赖，无法恢复")
+        ordered.push(next);remaining.delete(next)
+      }
+      await client.query(`TRUNCATE ${names.map(quoteIdent).join(", ")}`)
+      for (const table of ordered) {
+        const rows=tables[table]
         if (SKIP_RESTORE.has(table)) continue
         if (!Array.isArray(rows)) throw new Error("非法备份表数据")
-        await client.query(`DELETE FROM ${quoteIdent(table)}`)
         for (const row of rows) {
           const cols = Object.keys(row)
           await client.query(`INSERT INTO ${quoteIdent(table)} (${cols.map(quoteIdent).join(", ")}) VALUES (${cols.map((_,i)=>`$${i+1}`).join(", ")})`, cols.map(col => revive(row[col])))
@@ -344,22 +393,27 @@ export async function restoreBackup(id: string) {
       const sequences = await client.query<{table_name:string,column_name:string,sequence:string}>(`SELECT table_name, column_name, pg_get_serial_sequence(quote_ident(table_name), column_name) AS sequence FROM information_schema.columns WHERE table_schema='public' AND column_default LIKE 'nextval(%'`)
       for (const row of sequences.rows) {
         if (!row.sequence || SKIP_RESTORE.has(row.table_name)) continue
-        await client.query(`SELECT setval($1, COALESCE((SELECT max(${quoteIdent(row.column_name)}) FROM ${quoteIdent(row.table_name)}),1), EXISTS(SELECT 1 FROM ${quoteIdent(row.table_name)}))`, [row.sequence])
+        const maximum=await client.query<{next:string}>(`SELECT (COALESCE(max(${quoteIdent(row.column_name)}),0)+1)::text AS next FROM ${quoteIdent(row.table_name)}`)
+        const next=maximum.rows[0].next
+        if(!/^\d+$/.test(next))throw new Error("非法序列值")
+        // RESTART is transactional; setval would survive a failed restore rollback.
+        await client.query(`ALTER SEQUENCE ${row.sequence.split(".").map(quoteIdent).join(".")} RESTART WITH ${next}`)
       }
       await ch().command({query:`EXCHANGE TABLES events_v2 AND ${stage}`})
       exchanged = true
       await client.query("COMMIT")
-      committed = true
     } catch (error) {
       await client.query("ROLLBACK")
       if (exchanged) { await ch().command({query:`EXCHANGE TABLES events_v2 AND ${stage}`}); exchanged = false }
       throw error
     } finally { client.release() }
+    invalidateSiteCache()
     return manifest
   } finally {
-    // Retain the old table if an exchange rollback failed, for manual recovery.
-    if (!exchanged || committed) await ch().command({query:`DROP TABLE IF EXISTS ${stage}`})
+    // Retain the old table after a switch (including uncertain rollback), for manual recovery.
+    if (!exchanged) await ch().command({query:`DROP TABLE IF EXISTS ${stage}`})
   }
+ })
 }
 
 function revive(v: unknown) {

@@ -75,3 +75,11 @@ id_ed25519
 # Reviewed SQL source may be versioned; runtime dumps remain excluded.
 !app/migrations/**/*.sql
 !app/src/**/*.sql
+
+# Unified encrypted recovery packages and local operations state.
+*.lsb
+*.lsb.partial
+*.env
+*.before-restore
+*.restore-*.json
+.litestats-ops.lock

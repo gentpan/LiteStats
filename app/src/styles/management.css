@@ -115,14 +115,20 @@
 html[data-site-layout="grid"] .management-shell .site-layout-switch > button[data-layout="grid"],
 html:not([data-site-layout="grid"]) .management-shell .site-layout-switch > button[data-layout="list"] { color:var(--ui-selection-text); }
 html:not([data-site-layout="grid"]) .site-layout-thumb { transform:translateX(100%); }
-html[data-site-layout="grid"] .management-site-list { gap:20px; }
-html[data-site-layout="grid"] .management-site-list .management-site-row { padding:28px 64px 28px 24px; }
+html[data-site-layout="grid"] .management-site-list { grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
+html[data-site-layout="grid"] .management-site-item > a { height:100%; }
+html[data-site-layout="grid"] .management-site-list .management-site-row { display:flex; flex-direction:column; align-items:stretch; height:100%; gap:24px; padding:24px 20px 20px; }
+html[data-site-layout="grid"] .management-site-row > .management-site-identity { min-height:54px; padding-right:24px; }
+html[data-site-layout="grid"] .management-site-title { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; white-space:normal; overflow-wrap:anywhere; }
+html[data-site-layout="grid"] .management-site-data { display:flex; flex-direction:column; gap:18px; margin-top:auto; }
+html[data-site-layout="grid"] .management-site-data > span { display:block; width:100%; max-width:none; }
 html[data-site-layout="grid"] .management-site-data .text-lg { font-size:24px; }
+@media(max-width:1023px) { html[data-site-layout="grid"] .management-site-list { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:639px) {
   .management-site-tools { width:100%; justify-content:space-between; gap:8px; }
-  html[data-site-layout="grid"] .management-site-list { gap:16px; }
+  html[data-site-layout="grid"] .management-site-list { grid-template-columns:minmax(0,1fr); gap:16px; }
   html[data-site-layout="grid"] .management-site-list .management-site-row { padding:22px 18px; gap:20px; }
-  html[data-site-layout="grid"] .management-site-data > span { display:block; max-width:none; }
+  html[data-site-layout="grid"] .management-site-row > .management-site-identity { padding-right:32px; }
 }
 
 /* Solid selected rows: no edge stripe, glow or fading track. */

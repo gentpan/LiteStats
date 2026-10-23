@@ -879,5 +879,21 @@
   "如：我的博客": "e.g. My blog",
   "账户菜单": "Account menu",
   "刷新": "Refresh",
-  "安全": "Security"
+  "安全": "Security",
+  "完整备份与迁移": "Full backup and migration",
+  "部署工具可生成一份加密备份，包含账号、站点、访问记录和运行配置。恢复时先校验并还原到新库，成功后切换，旧库保留。": "The deployment tool creates an encrypted backup of accounts, sites, visits and runtime settings. Recovery validates and restores into new databases before switching, retaining the old databases.",
+  "请将备份文件和恢复密钥分别妥善保存。": "Keep backup files and the recovery key safe in separate locations.",
+  "部署与恢复说明": "Deployment and recovery guide",
+  "云端恢复期间会暂停采集与后台请求，并先自动保存当前数据。更换服务器请使用完整加密备份。": "Cloud recovery pauses collection and dashboard requests, and saves a recovery backup first. Use a full encrypted backup when moving servers.",
+  "备份中": "Backing up",
+  "扫描中": "Scanning",
+  "恢复中": "Restoring",
+  "正在执行备份或恢复，请稍后重试": "A backup or restore is running. Try again later.",
+  "仍有请求正在处理，请稍后重试": "Requests are still being processed. Try again later.",
+  "访问记录尚未写入完成，请稍后重试": "Accepted visits have not finished writing. Try again later.",
+  "备份文件校验失败": "Backup file verification failed.",
+  "备份清单校验失败": "Backup manifest verification failed.",
+  "备份表清单不完整": "The backup table list is incomplete.",
+  "恢复此备份需要原实例的 SESSION_KEY，请使用统一加密备份恢复": "This backup requires the original instance encryption key. Use unified encrypted recovery.",
+  "备份表存在循环依赖，无法恢复": "The backup has circular table dependencies and cannot be restored."
 }

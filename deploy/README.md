@@ -2,6 +2,16 @@
 
 The current production layout uses native systemd services and the existing FrankenPHP/Caddy proxy. Docker Compose remains an alternative below. Set your own analytics hostname; keep database services private and preserve existing applications and proxy sites.
 
+## Managed installation and unified recovery
+
+Use the [installation and recovery guide](OPERATIONS.md) for the managed Docker Compose installer, encrypted PostgreSQL + ClickHouse + runtime backup packages, verification, staged recovery and native-systemd commands.
+
+```sh
+python3 deploy/litestats.py install --directory /opt/litestats-instance --port 3100
+```
+
+The existing native deployment below remains supported. It is not converted to Docker during application upgrades. The unified backup script can run directly on that host with its existing private environment file and service.
+
 ## Build
 
 From `app/`, run:
@@ -72,10 +82,8 @@ Historical imported geography remains available. `GEOIP_PROVIDER=cnip` opts into
 
 Chinese reports display region and city labels in Simplified Chinese. The server resolves city names/GeoNames IDs using the bundled public GeoNames translation dictionary, scoped to country and subdivision. Unresolvable or ambiguous cities show “暂无中文名称”; original keys remain searchable and filterable. Historical events and newly collected events share this display path, without rewriting event data, identities or counts. See `app/src/assets/city-names-SOURCE.md` for attribution and reproduction.
 
-## Docker Compose alternative
+## Docker Compose installation
 
-`deploy/compose.yml` provides private PostgreSQL 16 and ClickHouse 24.8 containers with persistent named volumes, plus a Node.js 22 application container. It publishes the application only on `127.0.0.1:3100`; choose a different available host port if 3100 is already occupied. This is an alternative layout, not the configuration of the native services above. Avoid starting both layouts against the same data directories or ports.
+The managed installer builds `deploy/Dockerfile`, copies the runtime Compose/operations files into the private instance directory, generates credentials only for new instances, and waits for health. PostgreSQL and ClickHouse keep persistent named volumes without host-published ports. See [OPERATIONS.md](OPERATIONS.md) for install, upgrade, backup, verify and recovery commands.
 
-Copy `.output/` contents into `/opt/litestats/release/`, copy `compose.yml` to `/opt/litestats/compose.yml`, and create a private `.env` with production database credentials and `SESSION_KEY`. Preserve that file during upgrades. From `/opt/litestats`, deploy with `docker compose up -d`, or update only the application with `docker compose up -d --force-recreate app` after preparing its release.
-
-Use `docker compose ps`, `docker compose logs --tail=100 app`, and `docker compose restart app` for routine operations. Back up PostgreSQL, ClickHouse, and `.env` securely. Never run `docker compose down -v`: it removes the persistent database volumes. If using the standalone Caddy example, set its hostname, validate the installed Caddy configuration, and reload the existing proxy service.
+The root `docker-compose.yml` remains for local development only. It is not the managed production installer. Never run it against production volume directories.
