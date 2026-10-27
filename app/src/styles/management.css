@@ -18,8 +18,6 @@
 .management-search .input { display:block; height:var(--ui-control-height); }
 .management-search .input:focus { outline:none; outline-offset:0; box-shadow:none; border-color:var(--analytics-accent); }
 .management-search > span { display:none; }
-.management-create-form { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:20px; margin-bottom:20px; background:var(--surface); border:1px solid var(--color-gray-200); --sq-r:15px; }
-.management-create-form .input { flex:1 1 240px; }
 .management-shell .settings-layout { grid-template-columns:216px minmax(0,1fr); gap:0; margin-top:0; background:var(--surface); border:1px solid var(--color-gray-200); --sq-r:20px; align-items:start; }
 .management-shell .settings-sidebar { padding:20px 14px; border-right:1px solid var(--color-gray-200); max-height:calc(100dvh - 104px); }
 .management-shell .settings-sidebar h3 { font-size:12px; font-weight:600; color:var(--color-gray-500); letter-spacing:.02em; }
@@ -38,8 +36,6 @@
 .management-shell .settings-content .settings-card-heading h2 { font-size:var(--ui-text-card); line-height:24px; font-weight:600; }
 .management-shell .settings-content .settings-card-heading h2 + div { font-size:13px; line-height:1.7; margin-top:5px; }
 .management-shell .settings-content .settings-actions { border-top:0; margin-top:24px; padding-top:0; }
-.management-shell .settings-notice, .management-shell .settings-help { border:0; border-left:2px solid var(--color-gray-300); --sq-r:0px; background:var(--color-gray-50); font-size:13px; }
-.management-shell .settings-meta { padding-top:16px; border-top:1px solid var(--color-gray-100); }
 .management-shell .activity-page-toolbar { border:1px solid var(--color-gray-200); background:var(--surface); --sq-r:15px; padding:16px; }
 .management-shell .activity-log-panel { --sq-r:15px; }
 .management-shell .activity-log-tools { align-items:center; gap:12px; padding:12px 20px; border-bottom:1px solid var(--color-gray-200); }
@@ -88,6 +84,8 @@
 .management-site-data p { font-size:12px; }
 .management-site-data .text-lg { font-size:20px; font-weight:600; }
 .management-site-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.management-site-ssl { display:flex; align-items:center; gap:5px; margin-top:6px; font-size:11px; color:var(--color-gray-500); font-variant-numeric:tabular-nums; }
+.management-site-ssl .ui-icon { width:12px; height:12px; }
 @media(max-width:639px) {
  .management-site-list .management-site-row { grid-template-columns:minmax(0,1fr); gap:18px; padding:18px; }
  .management-site-row > .management-site-identity { padding-right:32px; }
@@ -97,8 +95,8 @@
 
 /* Site overview: one data set, with a remembered row or card presentation. */
 .management-site-tools { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
-.site-layout-switch { position:relative; display:inline-grid; grid-template-columns:repeat(2,minmax(0,1fr)); flex:none; align-items:center; height:var(--ui-control-height); gap:0; padding:4px; border:1px solid var(--color-gray-200); background:var(--color-gray-100); }
-.site-layout-thumb { position:absolute; top:4px; bottom:4px; left:4px; width:calc(50% - 4px); background:var(--ui-selection-bg); pointer-events:none; transition:transform 180ms ease; }
+.site-layout-switch { position:relative; display:inline-grid; grid-template-columns:repeat(3,minmax(0,1fr)); flex:none; align-items:center; height:var(--ui-control-height); gap:0; padding:4px; border:1px solid var(--color-gray-200); background:var(--color-gray-100); }
+.site-layout-thumb { position:absolute; top:4px; bottom:4px; left:4px; width:calc(33.3333% - 4px); background:var(--ui-selection-bg); pointer-events:none; transition:transform 180ms ease; }
 .management-shell .site-layout-switch > .btn { position:relative; z-index:1; --control-size:calc(var(--ui-control-height) - 10px); height:var(--control-size); padding-inline:10px; border:0; background:transparent; gap:6px; color:var(--color-gray-500); transition:color 180ms; }
 .management-site-tools > .btn { --control-size:var(--ui-control-height); }
 .management-overview-toolbar { flex-wrap:nowrap; border:0; padding:0; margin:32px 0 24px; }
@@ -113,8 +111,11 @@
 .management-shell .site-layout-switch > .btn:hover { background:transparent; color:var(--color-gray-900); }
 /* The early preference script also controls selection before React hydrates. */
 html[data-site-layout="grid"] .management-shell .site-layout-switch > button[data-layout="grid"],
-html:not([data-site-layout="grid"]) .management-shell .site-layout-switch > button[data-layout="list"] { color:var(--ui-selection-text); }
-html:not([data-site-layout="grid"]) .site-layout-thumb { transform:translateX(100%); }
+html[data-site-layout="list"] .management-shell .site-layout-switch > button[data-layout="list"],
+html:not([data-site-layout]) .management-shell .site-layout-switch > button[data-layout="list"],
+html[data-site-layout="compact"] .management-shell .site-layout-switch > button[data-layout="compact"] { color:var(--ui-selection-text); }
+html[data-site-layout="list"] .site-layout-thumb, html:not([data-site-layout]) .site-layout-thumb { transform:translateX(100%); }
+html[data-site-layout="compact"] .site-layout-thumb { transform:translateX(200%); }
 html[data-site-layout="grid"] .management-site-list { grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
 html[data-site-layout="grid"] .management-site-item > a { height:100%; }
 html[data-site-layout="grid"] .management-site-list .management-site-row { display:flex; flex-direction:column; align-items:stretch; height:100%; gap:24px; padding:24px 20px 20px; }
@@ -129,6 +130,17 @@ html[data-site-layout="grid"] .management-site-data .text-lg { font-size:24px; }
   html[data-site-layout="grid"] .management-site-list { grid-template-columns:minmax(0,1fr); gap:16px; }
   html[data-site-layout="grid"] .management-site-list .management-site-row { padding:22px 18px; gap:20px; }
   html[data-site-layout="grid"] .management-site-row > .management-site-identity { padding-right:32px; }
+}
+
+html[data-site-layout="compact"] .management-site-list { gap:8px; }
+html[data-site-layout="compact"] .management-site-list .management-site-row { grid-template-columns:minmax(200px,1fr) minmax(0,2fr); gap:16px; padding:14px 56px 14px 16px; }
+.management-compact-metrics { display:grid; grid-template-columns:repeat(4,minmax(72px,1fr)); gap:12px; }
+.management-compact-metrics > div { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.management-compact-metrics strong { font-size:16px; line-height:22px; font-weight:600; color:var(--color-gray-900); font-variant-numeric:tabular-nums; }
+.management-compact-metrics span { font-size:11px; color:var(--color-gray-500); white-space:nowrap; }
+@media(max-width:900px) {
+  html[data-site-layout="compact"] .management-site-list .management-site-row { grid-template-columns:minmax(0,1fr); }
+  .management-compact-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 
 /* Solid selected rows: no edge stripe, glow or fading track. */
@@ -198,7 +210,6 @@ html[data-theme="dark"] .management-shell .settings-content :is(.ui-action[data-
 .tracking-snippet-toolbar > span { font:12px ui-monospace,monospace; color:var(--color-gray-500); }
 .tracking-snippet pre { margin:0; padding:18px; color:var(--color-gray-800); background:var(--surface); font:13px/1.8 ui-monospace,monospace; white-space:pre-wrap; overflow-wrap:anywhere; }
 .tracking-snippet > p { padding:12px; font-size:12px; color:var(--color-red-600); }
-.search-integrations .integration-status-line { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:18px; font-size:12px; color:var(--color-gray-500); overflow-wrap:anywhere; }
 .integration-status { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; background:var(--color-gray-100); color:var(--color-gray-600); font-size:11px; font-weight:500; }
 .integration-status::before { content:""; width:5px; height:5px; background:currentColor; }
 .integration-status.is-connected { color:var(--analytics-accent); background:color-mix(in srgb,var(--analytics-accent) 8%,var(--surface)); }

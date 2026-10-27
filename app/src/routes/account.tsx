@@ -1,9 +1,9 @@
 import { MapboxSettingsPanel } from "~/components/MapboxSettingsPanel"
 import { mapboxSettingsFn } from "~/lib/mapbox-actions"
-import { SettingsNav } from "~/components/SettingsNav"
 import { UIIcon as TabIcon } from "~/components/UIIcon"
+import { ActionLink } from "~/components/ActionButton"
 import { BackupPanel } from "~/components/BackupPanel"
-import { SettingsLayout } from "~/components/SettingsLayout"
+import { SettingsLayout, SettingsNav } from "~/components/SettingsLayout"
 import { redirect, Link, createFileRoute, useRouter } from "@tanstack/react-router"
 import { AccountPreferences } from "~/components/AccountPreferences"
 import { AccountSecurity } from "~/components/AccountSecurity"
@@ -43,10 +43,10 @@ function AccountPage() {
         <SettingsHeader
           title={t("settings.title")}
           back={(
-            <Link to="/dashboard" className="squircle btn btn-secondary btn-sm settings-back">
+            <ActionLink to="/dashboard" className="btn-secondary settings-back">
               <BackArrow />
               {t("settings.back_sites")}
-            </Link>
+            </ActionLink>
           )}
         />
         <SettingsLayout navigationTitle={t([...ACCOUNT_TABS,...SYSTEM_TABS].find(item=>item.id===tab)?.label || "设置")} sidebar={<>

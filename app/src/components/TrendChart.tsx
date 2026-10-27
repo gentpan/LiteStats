@@ -9,9 +9,9 @@ import type { MetricKey } from "~/lib/ch"
 type Point = { date: string, value: number }
 
 const METRIC_LABEL: Record<MetricKey, string> = {
-  visitors: "独立访客",
-  visits: "总会话",
-  pageviews: "总浏览量",
+  visitors: "访客",
+  visits: "访问次数",
+  pageviews: "浏览量",
   views_per_visit: "每次访问浏览量",
   bounce_rate: "跳出率",
   visit_duration: "访问时长",

@@ -7,7 +7,7 @@ import { rootPreferencesFn } from "~/lib/auth-actions"
 import { ACCENT_BOOTSTRAP_SCRIPT, ACCENT_FAVICON_BOOTSTRAP_SCRIPT, subscribeAccentColor, syncAccentFavicon } from "~/lib/accent-preference"
 import { SITE_LAYOUT_BOOTSTRAP_SCRIPT, subscribeSiteLayout } from "~/lib/site-layout-preference"
 import { themeBootstrapScript, type ThemePreference } from "~/lib/theme-appearance"
-import { MapStyleProvider } from "~/lib/map-style-preference"
+import { MapStyleProvider } from "~/lib/map-preferences"
 import { startSquircleFallback } from "~/lib/squircle"
 import appCss from "~/styles/app.css?url"
 

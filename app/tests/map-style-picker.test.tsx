@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import { renderToString } from "react-dom/server"
 import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from "@tanstack/react-router"
 import { MapStylePicker } from "../src/components/MapStylePicker"
-import { MapStyleProvider } from "../src/lib/map-style-preference"
+import { MapStyleProvider } from "../src/lib/map-preferences"
 import { I18nProvider } from "../src/lib/i18n"
 import { MAPBOX_STYLES, type MapboxStyleId } from "../src/lib/mapbox-styles"
 

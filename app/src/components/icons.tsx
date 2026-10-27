@@ -1,6 +1,7 @@
 import { UIIcon } from "./UIIcon"
 import { ImageWithFallback } from "./ImageWithFallback"
 import { isDirectSource, sourceIconSrc } from "~/lib/source-icons"
+import { browserDisplayName } from "~/lib/report-values"
 
 // Original-color SVGs are pinned to The SVG; unsupported products retain their
 // existing local artwork instead of borrowing a different product's brand.
@@ -13,6 +14,10 @@ const BROWSER_ICONS: Record<string, string> = {
   "Chrome Mobile iOS": platform("chrome"),
   "Chrome Headless": platform("chrome"),
   Chromium: platform("chromium"),
+  "Chromium WebView": platform("chromium"),
+  "Android Browser": platform("android"),
+  Instagram: "/brands/sources/instagram.svg",
+  Facebook: "/brands/sources/facebook.svg",
   Safari: platform("safari"),
   "Mobile Safari": platform("safari"),
   "Safari Mobile": platform("safari"),
@@ -22,6 +27,7 @@ const BROWSER_ICONS: Record<string, string> = {
   "Microsoft Edge": platform("edge"),
   Edge: platform("edge"),
   "Edge Mobile": platform("edge"),
+  "Edge iOS": platform("edge"),
   Opera: platform("opera"),
   "Opera Mobile": platform("opera"),
   "Opera Mini": platform("opera"),
@@ -142,7 +148,7 @@ function AssetIcon({ src, fallback, className = "" }: { src: string, fallback: s
 }
 
 function BrowserIcon({ name }: { name: string }) {
-  const src = platformIconSrc(BROWSER_ICONS, name)
+  const src = platformIconSrc(BROWSER_ICONS, browserDisplayName(name))
   if (src) return <AssetIcon src={src} fallback="browser" className={platformIconClass(src)} />
   return <UIIcon name="browser" className={rowIconClassName} />
 }

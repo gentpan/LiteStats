@@ -40,12 +40,4 @@ html[data-theme="dark"] :is(.health-timeline,.health-chart-legend) .health-tone-
 .health-chart-legend .health-check-count { margin-left:auto; }
 .health-footer { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; font-size:var(--ui-text-caption); line-height:1.7; color:var(--color-gray-500); margin-top:16px; }
 .health-registration-note { font-size:var(--ui-text-caption); color:var(--color-gray-500); margin-top:4px; }
-.health-settings { margin-top:24px; margin-bottom:60px; border-top:1px solid var(--color-gray-200); padding-top:20px; color:var(--color-gray-600); }
-.health-settings summary { font-size:13px; cursor:pointer; width:max-content; }
-.health-settings form { display:flex; flex-direction:column; align-items:flex-start; gap:16px; margin-top:16px; font-size:12px; }
-.health-settings label { width:min(100%,600px); }
-.health-path { display:flex; align-items:center; gap:8px; margin-top:8px; }
-.health-path span { overflow-wrap:anywhere; }
-.health-path .input { min-width:100px; flex:1; }
-.health-settings form > div { display:flex; gap:8px; }
-@media(max-width:700px) { .health-cards { --health-value-height:40px; grid-template-columns:1fr; gap:var(--ui-grid-gap); } .health-card { padding:var(--ui-card-padding); } .health-card-value { margin-top:16px; font-size:34px; } .health-status { margin-top:16px; } .health-card-foot { margin-top:16px; padding-top:16px; } .health-chart { padding:var(--ui-card-padding); } .health-chart-stats { gap:24px; text-align:left; } .health-chart-stats strong { font-size:16px; } .health-timeline { gap:2px; } .health-timeline span { height:18px; } .health-chart-caption { text-align:left; } .health-path { flex-wrap:wrap; } }
+@media(max-width:700px) { .health-cards { --health-value-height:40px; grid-template-columns:1fr; gap:var(--ui-grid-gap); } .health-card { padding:var(--ui-card-padding); } .health-card-value { margin-top:16px; font-size:34px; } .health-status { margin-top:16px; } .health-card-foot { margin-top:16px; padding-top:16px; } .health-chart { padding:var(--ui-card-padding); } .health-chart-stats { gap:24px; text-align:left; } .health-chart-stats strong { font-size:16px; } .health-timeline { gap:2px; } .health-timeline span { height:18px; } .health-chart-caption { text-align:left; } }

@@ -1,4 +1,5 @@
 import { dashboardMapboxToken } from "./mapbox-settings"
+import { runSiteCheck, saveSiteCheck, siteCertificateExpiries, siteCheckReport } from "./site-checks"
 import { createSearchIntegrationHandlers } from "./search-integration-security"
 import { dashboardKeywordPack } from "./keyword-report"
 import { googleOAuthSchema, googleOAuthPublicConfig, saveGoogleOAuthConfig } from "./google-oauth-settings"
@@ -113,13 +114,19 @@ export const trafficPulseFn = createServerFn({ method: "GET" }).handler(async ()
 export const sitesFn = createServerFn({ method: "GET" }).handler(async () => {
   const user = await requireUser()
   const sites = await listSites(user.id)
-  const stats = await siteSummaries(sites.map((s) => s.id))
+  const [stats, certificateExpiries] = await Promise.all([
+    siteSummaries(sites.map((s) => s.id)),
+    siteCertificateExpiries(sites.map((s) => s.id)),
+  ])
   return sites.map((s) => {
-    const stat = stats.get(Number(s.id)) || { visitors: 0, live: 0, change: 0, sparkline: [] }
+    const stat = stats.get(Number(s.id)) || { visitors: 0, visits: 0, pageviews: 0, live: 0, change: 0, sparkline: [] }
     return {
       ...s,
       id: Number(s.id),
+      certificateExpiresAt: certificateExpiries.get(Number(s.id)) || null,
       visitors: stat.visitors,
+      visits: stat.visits,
+      pageviews: stat.pageviews,
       live: stat.live,
       change: stat.change,
       sparkline: stat.sparkline,
@@ -216,6 +223,7 @@ async function loadDashboard(site: Site, data: DashInput) {
   return {
     site,
     mapboxToken,
+    health: null,
     range,
     ...over,
     sources,
@@ -255,7 +263,11 @@ export const dashboardFn = createServerFn({ method: "GET" })
     const memberSite = user ? await findSiteForUser(user.id, data.domain) : null
     const site = memberSite || await findPublicSite(data.domain)
     if (!site) throw new Error("站点不存在或没有权限")
-    return { ...await loadDashboard(site, data), access: {member: !!memberSite, canManage: ["owner", "admin"].includes(memberSite?.role || "")} }
+    const [dashboard, health] = await Promise.all([
+      loadDashboard(site, data),
+      memberSite ? siteCheckReport(site).catch(() => null) : Promise.resolve(null),
+    ])
+    return { ...dashboard, health, access: {member: !!memberSite, canManage: ["owner", "admin"].includes(memberSite?.role || "")} }
   })
 
 export const shareDashboardFn = createServerFn({ method: "GET" })
@@ -278,6 +290,7 @@ export const siteSettingsFn = createServerFn({ method: "GET" })
     ])
     return {
       site,
+      health: await siteCheckReport(site).catch(() => null),
       shares: await listSharedLinks(site.id),
       google: google ? { email: google.email, property: google.property, properties: await listGoogleProperties(site.id).catch(() => []) } : null,
       bing: bing ? { site_url: bing.site_url, connected: true } : null,
@@ -293,7 +306,9 @@ export const saveSettingsFn = createServerFn({ method: "POST" })
     timezone: timezoneSchema.optional(),
     allowed_event_props: z.array(text).max(100).optional(),
     public: z.boolean().optional(),
-    newDomain: text.optional()
+    newDomain: text.optional(),
+    healthEnabled: z.boolean().optional(),
+    healthPath: z.string().min(1).max(2048).optional(),
   }).parse(input))
   .handler(async ({ data }) => {
     const user = await requireUser()
@@ -306,6 +321,10 @@ export const saveSettingsFn = createServerFn({ method: "POST" })
       public: data.public,
       domain: data.newDomain,
     })
+    if (data.healthEnabled !== undefined) {
+      await saveSiteCheck(site, data.healthEnabled, data.healthPath || "/")
+      if (data.healthEnabled) await runSiteCheck(site.id, true)
+    }
     return { domain }
   })
 

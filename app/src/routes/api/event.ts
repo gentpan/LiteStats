@@ -15,13 +15,6 @@ export const Route = createFileRoute("/api/event")({
     handlers: {
       OPTIONS: async ({ request }) => new Response(null, { status: 204, headers: eventCors(request) }),
       POST: async ({ request }) => {
-        // Respect Do Not Track (DNT) and Global Privacy Control (GPC)
-        const dnt = request.headers.get("dnt")
-        const gpc = request.headers.get("sec-gpc")
-        if (dnt === "1" || gpc === "1") {
-          return new Response("ok", { status: 202, headers: { ...eventCors(request), "Content-Type": "text/plain; charset=utf-8" } })
-        }
-
         let body: Record<string, unknown> = {}
         try {
           body = eventSchema.parse(await readJson(request))
@@ -62,7 +55,8 @@ export const Route = createFileRoute("/api/event")({
         const ip = visitorAddress(request.headers)
         const ua = request.headers.get("user-agent") || ""
         const day = dateInTimezone(site.timezone)
-        const visitorId = createHmac("sha256", SESSION_KEY).update(`${site.id}|${ip}|${ua}|${day}`).digest("hex")
+        const identity = String(body.v || body.visitor || "") || `${ip}|${ua}|${day}`
+        const visitorId = createHmac("sha256", SESSION_KEY).update(`${site.id}|${identity}`).digest("hex")
         const sessionId = await eventSession(visitorId)
         const propsRaw = (body.p || body.props || body.m || body.meta || {}) as Record<string, unknown>
         const props: Record<string, string> = {}

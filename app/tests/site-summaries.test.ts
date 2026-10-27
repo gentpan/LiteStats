@@ -1,7 +1,7 @@
 import { expect, spyOn, test } from "bun:test"
 import { ch, siteSummaries } from "../src/lib/ch"
 
-type Count = { site_id: string; n: string }
+type Count = { site_id: string; n: string; visits?: string; pageviews?: string }
 type Hour = Count & { hour: string }
 
 async function withSummaries(
@@ -22,13 +22,13 @@ async function withSummaries(
 
 test("site comparison includes sites whose current traffic dropped to zero", async () => {
   await withSummaries({
-    current: [{site_id: "2", n: "20"}, {site_id: "4", n: "8"}],
+    current: [{site_id: "2", n: "20", visits: "24", pageviews: "40"}, {site_id: "4", n: "8", visits: "10", pageviews: "16"}],
     previous: [{site_id: "1", n: "12"}, {site_id: "2", n: "10"}],
     live: [{site_id: "2", n: "3"}],
   }, async () => {
     const result = await siteSummaries([1, 2, 3, 4])
     expect(result.get(1)).toMatchObject({visitors: 0, change: -100, live: 0})
-    expect(result.get(2)).toMatchObject({visitors: 20, change: 100, live: 3})
+    expect(result.get(2)).toMatchObject({visitors: 20, visits: 24, pageviews: 40, change: 100, live: 3})
     expect(result.get(3)).toMatchObject({visitors: 0, change: 0, live: 0})
     expect(result.get(4)).toMatchObject({visitors: 8, change: 100, live: 0})
   })

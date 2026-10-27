@@ -449,14 +449,15 @@ export async function todayTraffic(siteIds: number[]) {
   }
 }
 
-export type SiteSummary = { visitors: number, live: number, change: number, sparkline: number[] }
+export type SiteSummary = { visitors: number, visits: number, pageviews: number, live: number, change: number, sparkline: number[] }
 
 export async function siteSummaries(siteIds: number[]) {
   if (!siteIds.length) return new Map<number, SiteSummary>()
   const ids = siteIds.join(",")
   const [day, prev, live, hours] = await Promise.all([
-    query<{ site_id: string, n: string }>(`
-      SELECT toString(site_id) AS site_id, toString(uniqExact(user_id)) AS n
+    query<{ site_id: string, n: string, visits: string, pageviews: string }>(`
+      SELECT toString(site_id) AS site_id, toString(uniqExact(user_id)) AS n,
+        toString(uniqExact(session_id)) AS visits, toString(countIf(name = 'pageview')) AS pageviews
       FROM events_v2
       WHERE site_id IN (${ids}) AND timestamp >= now() - INTERVAL 24 HOUR
       GROUP BY site_id
@@ -481,21 +482,25 @@ export async function siteSummaries(siteIds: number[]) {
     `),
   ])
   const out = new Map<number, SiteSummary>()
-  const currentMap = new Map(day.map(r => [Number(r.site_id), Number(r.n)]))
+  const currentMap = new Map(day.map(r => [Number(r.site_id), r]))
   const prevMap = new Map<number, number>()
   for (const r of prev) prevMap.set(Number(r.site_id), Number(r.n))
   for (const id of siteIds) {
-    const visitors = currentMap.get(id) || 0
+    const current = currentMap.get(id)
+    const visitors = Number(current?.n || 0)
     const before = prevMap.get(id) || 0
     out.set(id, {
-      visitors, live: 0,
+      visitors,
+      visits: Number(current?.visits || 0),
+      pageviews: Number(current?.pageviews || 0),
+      live: 0,
       change: before ? Math.round(((visitors - before) / before) * 100) : (visitors ? 100 : 0),
       sparkline: Array.from({ length: 24 }, () => 0),
     })
   }
   for (const r of live) {
     const id = Number(r.site_id)
-    const cur = out.get(id) || { visitors: 0, live: 0, change: 0, sparkline: Array.from({ length: 24 }, () => 0) }
+    const cur = out.get(id) || { visitors: 0, visits: 0, pageviews: 0, live: 0, change: 0, sparkline: Array.from({ length: 24 }, () => 0) }
     cur.live = Number(r.n)
     out.set(id, cur)
   }

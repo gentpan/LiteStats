@@ -32,9 +32,9 @@ export function VisitorGraph({
   return (
     <Surface className="visitor-graph analytics-panel col-span-full">
       <div className="metric-grid">
-        <Card icon="user" index={0} label={t("独立访客")} selected={metric === "visitors"} onSelect={() => onMetric("visitors")} value={overview.visitors} prev={compare.visitors} />
-        <Card icon="activity" index={1} label={t("总会话")} selected={metric === "visits"} onSelect={() => onMetric("visits")} value={overview.visits} prev={compare.visits} />
-        <Card icon="eye" index={2} label={t("总浏览量")} selected={metric === "pageviews"} onSelect={() => onMetric("pageviews")} value={overview.pageviews} prev={compare.pageviews} />
+        <Card icon="user" index={0} label={t("访客")} selected={metric === "visitors"} onSelect={() => onMetric("visitors")} value={overview.visitors} prev={compare.visitors} />
+        <Card icon="activity" index={1} label={t("访问次数")} selected={metric === "visits"} onSelect={() => onMetric("visits")} value={overview.visits} prev={compare.visits} />
+        <Card icon="eye" index={2} label={t("浏览量")} selected={metric === "pageviews"} onSelect={() => onMetric("pageviews")} value={overview.pageviews} prev={compare.pageviews} />
         <Card icon="copy" index={3} label={t("每次访问浏览量")} selected={metric === "views_per_visit"} onSelect={() => onMetric("views_per_visit")} value={overview.views_per_visit} prev={compare.views_per_visit} text={overview.views_per_visit.toFixed(2)} />
         <Card icon="external" index={4} label={t("跳出率")} selected={metric === "bounce_rate"} onSelect={() => onMetric("bounce_rate")} suffix="%" value={overview.bounce_rate} prev={compare.bounce_rate} invertChange />
         <Card icon="clock" index={5} label={t("访问时长")} selected={metric === "visit_duration"} onSelect={() => onMetric("visit_duration")} value={overview.visit_duration} prev={compare.visit_duration} text={formatDuration(overview.visit_duration)} />

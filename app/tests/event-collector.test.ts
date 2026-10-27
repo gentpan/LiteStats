@@ -54,12 +54,22 @@ test("collector acknowledges only events accepted by the bounded queue", async (
   })
 })
 
-test("privacy opt-out, invalid payloads and unknown sites do not enqueue analytics", async () => {
-  await withCollector(async ({find, session, queue}) => {
+test("privacy headers do not suppress collection and persistent visitor IDs remain stable", async () => {
+  await withCollector(async ({session, queue}) => {
     for (const headers of [{DNT: "1"}, {"Sec-GPC": "1"}] as Record<string, string>[]) {
-      expect((await collect({request: request(headers)})).status).toBe(202)
+      expect((await collect({request: request(headers, {v: "visitor-fixture"})})).status).toBe(202)
     }
-    expect(find).not.toHaveBeenCalled()
+    expect(queue).toHaveBeenCalledTimes(2)
+    expect(session).toHaveBeenCalledTimes(2)
+    const first = queue.mock.calls[0][0].userId
+    expect(first).toBe(queue.mock.calls[1][0].userId)
+    expect(first).not.toBe("visitor-fixture")
+    expect(first).toMatch(/^[a-f0-9]{64}$/)
+  })
+})
+
+test("invalid payloads and unknown sites do not enqueue analytics", async () => {
+  await withCollector(async ({find, session, queue}) => {
     expect((await collect({request: request({}, {n: ""})})).status).toBe(400)
     expect(find).not.toHaveBeenCalled()
     find.mockResolvedValue(null)

@@ -99,5 +99,6 @@ export type BrandName = "google" | "bing" | "cloudflare"
 export function BrandIcon({ name, className = "" }: { name: BrandName, className?: string }) {
   const classes = `brand-icon brand-${name} ${className}`.trim()
   if (name === "bing") return <img src="/brands/bing.svg" alt="" aria-hidden="true" className={classes} />
+  if (name === "google") return <img src="/brands/sources/google.svg" alt="" aria-hidden="true" className={classes} />
   return <UIIcon name={`brand-${name}`} className={classes} />
 }

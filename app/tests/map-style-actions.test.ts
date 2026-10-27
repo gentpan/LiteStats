@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { createUserMapStyleHandlers } from "../src/lib/map-style-actions"
+import { createUserMapStyleHandlers } from "../src/lib/mapbox-actions"
 import { MAPBOX_STYLES, type MapboxStyleId } from "../src/lib/mapbox-styles"
 
 function handlers() {

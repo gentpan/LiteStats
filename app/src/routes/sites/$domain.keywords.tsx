@@ -4,6 +4,7 @@ import { Shell } from "~/components/Shell"
 import { ManagementHeader } from "~/components/ManagementHeader"
 import { HelpHint } from "~/components/HelpHint"
 import { PageState } from "~/components/PageState"
+import { ActionLink } from "~/components/ActionButton"
 import { KeywordTable } from "~/components/KeywordTable"
 import { KeywordImportPanel } from "~/components/KeywordImportPanel"
 import { KeywordSeoPanel } from "~/components/KeywordSeoPanel"
@@ -91,8 +92,8 @@ function KeywordWorkspace({domain, data}: {domain: string; data: WorkspaceData})
     : t("当前范围暂无关键词。最近的数据可能延迟，部分低频查询不会公开。")
   return <Shell user={data.me}>
     <ManagementHeader title={t("搜索关键词")} description={domain}>
-      <Link to="/sites/$domain" params={{domain}} className="squircle btn">{t("返回统计")}</Link>
-      {canManage ? <Link to="/sites/$domain/settings" params={{domain}} search={{tab: "integrations"}} className="squircle btn">{t("接入设置")}</Link> : null}
+      <ActionLink to="/sites/$domain" params={{domain}}>{t("返回统计")}</ActionLink>
+      {canManage ? <ActionLink to="/sites/$domain/settings" params={{domain}} search={{tab: "integrations"}}>{t("接入设置")}</ActionLink> : null}
     </ManagementHeader>
     <div className="keyword-workspace">
       <section className="squircle keyword-card" aria-label={t("关键词报告")}>
