@@ -1,11 +1,11 @@
-export type SiteLayout = "list" | "grid"
+export type SiteLayout = "list" | "grid" | "compact"
 
 const STORAGE_KEY = "litestats:site-layout"
 const CHANGE_EVENT = "litestats:site-layout-change"
-const layoutValue = (value: unknown): SiteLayout => value === "grid" ? "grid" : "list"
+const layoutValue = (value: unknown): SiteLayout => value === "grid" || value === "compact" ? value : "list"
 
 // Apply before the first paint so a saved grid does not briefly render as rows.
-export const SITE_LAYOUT_BOOTSTRAP_SCRIPT = `(function(){var value="list";try{if(localStorage.getItem(${JSON.stringify(STORAGE_KEY)})==="grid")value="grid"}catch(e){}document.documentElement.dataset.siteLayout=value})()`
+export const SITE_LAYOUT_BOOTSTRAP_SCRIPT = `(function(){var value="list";try{var saved=localStorage.getItem(${JSON.stringify(STORAGE_KEY)});if(saved==="grid"||saved==="compact")value=saved}catch(e){}document.documentElement.dataset.siteLayout=value})()`
 
 export function readSiteLayout(): SiteLayout {
   return typeof document === "undefined" ? "list" : layoutValue(document.documentElement.dataset.siteLayout)

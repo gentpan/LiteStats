@@ -1,4 +1,4 @@
-.api-reference { max-width:960px; margin:32px auto 64px; }
+.api-reference { width:100%; margin:32px auto 64px; }
 .api-reference-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:24px; }
 .api-reference h1 { font-size:28px; font-weight:600; margin:8px 0; color:var(--color-gray-900); }
 .api-reference-heading > div:last-child { display:flex; flex-wrap:wrap; gap:8px; }

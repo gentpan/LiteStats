@@ -3,6 +3,11 @@ import { useRouterState } from "@tanstack/react-router"
 import { UIIcon } from "./UIIcon"
 import { useT } from "~/lib/i18n"
 
+/** Actual links carry aria-current; each selected row has one solid background. */
+export function SettingsNav({label,children}:{label:string;children:ReactNode}) {
+  return <nav aria-label={label} className="settings-nav">{children}</nav>
+}
+
 /** One workspace with persistent desktop navigation and a compact mobile menu. */
 export function SettingsLayout({ sidebar, children, navigationTitle }: { sidebar: ReactNode; children: ReactNode; navigationTitle?:string }) {
   const {t}=useT()

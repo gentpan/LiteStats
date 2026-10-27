@@ -24,6 +24,13 @@ export function rdapExpiry(data: unknown): string | null {
   return dates.length ? new Date(Math.min(...dates)).toISOString() : null
 }
 
+export function whoGaExpiry(data: unknown): string | null {
+  const value = (data as {expiresAt?: unknown})?.expiresAt
+  if (typeof value !== "string") return null
+  const timestamp = Date.parse(value)
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null
+}
+
 type Bootstrap = {services: [string[], string[]][]}
 let bootstrap: {value: Bootstrap; expires: number} | null = null
 let pendingBootstrap: Promise<Bootstrap> | null = null
@@ -61,6 +68,15 @@ export async function inspectDomain(hostname: string, lookup = domainLookup): Pr
     } else {
       unavailable = {domain, expiresAt: null, error: "暂不支持该域名后缀的到期查询，请到注册商查看", retryable: false}
     }
+  } catch (error) { unavailable = {domain, expiresAt: null, error: checkError(error)} }
+  try {
+    const result = await lookup.fetch(new URL(`https://api.who.ga/${encodeURIComponent(domain)}`), AbortSignal.timeout(10_000), 1_000_000)
+    if (result.status !== 200) throw new Error("域名到期信息暂时不可用")
+    const payload = JSON.parse(result.body) as {domain?: unknown}
+    if (typeof payload.domain !== "string" || payload.domain.toLowerCase() !== domain) throw new Error("域名到期信息格式无效")
+    const expiresAt = whoGaExpiry(payload)
+    if (expiresAt) return {domain, expiresAt, error: null, retryable: false}
+    unavailable = {domain, expiresAt: null, error: "查询服务未返回该域名的到期时间，请到注册商查看", retryable: false}
   } catch (error) { unavailable = {domain, expiresAt: null, error: checkError(error)} }
   // .com.cn and other .cn registrations share CNNIC's official WHOIS service.
   // RDAP remains preferred if the registry publishes it in the future.

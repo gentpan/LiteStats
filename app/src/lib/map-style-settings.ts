@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { db } from "./db"
 import { DEFAULT_MAPBOX_STYLE, MAPBOX_STYLES, normalizeMapboxStyle, type MapboxStyleId } from "./mapbox-styles"
-import { mapboxStyleIdSchema } from "./map-style-validation"
+import { mapboxStyleIdSchema } from "./mapbox-validation"
 const userIdSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER)
 
 /** A separate preference table leaves historical map configuration and keys untouched. */

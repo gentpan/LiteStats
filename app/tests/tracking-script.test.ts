@@ -3,9 +3,9 @@ import vm from "node:vm"
 import { trackingScript } from "../src/lib/tracking-script"
 
 type Listener = { callback: (event: Record<string, unknown>) => void, once: boolean }
-type Payload = { n: string, d: string, u: string, r: string, w: number, t: string, l: string, s: string, p?: Record<string, string> }
+type Payload = { n: string, d: string, u: string, r: string, w: number, v?: string, t: string, l: string, s: string, p?: Record<string, string> }
 
-function tracker(options: { attrs?: Record<string, string>, prerendering?: boolean, fetch?: ((url: string, init: RequestInit) => Promise<Response>) | null, script?: boolean, dnt?:string, gpc?:boolean } = {}) {
+function tracker(options: { attrs?: Record<string, string>, prerendering?: boolean, fetch?: ((url: string, init: RequestInit) => Promise<Response>) | null, script?: boolean, dnt?:string, gpc?:boolean, storageBlocked?:boolean } = {}) {
   const documentEvents = new Map<string, Listener[]>()
   const windowEvents = new Map<string, Listener[]>()
   const requests: { url: string, init: RequestInit, payload: Payload }[] = []
@@ -36,14 +36,20 @@ function tracker(options: { attrs?: Record<string, string>, prerendering?: boole
   const window = {
     addEventListener: listen(windowEvents),
     setTimeout: (run: () => void, delay: number) => { timers.push({ run, delay }) },
+    crypto: { randomUUID: () => "generated-visitor" },
     litestats: undefined as { track: (name: string, props?: Record<string, unknown>) => void } | undefined,
+  }
+  const stored = new Map([["litestats:visitor-id", "visitor-fixture"]])
+  const localStorage = {
+    getItem: (key: string) => { if (options.storageBlocked) throw new Error("blocked"); return stored.get(key) || null },
+    setItem: (key: string, value: string) => { if (options.storageBlocked) throw new Error("blocked"); stored.set(key, value) },
   }
   const navigate = (_state: unknown, _title: string, url?: string | URL | null) => {
     if (url != null) location.href = new URL(String(url), location.href).href
     return "history-result"
   }
   const context = {
-    document, window, location,
+    document, window, location, localStorage,
     history: { pushState: navigate, replaceState: navigate },
     navigator: { language: "zh-CN", doNotTrack:options.dnt, globalPrivacyControl:options.gpc, sendBeacon: (url: string, body: Blob) => { beacons.push({ url, body }); return true } },
     innerWidth: 320, screen: { width: 320, height: 800 }, Blob, URL,
@@ -55,7 +61,7 @@ function tracker(options: { attrs?: Record<string, string>, prerendering?: boole
   const run = () => vm.runInNewContext(trackingScript, context)
   run()
   return {
-    ...context, requests, beacons, timers, run,
+    ...context, requests, beacons, timers, run, stored,
     emitDocument: (name: string, event?: Record<string, unknown>) => emit(documentEvents, name, event),
     emitWindow: (name: string, event?: Record<string, unknown>) => emit(windowEvents, name, event),
     click: (href: string) => emit(documentEvents, "click", { target: { closest: () => ({ href }) } }),
@@ -73,7 +79,16 @@ describe("browser tracker navigation and installation", () => {
     expect(app.beacons).toHaveLength(0)
     expect(app.requests[0]?.url).toBe("https://stats.example.com/api/event")
     expect(app.requests[0]?.init).toMatchObject({ method: "POST", keepalive: true, credentials: "omit", headers: { "Content-Type": "text/plain;charset=UTF-8" } })
-    expect(app.requests[0]?.payload).toEqual({ n: "pageview", d: "shop.example.com", u: "https://shop.example.com/start", r: "https://www.google.com/search?q=shop", w: 320, t: "Shop", l: "zh-CN", s: "320x800" })
+    expect(app.requests[0]?.payload).toEqual({ n: "pageview", d: "shop.example.com", u: "https://shop.example.com/start", r: "https://www.google.com/search?q=shop", w: 320, v: "visitor-fixture", t: "Shop", l: "zh-CN", s: "320x800" })
+  })
+
+  test("persistent visitor IDs survive navigation and blocked storage still collects", () => {
+    const app = tracker()
+    app.history.pushState(null, "", "/pricing")
+    expect(app.requests.map(request => request.payload.v)).toEqual(["visitor-fixture", "visitor-fixture"])
+    const blocked = tracker({storageBlocked: true})
+    expect(blocked.requests).toHaveLength(1)
+    expect(blocked.requests[0]?.payload).not.toHaveProperty("v")
   })
 
   test("duplicate script aliases do not double pageviews, clicks or history wrappers", () => {
@@ -159,18 +174,17 @@ describe("browser tracker navigation and installation", () => {
 })
 
 describe("browser tracker delivery", () => {
-  test.each([{dnt:"1"},{gpc:true}])("privacy preferences prevent pageviews and custom events, including Beacon", options => {
+  test.each([{dnt:"1"},{gpc:true}])("privacy preferences do not suppress pageviews or custom events by default", options => {
     for (const fetch of [undefined,null]) {
       const app=tracker({...options,fetch})
       app.window.litestats!.track("Signup")
       app.history.pushState(null,"","/pricing")
       app.click("https://outside.example.com/report.pdf")
-      expect(app.requests).toHaveLength(0)
-      expect(app.beacons).toHaveLength(0)
+      expect(app.requests.length + app.beacons.length).toBe(5)
     }
   })
 
-  test("a privacy change also suppresses an already scheduled retry", async () => {
+  test("a privacy change does not suppress an already scheduled retry", async () => {
     const app=tracker({fetch:()=>Promise.resolve(Response.json({error:"event_buffer_full"},{status:503}))})
     await settle()
     expect(app.timers).toHaveLength(1)
@@ -178,7 +192,7 @@ describe("browser tracker delivery", () => {
     app.timers.shift()!.run()
     app.window.litestats!.track("Signup")
     await settle()
-    expect(app.requests).toHaveLength(1)
+    expect(app.requests).toHaveLength(3)
   })
 
   test("only a definite unqueued event retries twice, with the original payload", async () => {

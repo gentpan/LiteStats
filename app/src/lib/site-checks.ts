@@ -62,6 +62,18 @@ export async function siteCheckReport(site: {id: number; domain: string}): Promi
     latest: checks.at(-1) || null, checks, now: new Date().toISOString()}
 }
 
+export async function siteCertificateExpiries(siteIds: number[]) {
+  const expiries = new Map<number, string | null>()
+  if (!siteIds.length) return expiries
+  const pool = await siteCheckDb()
+  const rows = await pool.query<{site_id: number; expires_at: string | null}>(`
+    SELECT c.site_id,c.expiry->'certificate'->>'expiresAt' AS expires_at
+    FROM site_check_settings c JOIN sites s ON s.id=c.site_id
+    WHERE c.site_id=ANY($1) AND c.expiry_host=s.domain`, [siteIds])
+  for (const row of rows.rows) expiries.set(Number(row.site_id), row.expires_at)
+  return expiries
+}
+
 export async function saveSiteCheck(site: {id: number; domain: string}, enabled: boolean, path: string) {
   siteCheckUrl(site.domain, path)
   const pool = await siteCheckDb()

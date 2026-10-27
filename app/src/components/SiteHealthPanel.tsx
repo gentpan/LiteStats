@@ -5,6 +5,7 @@ import { useT } from "~/lib/i18n"
 import { checkSummary, expiryState, responseSegments } from "~/lib/site-check-view"
 import { formatTimestamp } from "~/lib/format"
 import type { SiteCheckReport } from "~/lib/site-checks"
+import "~/styles/site-health.css"
 
 function ExpiryCard({kind, date, error, stale, lastSuccessAt, now}: {kind: "domain" | "certificate"; date?: string | null; error?: string | null; stale?: boolean; lastSuccessAt?: string; now: string}) {
   const {t, locale} = useT()
@@ -90,21 +91,27 @@ function ResponseChart({report}: {report: SiteCheckReport}) {
   </Surface>
 }
 
-export function SiteHealthPanel({report}: {report: SiteCheckReport}) {
-  const {t, locale} = useT()
+export function SiteHealthCards({report}: {report: SiteCheckReport}) {
+  const {t} = useT()
   const latest = report.latest
   const stale = !latest || Date.parse(report.now) - Date.parse(latest.checkedAt) > 10 * 60_000
   const state = !report.enabled ? "paused" : stale ? "unknown" : latest.ok ? "good" : "bad"
+  return <div className="health-cards">
+    <Surface className={`health-card health-tone-${state}`}><div className="health-card-heading"><span>{t("网站可用性")}</span><UIIcon name="activity"/></div>
+      <div className="health-status"><span className="health-dot"/>{t(state === "paused" ? "已暂停" : state === "unknown" ? "等待检查" : state === "good" ? "正常访问" : "访问异常")}</div>
+      <p>{latest && !stale ? latest.error ? t(latest.error) : `HTTP ${latest.status}` : t("以最新检查结果为准")}</p>
+      <div className="health-card-foot"><span>{latest && !stale && latest.durationMs !== null ? `${latest.durationMs} ms` : "—"}</span><span>{t("预期 HTTP 200")}</span></div>
+    </Surface>
+    <ExpiryCard kind="certificate" {...report.expiry?.certificate} date={report.expiry?.certificate.expiresAt} now={report.now}/>
+    <ExpiryCard kind="domain" {...report.expiry?.domain} date={report.expiry?.domain.expiresAt} now={report.now}/>
+  </div>
+}
+
+export function SiteHealthPanel({report}: {report: SiteCheckReport}) {
+  const {t, locale} = useT()
+  const latest = report.latest
   return <div className="site-health">
-    <div className="health-cards">
-      <Surface className={`health-card health-tone-${state}`}><div className="health-card-heading"><span>{t("网站可用性")}</span><UIIcon name="activity"/></div>
-        <div className="health-status"><span className="health-dot"/>{t(state === "paused" ? "已暂停" : state === "unknown" ? "等待检查" : state === "good" ? "正常访问" : "访问异常")}</div>
-        <p>{latest && !stale ? latest.error ? t(latest.error) : `HTTP ${latest.status}` : t("以最新检查结果为准")}</p>
-        <div className="health-card-foot"><span>{latest && !stale && latest.durationMs !== null ? `${latest.durationMs} ms` : "—"}</span><span>{t("预期 HTTP 200")}</span></div>
-      </Surface>
-      <ExpiryCard kind="certificate" {...report.expiry?.certificate} date={report.expiry?.certificate.expiresAt} now={report.now}/>
-      <ExpiryCard kind="domain" {...report.expiry?.domain} date={report.expiry?.domain.expiresAt} now={report.now}/>
-    </div>
+    <SiteHealthCards report={report}/>
     <ResponseChart report={report}/>
     <div className="health-footer"><span>{t("最近检查")}: {latest ? formatTimestamp(latest.checkedAt, locale) : "—"}</span><span>{t("到期信息每日更新，临时查询失败后 15 分钟重试")}{report.expiry ? ` · ${formatTimestamp(report.expiry.checkedAt, locale)}` : ""}</span></div>
     {report.expiry?.domain.domain ? <p className="health-registration-note">{t("域名到期信息对应 {0}", {0: report.expiry.domain.domain})}</p> : null}

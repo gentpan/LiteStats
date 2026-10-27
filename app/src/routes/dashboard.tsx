@@ -9,6 +9,7 @@ import { meFn, sitesFn } from "~/lib/actions"
 import { numberShort } from "~/lib/format"
 import { useT } from "~/lib/i18n"
 import { readSiteLayout, setSiteLayout, subscribeSiteLayout, type SiteLayout } from "~/lib/site-layout-preference"
+import { expiryState } from "~/lib/site-check-view"
 
 export const Route = createFileRoute("/dashboard")({
   validateSearch: (search: Record<string, unknown>): {gsc?: "expired"} => ({gsc: search.gsc === "expired" ? "expired" : undefined}),
@@ -73,7 +74,7 @@ function DashboardPage() {
     if (!s) return sites
     return sites.filter((site) => site.domain.toLowerCase().includes(s) || (site.name && site.name.toLowerCase().includes(s)))
   }, [q, sites])
-
+  const now = new Date().toISOString()
 
   return (
     <Shell user={me}>
@@ -105,6 +106,10 @@ function DashboardPage() {
               <button className="squircle btn" data-layout="list" type="button" aria-label={t("列表")} title={t("列表")} aria-pressed={layout === "list"} onClick={() => changeLayout("list")}>
                 <UIIcon name="list" className="size-4" />
                 <span className="management-tool-label">{t("列表")}</span>
+              </button>
+              <button className="squircle btn" data-layout="compact" type="button" aria-label={t("紧凑")} title={t("紧凑")} aria-pressed={layout === "compact"} onClick={() => changeLayout("compact")}>
+                <UIIcon name="activity" className="size-4" />
+                <span className="management-tool-label">{t("紧凑")}</span>
               </button>
             </div>
           <Link to="/sites/new" className="squircle btn btn-primary" aria-label={t("添加网站")} title={t("添加网站")}>
@@ -138,26 +143,29 @@ function DashboardPage() {
                         {site.name && site.name.toLowerCase() !== site.domain.toLowerCase() ? (
                           <p title={site.domain} className="truncate text-xs font-normal text-gray-400 mt-0.5">{site.domain}</p>
                         ) : null}
+                        <p className="management-site-ssl"><UIIcon name="shield"/>SSL {expiryState(site.certificateExpiresAt, now).days ?? "—"}{expiryState(site.certificateExpiresAt, now).days === null ? "" : ` ${t("天")}`}</p>
                       </div>
                     </div>
                     <div className="management-site-data">
-                      <span className="h-12 max-w-sm text-indigo-500 sm:max-w-none">
-                        <Sparkline values={site.sparkline || []} />
-                      </span>
-                      <div className="flex items-end justify-between max-lg:col-span-full">
-                        <div className="flex flex-col">
-                          <p className="text-lg font-bold text-gray-900 sm:text-xl">{numberShort(site.visitors || 0)}</p>
-                          <p className="text-gray-600">{site.visitors === 1 ? t("位访客（近 24 小时）") : t("位访客（近 24 小时）")}</p>
+                      {layout === "compact" ? <CompactMetrics site={site}/> : <>
+                        <span className="h-12 max-w-sm text-indigo-500 sm:max-w-none">
+                          <Sparkline values={site.sparkline || []} />
+                        </span>
+                        <div className="flex items-end justify-between max-lg:col-span-full">
+                          <div className="flex flex-col">
+                            <p className="text-lg font-bold text-gray-900 sm:text-xl">{numberShort(site.visitors || 0)}</p>
+                            <p className="text-gray-600">{site.visitors === 1 ? t("位访客（近 24 小时）") : t("位访客（近 24 小时）")}</p>
+                          </div>
+                          <p className="text-sm text-gray-900">
+                            {site.change > 0 ? (
+                              <UIIcon name="arrow-up-right" className="mr-0.5 inline-block h-3 w-3 text-green-500" />
+                            ) : site.change < 0 ? (
+                              <UIIcon name="arrow-down-right" className="mr-0.5 inline-block h-3 w-3 text-red-500" />
+                            ) : null}
+                            {Math.abs(site.change || 0)}%
+                          </p>
                         </div>
-                        <p className="text-sm text-gray-900">
-                          {site.change > 0 ? (
-                            <UIIcon name="arrow-up-right" className="mr-0.5 inline-block h-3 w-3 text-green-500" />
-                          ) : site.change < 0 ? (
-                            <UIIcon name="arrow-down-right" className="mr-0.5 inline-block h-3 w-3 text-red-500" />
-                          ) : null}
-                          {Math.abs(site.change || 0)}%
-                        </p>
-                      </div>
+                      </>}
                     </div>
                   </Surface>
                 </Link>
@@ -186,6 +194,17 @@ function DashboardPage() {
       </div>
     </Shell>
   )
+}
+
+export function CompactMetrics({site}: {site: Awaited<ReturnType<typeof sitesFn>>[number]}) {
+  const {t} = useT()
+  const metrics: Array<[string, number]> = [
+    [t("访客"), site.visitors],
+    [t("访问次数"), site.visits],
+    [t("浏览量"), site.pageviews],
+    [t("当前在线"), site.live],
+  ]
+  return <div className="management-compact-metrics">{metrics.map(([label,value]) => <div key={label}><strong>{numberShort(value)}</strong><span>{label}</span></div>)}</div>
 }
 
 function Sparkline({ values }: { values: number[] }) {

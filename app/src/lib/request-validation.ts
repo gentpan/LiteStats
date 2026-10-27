@@ -1,7 +1,9 @@
 import { z } from "zod"
 
 const scalar = z.union([z.string().max(2000), z.number().finite(), z.boolean(), z.null()])
+const visitorId = z.string().regex(/^[A-Za-z0-9_-]{8,64}$/).optional()
 export const eventSchema = z.object({
+  v: visitorId, visitor: visitorId,
   d: z.string().max(255).optional(), domain: z.string().max(255).optional(),
   u: z.url().max(8192).optional(), url: z.url().max(8192).optional(),
   n: z.string().min(1).max(255).optional(), name: z.string().min(1).max(255).optional(),

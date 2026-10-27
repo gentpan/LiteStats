@@ -18,6 +18,25 @@ test("report labels follow the active locale instead of language or country snap
   expect(reportValueLabel(undefined, "Raw", "en")).toBe("Raw")
 })
 
+test("legacy browser names use standard display labels without changing stored keys", () => {
+  const names = {
+    "edge-chromium": "Edge",
+    "chromium-webview": "Chromium WebView",
+    "edge-ios": "Edge iOS",
+    yandexbrowser: "Yandex Browser",
+    fxios: "Firefox iOS",
+    android: "Android Browser",
+    ie: "Internet Explorer",
+    silk: "Amazon Silk",
+    instagram: "Instagram",
+    facebook: "Facebook",
+    pie: "Android Browser",
+  }
+  for (const [raw, label] of Object.entries(names)) expect(reportValueLabel("browser", raw, "en")).toBe(label)
+  expect(reportSearchText("browser", {name: "edge-chromium"}, "en")).toBe("edge-chromium Edge")
+  expect(resolveReportFilter("browser", "Edge", [{name: "edge-chromium"}], "en")).toBe("edge-chromium")
+})
+
 test("direct display changes only source values and retains real domains and campaign labels", () => {
   for (const name of ["Direct", " direct ", "DIRECT", "Direct / None", "(none)", ""]) {
     expect(reportValueLabel("source", name, "zh-CN", "Snapshot")).toBe("直接访问")

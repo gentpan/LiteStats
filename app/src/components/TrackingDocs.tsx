@@ -126,8 +126,8 @@ export function TrackingDocs({ domain }: { domain: string }) {
             />
             <p className="api-note">
               {en
-                ? "Returns HTTP 202 Accepted with 'ok'; this acknowledges receipt, not durable storage. LiteStats respects Do-Not-Track (DNT: 1) and Global Privacy Control (Sec-GPC: 1) headers."
-                : "接口返回 HTTP 202 Accepted 与文本 'ok'，表示已接收请求，不代表已经持久化。采集遵守 Do-Not-Track (DNT: 1) 与 Sec-GPC 隐私标头，事件经内存缓冲写入 ClickHouse。"}
+                ? "Returns HTTP 202 Accepted with 'ok'; this acknowledges receipt, not durable storage. Events are buffered in memory before being written to ClickHouse."
+                : "接口返回 HTTP 202 Accepted 与文本 'ok'，表示已接收请求，不代表已经持久化。事件经内存缓冲写入 ClickHouse。"}
             </p>
           </div>
         </details>
@@ -153,8 +153,8 @@ export function TrackingDocs({ domain }: { domain: string }) {
             />
             <p className="api-note">
               {en
-                ? "The script is cached for up to 5 minutes. Replacing history state without changing the URL, or changing only an anchor, does not add a pageview. SPA navigation preserves the document entry referrer for source attribution. Prerendered pages wait until activation; a browser back/forward cache restoration counts as another view. Visit duration is estimated from recorded pageviews, so time spent after the last pageview cannot be measured precisely."
-                : "脚本最多缓存 5 分钟。同一地址的历史状态更新和仅锚点变化不会重复计数；SPA 路由切换保留本次文档的入站来源，用于来源统计。预渲染页面在实际打开后才计数，浏览器从往返缓存恢复页面会记录一次新浏览。访问时长由已记录的页面浏览估算，最后一次浏览之后的停留时间无法精确测量。"}
+                ? "The script is cached for up to 5 minutes. A random anonymous visitor ID is persisted in localStorage without cookies; unavailable storage falls back to the legacy daily anonymous ID. Replacing history state without changing the URL, or changing only an anchor, does not add a pageview. SPA navigation preserves the document entry referrer for source attribution. Prerendered pages wait until activation; a browser back/forward cache restoration counts as another view. Visit duration is estimated from recorded pageviews, so time spent after the last pageview cannot be measured precisely."
+                : "脚本最多缓存 5 分钟。使用 localStorage 持久保存随机匿名访客 ID，不使用 Cookie；存储不可用时回退到原每日匿名标识。同一地址的历史状态更新和仅锚点变化不会重复计数；SPA 路由切换保留本次文档的入站来源，用于来源统计。预渲染页面在实际打开后才计数，浏览器从往返缓存恢复页面会记录一次新浏览。访问时长由已记录的页面浏览估算，最后一次浏览之后的停留时间无法精确测量。"}
             </p>
             <p className="api-note">
               {en

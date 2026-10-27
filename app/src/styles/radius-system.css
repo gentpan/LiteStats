@@ -19,12 +19,11 @@
 
 /* Control radii follow the shared size, including compact variants. */
 .squircle:is(.btn, .ui-action, .ui-icon-button) { --sq-r: calc(var(--control-size) * .46); }
-.squircle:is(.h-8, .size-8) { --sq-r: 14.72px; }
+.squircle.h-8 { --sq-r: 14.72px; }
 .squircle.input.input { --sq-r: calc(var(--ui-input-height) * .46); }
 .squircle.rounded-sm, .squircle.rounded { --sq-r: 8px; }
 .squircle.rounded-md { --sq-r: 15px; }
-.squircle.rounded-lg { --sq-r: 20px; }
-.squircle:is(.h-8, .size-8).rounded-md { --sq-r: 14.72px; }
+.squircle.h-8.rounded-md { --sq-r: 14.72px; }
 .squircle.ui-icon-button { --sq-r: calc(var(--control-size) * .46); }
 .management-shell .settings-content :is(.ui-action, .btn),
 .management-shell .management-heading .btn,
@@ -38,8 +37,8 @@
 .ui-surface.squircle[data-radius="medium"] { --sq-r: 15px; }
 .ui-surface.squircle[data-radius="large"] { --sq-r: 20px; }
 .ui-surface.squircle[data-radius="xlarge"] { --sq-r: 22px; }
-.squircle:is(.settings-modal-card, .recent-visitors-dialog, .management-create-form, .management-site-list) { --sq-r: 20px; }
-.squircle:is(.site-header-menu, .absolute.shadow-lg, .absolute.shadow-2xl) { --sq-r: 20px; }
+.squircle:is(.settings-modal-card, .recent-visitors-dialog, .management-site-list) { --sq-r: 20px; }
+.squircle:is(.site-header-menu, .absolute.shadow-lg) { --sq-r: 20px; }
 .squircle.site-header-menu .site-header-menu-item { --sq-r: calc(20px - .35rem); }
 .squircle.absolute.p-1 > .squircle,
 .squircle.absolute.p-1 > div > .squircle { --sq-r: 16px; }
@@ -51,7 +50,6 @@
 .squircle.traffic-cell { --sq-r: 6px; }
 .squircle.site-card-menu-trigger { --sq-r: 14.72px; }
 .squircle.api-doc-badge { --sq-r: 10px; }
-.squircle.settings-status { --sq-r: 11px; }
 .squircle.map-controls { --sq-r: calc(var(--ui-control-compact) * .46); }
 .map-controls > .squircle { --sq-r: 0px; }
 .map-controls > .squircle:first-child { --sq-tl: calc(var(--ui-control-compact) * .46 - 1px); --sq-bl: calc(var(--ui-control-compact) * .46 - 1px); }

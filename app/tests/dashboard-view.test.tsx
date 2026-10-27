@@ -9,6 +9,7 @@ import { parseDashSearch } from "../src/lib/range"
 
 const data: ComponentProps<typeof AnalyticsDashboard>["data"] = {
   mapboxToken: "",
+  health: null,
   site: {id: 1, domain: "view.test", name: "Test", timezone: "UTC", team_id: 1, public: false, allowed_event_props: null},
   range: {from: "2026-10-21", to: "2026-10-21"},
   overview: {visitors: 9, visits: 10, pageviews: 12, bounce_rate: 50, views_per_visit: 1.2, visit_duration: 3, live: 2},
@@ -19,8 +20,8 @@ const data: ComponentProps<typeof AnalyticsDashboard>["data"] = {
   searchTerms: {google: {configured: false, rows: []}, bing: {configured: false, rows: []}, organic: []},
 }
 
-async function render(readonly: boolean, source = "Google", locale: Locale = "zh-CN", browsers = data.browsers) {
-  const root = createRootRoute({component: () => <I18nProvider locale={locale}><AnalyticsDashboard data={{...data, browsers, sources:[{name:source,value:9}]}} domain="view.test"
+async function render(readonly: boolean, source = "Google", locale: Locale = "zh-CN", browsers = data.browsers, health: ComponentProps<typeof AnalyticsDashboard>["data"]["health"] = null) {
+  const root = createRootRoute({component: () => <I18nProvider locale={locale}><AnalyticsDashboard data={{...data, browsers, health, sources:[{name:source,value:9}]}} domain="view.test"
     search={parseDashSearch({period: "7d", source})} readonly={readonly} canManage={false} onSearch={() => {}}
   /></I18nProvider>})
   const router = createRouter({routeTree: root, history: createMemoryHistory({initialEntries: ["/"]})})
@@ -31,7 +32,7 @@ async function render(readonly: boolean, source = "Google", locale: Locale = "zh
 test("member and share views retain the same metrics, report groups and active filters", async () => {
   for (const readonly of [false, true]) {
     const html = await render(readonly)
-    for (const text of ["独立访客", "总会话", "总浏览量", "访客分布", "热门页面", "浏览器", "来源 Google", "清除筛选"]) {
+    for (const text of ["访客", "访问次数", "浏览量", "访客分布", "热门页面", "浏览器", "来源 Google", "清除筛选"]) {
       expect(html).toContain(text)
     }
     expect(html.includes("/sites/view.test/activity")).toBe(!readonly)
@@ -49,6 +50,26 @@ test("member and share views retain the same metrics, report groups and active f
     expect(html).not.toContain("Google Maps")
     expect(html).not.toContain("Mapbox")
   }
+})
+
+test("member dashboard shows compact health status while shared views keep it private", async () => {
+  const health = {
+    enabled: true, path: "/", url: "https://view.test/", now: "2026-10-22T12:00:00Z",
+    latest: {checkedAt: "2026-10-22T11:59:00Z", ok: true, status: 200, durationMs: 80, error: null}, checks: [],
+    expiry: {checkedAt: "2026-10-22T12:00:00Z", domain: {domain: "view.test", expiresAt: "2027-01-01T00:00:00Z", error: null}, certificate: {expiresAt: "2026-11-01T00:00:00Z", valid: true, error: null}},
+  }
+  const member = await render(false, "Google", "zh-CN", data.browsers, health)
+  expect(member).toContain("dashboard-health-inline")
+  expect(member).toContain("/sites/view.test/health")
+  expect(member).toContain("HTTP 200")
+  expect(member).toMatch(/SSL(?: <!-- -->)?10/)
+  expect(member).not.toMatch(/域名.*71.*天/)
+  expect(member).not.toContain("health-cards")
+  expect(member).not.toContain("dashboard-health-heading")
+  const shared = await render(true, "Google", "zh-CN", data.browsers, health)
+  expect(shared).not.toContain("dashboard-health-inline")
+  expect(shared).not.toContain("证书到期")
+  expect(shared).not.toContain("/sites/view.test/health")
 })
 
 test("the device report retains every row so wheel scrolling can reach entries after the ninth", async () => {

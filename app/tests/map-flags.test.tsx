@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import { renderToString } from "react-dom/server"
 import { MapCard } from "../src/components/WorldMap"
 import { MapboxVisitorMap } from "../src/components/MapboxVisitorMap"
-import { readMapFlags, saveMapFlags } from "../src/lib/map-flags-preference"
+import { readMapFlags, saveMapFlags } from "../src/lib/map-preferences"
 
 function withStorage(storage: unknown, run: () => void) {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, "localStorage")

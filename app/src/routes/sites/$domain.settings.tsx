@@ -1,13 +1,11 @@
 import { Surface } from "~/components/Surface"
 import { TrackingDocs } from "~/components/TrackingDocs"
 import { TrackingSnippet } from "~/components/TrackingSnippet"
-import { SettingsNav } from "~/components/SettingsNav"
-import { ActionButton } from "~/components/ActionButton"
+import { ActionButton, ActionLink } from "~/components/ActionButton"
 import { UIIcon as TabIcon, BrandIcon } from "~/components/UIIcon"
-import { SettingsLayout } from "~/components/SettingsLayout"
+import { SettingsLayout, SettingsNav } from "~/components/SettingsLayout"
 import { SettingsForm, Field, FormActions } from "~/components/SettingsForm"
-import { Navigate } from "@tanstack/react-router"
-import { Link, createFileRoute, useRouter } from "@tanstack/react-router"
+import { Link, Navigate, createFileRoute, useRouter } from "@tanstack/react-router"
 import { useMemo, useEffect, useId, useState, type ReactNode } from "react"
 import { BackArrow, SettingsHeader } from "~/components/SettingsChrome"
 import { Shell } from "~/components/Shell"
@@ -64,6 +62,8 @@ function SettingsPage() {
   const [timezone, setTimezone] = useState(data.site.timezone || "Asia/Shanghai")
   const ZONES = useMemo(() => timezoneOptions(timezone), [timezone])
   const [newDomain, setNewDomain] = useState(domain)
+  const [healthEnabled, setHealthEnabled] = useState(data.health?.enabled || false)
+  const [healthPath, setHealthPath] = useState(data.health?.path || "/")
   const [isPublic, setIsPublic] = useState(!!data.site.public)
   const [shareName, setShareName] = useState(t("公开报表"))
   const [ok, setOk] = useState("")
@@ -86,10 +86,10 @@ function SettingsPage() {
           domain={domain}
           name={name || data.site.name || ""}
           back={(
-            <Link to="/sites/$domain" params={{ domain }} className="squircle btn btn-secondary btn-sm settings-back">
+            <ActionLink to="/sites/$domain" params={{ domain }} className="btn-secondary settings-back">
               <BackArrow />
               {t("settings.back_stats")}
-            </Link>
+            </ActionLink>
           )}
         />
         <SettingsLayout navigationTitle={t(TABS.find(item=>item.id===tab)?.label || "设置")} sidebar={<SettingsNav label={t("站点设置")}>
@@ -101,7 +101,7 @@ function SettingsPage() {
             {tab === "general" ? <Tile icon="globe" title={t("站点详情")}>
               <SettingsForm onSubmit={async event => {
                 event.preventDefault()
-                const saved = await saveSettingsFn({data:{domain,name,timezone,newDomain,public:data.site.public}})
+                const saved = await saveSettingsFn({data:{domain,name,timezone,newDomain,public:data.site.public,...(data.health ? {healthEnabled,healthPath} : {})}})
                 if (saved.domain !== domain) await router.navigate({to:"/sites/$domain/settings",params:{domain:saved.domain},search:{tab:"general"}})
                 else await router.invalidate()
                 setOk(t("设置已保存"))
@@ -112,6 +112,8 @@ function SettingsPage() {
                   {ZONES.some(zone=>zone.value === timezone) ? null : <option value={timezone}>{timezone}</option>}
                   {ZONES.map(zone=><option key={zone.value} value={zone.value}>{t(zone.label)}</option>)}
                 </select></Field>
+                {data.health ? <Field label={t("站点检查")}><span className="flex items-center gap-3 text-sm text-gray-800"><input type="checkbox" checked={healthEnabled} onChange={event=>setHealthEnabled(event.target.checked)} />{t("开启检查")}</span></Field> : null}
+                {data.health && healthEnabled ? <Field label={t("检查路径")} hint={t("每 5 分钟访问一次，跟随跳转后返回 HTTP 200 视为正常。无需安装探针或统计脚本。")}><input className="squircle input" required maxLength={2048} value={healthPath} onChange={event=>setHealthPath(event.target.value)} placeholder="/" autoCapitalize="none" autoCorrect="off" spellCheck={false}/></Field> : null}
                 <FormActions><ActionButton className="btn btn-primary" type="submit">{t("保存设置")}</ActionButton></FormActions>
               </SettingsForm>
             </Tile> : null}

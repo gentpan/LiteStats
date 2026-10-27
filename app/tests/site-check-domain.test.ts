@@ -46,6 +46,17 @@ test("RDAP remains preferred whenever it supplies expiry; other suffixes never u
   expect(absent.calls).toEqual([])
 })
 
+test("who.ga supplies expiry when RDAP is unavailable or has no expiration", async () => {
+  const {lookup, calls} = fixture({
+    fetch: async url => {
+      expect(url.href).toBe("https://api.who.ga/example.com")
+      return {status: 200, location: null, url: url.href, body: JSON.stringify({domain: "example.com", expiresAt: "2027-08-13T04:00:00.000Z"})}
+    },
+  })
+  expect(await inspectDomain("example.com", lookup)).toEqual({domain: "example.com", expiresAt: "2027-08-13T04:00:00.000Z", error: null, retryable: false})
+  expect(calls).toEqual([])
+})
+
 test("CNNIC fallback covers bootstrap failures, RDAP errors, invalid responses and missing dates", async () => {
   const scenarios: Partial<Lookup>[] = [
     {bootstrap: async () => {throw new Error("Network unavailable")}},

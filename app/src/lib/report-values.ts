@@ -6,6 +6,25 @@ import { geographyLabel } from "./geography"
 
 type ReportValue = { name: string; label?: string; code?: string }
 
+const BROWSER_NAMES: Record<string, string> = {
+  "edge-chromium": "Edge",
+  "chromium-webview": "Chromium WebView",
+  "edge-ios": "Edge iOS",
+  yandexbrowser: "Yandex Browser",
+  fxios: "Firefox iOS",
+  android: "Android Browser",
+  ie: "Internet Explorer",
+  silk: "Amazon Silk",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  pie: "Android Browser",
+}
+
+export function browserDisplayName(name: string): string {
+  const value = name.trim()
+  return BROWSER_NAMES[value.toLowerCase()] || value
+}
+
 /** Resolve display text at render time so changing locale cannot leave stale labels. */
 export function reportValueLabel(kind: string | undefined, name: string, locale: Locale, label?: string, country?: string): string {
   if (kind === "language") return languageName(name, locale)
@@ -15,7 +34,7 @@ export function reportValueLabel(kind: string | undefined, name: string, locale:
   if ((kind === "browser" || kind === "os") && (!name.trim() || name.trim().toLowerCase() === "(none)")) {
     return translate(locale, "未知")
   }
-  return label || name
+  return kind === "browser" ? browserDisplayName(label || name) : label || name
 }
 
 /** Retain the stored key for search while exposing the current localized display value. */

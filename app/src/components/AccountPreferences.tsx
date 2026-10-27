@@ -1,6 +1,5 @@
 import { UserAvatar } from "./UserAvatar"
-import { UIIcon } from "~/components/UIIcon"
-import { ActionButton } from "~/components/ActionButton"
+import { ActionButton, ActionUpload } from "~/components/ActionButton"
 import { AccentPicker } from "~/components/AccentPicker"
 import { MapStylePicker } from "~/components/MapStylePicker"
 import { useEffect, useState } from "react"
@@ -58,11 +57,11 @@ export function AccountPreferences({ user, onSaved }: {
       <div className="settings-avatar-row">
         <UserAvatar avatar={avatar} gravatarUrl={user.gravatarUrl} name={name} className="settings-avatar-preview" alt={t("profile.avatar")} />
         <div className="settings-avatar-controls flex min-w-0 flex-wrap gap-2">
-          <label className="squircle btn btn-secondary settings-avatar-upload"><UIIcon name="user" />{t("profile.change_avatar")}<input type="file" accept="image/*" className="sr-only" disabled={processing} onChange={async event=>{
+          <ActionUpload icon="user" className="btn-secondary settings-avatar-upload" accept="image/*" disabled={processing} onChange={async event=>{
             const file=event.target.files?.[0];event.target.value="";if(!file)return
             setProcessing(true);setAvatarError("");setSaved(false)
             try {setAvatar(await resizeAvatar(file))} catch(err){setAvatarError(err instanceof Error ? err.message : t("无法读取图片"))} finally {setProcessing(false)}
-          }} /></label>
+          }}>{t("profile.change_avatar")}</ActionUpload>
           {avatar ? <ActionButton icon="trash" type="button" className="btn btn-secondary" onClick={()=>{setAvatar("");setSaved(false)}}>{t("profile.remove_avatar")}</ActionButton> : null}
         </div>
       </div>

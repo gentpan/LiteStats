@@ -1,6 +1,5 @@
 /* Search connections use one spacing contract for help, fields and actions. */
 .search-integrations { display:grid; gap:24px; min-width:0; }
-.search-integrations-intro { max-width:76ch; margin:0; font-size:13px; line-height:1.75; color:var(--color-gray-500); }
 .search-integration-section { display:grid; gap:20px; min-width:0; }
 .search-integration-section + .search-integration-section { padding-top:24px; border-top:1px solid var(--color-gray-200); }
 .search-integration-heading { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:16px; }

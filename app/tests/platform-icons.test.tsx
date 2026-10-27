@@ -2,6 +2,7 @@ import { expect, test } from "bun:test"
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { renderToStaticMarkup } from "react-dom/server"
 import { RowIcon } from "../src/components/icons"
+import { BrandIcon } from "../src/components/UIIcon"
 import { parseUa } from "../src/lib/ua"
 
 const publicRoot = new URL("../public/", import.meta.url)
@@ -24,25 +25,29 @@ function checkCases(kind: "browser" | "os", cases: [string[], string][]) {
 test("browsers and version aliases keep their own original-color local artwork", () => {
   checkCases("browser", [
     [["Chrome", "Chrome 145", "Google Chrome", "Chrome Mobile", "Chrome Mobile iOS 26", "Chrome Headless/145"], "/brands/platforms/chrome.svg"],
-    [["Chromium", "chromium 145"], "/brands/platforms/chromium.svg"],
+    [["Chromium", "chromium 145", "Chromium WebView", "chromium-webview"], "/brands/platforms/chromium.svg"],
+    [["Android Browser", "android", "pie"], "/brands/platforms/android.svg"],
+    [["Instagram", "instagram"], "/brands/sources/instagram.svg"],
+    [["Facebook", "facebook"], "/brands/sources/facebook.svg"],
     [["Safari", "Mobile Safari", "Safari Mobile 26"], "/brands/platforms/safari.svg"],
-    [["Firefox", "Firefox Mobile", "Firefox iOS 144"], "/brands/platforms/firefox.svg"],
-    [["Edge", "Microsoft Edge", "Edge Mobile 145"], "/brands/platforms/edge.svg"],
+    [["Firefox", "Firefox Mobile", "Firefox iOS 144", "fxios"], "/brands/platforms/firefox.svg"],
+    [["Edge", "Microsoft Edge", "Edge Mobile 145", "edge-chromium", "edge-ios"], "/brands/platforms/edge.svg"],
     [["Opera", "Opera Mini", "Opera Mobile 95"], "/brands/platforms/opera.svg"],
     [["Brave", "Brave Browser"], "/brands/platforms/brave-browser.svg"],
     [["Vivaldi"], "/brands/platforms/vivaldi.svg"],
-    [["Internet Explorer", "IE 11"], "/brands/platforms/internetexplorer.svg"],
+    [["Internet Explorer", "IE 11", "ie"], "/brands/platforms/internetexplorer.svg"],
     [["Samsung Browser", "Samsung Internet"], "/brands/platforms/samsung-browser.svg"],
     [["DuckDuckGo", "DuckDuckGo Browser", "DuckDuckGo Privacy Browser"], "/brands/platforms/duckduckgo.svg"],
     [["curl/8.5"], "/brands/platforms/curl.svg"],
     [["Ecosia"], "/brands/platforms/ecosia.svg"],
-    [["Yandex Browser"], "/images/icon/browser/yandex.png"],
+    [["Yandex Browser", "yandexbrowser"], "/images/icon/browser/yandex.png"],
     [["QQ Browser"], "/images/icon/browser/qq.png"],
     [["UC Browser"], "/images/icon/browser/uc.svg"],
     [["MIUI Browser"], "/images/icon/browser/miui.webp"],
     [["Huawei Browser", "Huawei Browser Mobile"], "/images/icon/browser/huawei.png"],
     [["vivo Browser"], "/images/icon/browser/vivo.png"],
   ])
+  expect(render("browser", "silk").html).toContain("fa-browser")
 })
 
 test("OS versions select the correct family, while unknown names keep a generic 16px icon", () => {
@@ -133,4 +138,10 @@ test("pinned The SVG assets are self-contained and preserve color plus license p
   const source = renderToStaticMarkup(<RowIcon kind="source" name="Google"/>)
   expect(source).toContain('/brands/sources/google.svg')
   expect(source).not.toContain("thesvg.org")
+})
+
+test("Google brand actions use the bundled color logo", () => {
+  const html = renderToStaticMarkup(<BrandIcon name="google"/>)
+  expect(html).toContain('src="/brands/sources/google.svg"')
+  expect(html).not.toContain("fa-google")
 })

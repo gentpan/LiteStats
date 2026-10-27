@@ -1,5 +1,5 @@
 import { TrackingSnippet } from "~/components/TrackingSnippet"
-import { ActionButton } from "~/components/ActionButton"
+import { ActionButton, ActionLink } from "~/components/ActionButton"
 import { Surface } from "~/components/Surface"
 import { UIIcon } from "~/components/UIIcon"
 import { Navigate } from "@tanstack/react-router"
@@ -42,10 +42,10 @@ function NewSitePage() {
       <SettingsHeader
         title={t("site.new_title")}
         back={(
-          <Link to="/dashboard" className="squircle btn btn-secondary btn-sm settings-back">
+          <ActionLink to="/dashboard" className="btn-secondary settings-back">
             <BackArrow />
             {t("settings.back_sites")}
-          </Link>
+          </ActionLink>
         )}
       />
       <div className="new-site-wizard mx-auto mt-6 min-w-0 w-full max-w-2xl pb-16">

@@ -8,8 +8,7 @@ import { countryName } from "~/lib/countries"
 import { numberShort } from "~/lib/format"
 import { MapboxVisitorMap } from "./MapboxVisitorMap"
 import { HelpHint } from "./HelpHint"
-import { useMapStyle } from "~/lib/map-style-preference"
-import { readMapFlags, saveMapFlags } from "~/lib/map-flags-preference"
+import { readMapFlags, saveMapFlags, useMapStyle } from "~/lib/map-preferences"
 import {
   COUNTRIES_BY_TWO_LETTER_CODE,
   loadWorldMap,

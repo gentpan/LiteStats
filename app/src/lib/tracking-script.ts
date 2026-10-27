@@ -10,13 +10,22 @@ export const trackingScript = `(() => {
   installed[trackerKey] = true;
   const trackOutbound = s.getAttribute("data-outbound") !== "false";
   const trackFiles = s.getAttribute("data-file-downloads") !== "false";
+  const visitor = (function () {
+    const key = "litestats:visitor-id";
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved && /^[A-Za-z0-9_-]{8,64}$/.test(saved)) return saved;
+      const id = window.crypto && typeof window.crypto.randomUUID === "function" ? window.crypto.randomUUID() : "v" + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+      localStorage.setItem(key, id);
+      return id;
+    } catch (e) { return ""; }
+  })();
   let pageKey = "";
   const entryReferrer = document.referrer;
   function beacon(body) {
     try { if (navigator.sendBeacon) navigator.sendBeacon(endpoint, new Blob([body], { type: "text/plain;charset=UTF-8" })); } catch (e) {}
   }
   function deliver(body, attempt) {
-    if (navigator.doNotTrack === "1" || navigator.globalPrivacyControl === true) return;
     if (typeof fetch !== "function") { beacon(body); return; }
     try {
       fetch(endpoint, { method: "POST", body, headers: { "Content-Type": "text/plain;charset=UTF-8" }, credentials: "omit", keepalive: true }).then(function (response) {
@@ -34,7 +43,7 @@ export const trackingScript = `(() => {
     try {
       const body = JSON.stringify(Object.assign({
         n: "pageview", d: domain, u: location.href, r: entryReferrer, w: innerWidth,
-        t: document.title || "", l: navigator.language || "",
+        v: visitor || undefined, t: document.title || "", l: navigator.language || "",
         s: (screen.width && screen.height) ? (screen.width + "x" + screen.height) : ""
       }, payload || {}));
       deliver(body, 0);

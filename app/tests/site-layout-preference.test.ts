@@ -8,7 +8,7 @@ import {
 } from "../src/lib/site-layout-preference"
 
 test("site layout bootstrap restores both layouts without changing color or dark mode", () => {
-  for (const value of ["list", "grid"]) {
+  for (const value of ["list", "grid", "compact"]) {
     const dataset = { theme: "dark", accent: "green", siteLayout: "list" }
     const keys: string[] = []
     runInNewContext(SITE_LAYOUT_BOOTSTRAP_SCRIPT, {
@@ -80,7 +80,7 @@ test("server rendering and malformed DOM values return a stable list snapshot", 
     if (descriptor) Object.defineProperty(globalThis, "document", descriptor)
   }
   withBrowser((_browser, dataset) => {
-    for (const value of ["list", "grid"] as const) {
+    for (const value of ["list", "grid", "compact"] as const) {
       dataset.siteLayout = value
       expect(readSiteLayout()).toBe(value)
     }

@@ -72,6 +72,7 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
         </div> : null}
         filterOptions={{page:data.pages,source:data.sources.map(row=>({...row,label:isDirectSource(row.name) ? t("直接访问") : row.name})),country:data.countries.map(row=>({...row,label:countryName(row.name,locale)})),device:data.devices,browser:data.browsers,os:data.os}}
         search={search}
+        health={data.health}
         onPeriod={go}
         readonly={readonly}
         canManage={canManage}
