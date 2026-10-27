@@ -13,7 +13,7 @@
   <a href="https://github.com/gentpan/LiteStats/commits"><img src="https://img.shields.io/github/last-commit/gentpan/LiteStats?style=flat-square" alt="Last commit"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/github/license/gentpan/LiteStats?style=flat-square&color=4f46e5" alt="License"></a>
   <a href="https://bun.sh/"><img src="https://img.shields.io/badge/Bun-1.4%2B-000000?logo=bun&logoColor=white&style=flat-square" alt="Bun 1.4+"></a>
-  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-22-339933?logo=nodedotjs&logoColor=white&style=flat-square" alt="Node.js 22"></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-26-339933?logo=nodedotjs&logoColor=white&style=flat-square" alt="Node.js 26"></a>
   <a href="./deploy/README.md"><img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white&style=flat-square" alt="Docker Ready"></a>
 </p>
 

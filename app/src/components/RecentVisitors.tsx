@@ -30,13 +30,13 @@ export function RecentVisitors({domain,onClose}:{domain:string;onClose:()=>void}
       finally {pending=false;if(!disposed)setBusy(false)}
     }
     void load()
-    const timer=setInterval(()=>{if(document.visibilityState==="visible")void load()},15000)
+    const timer=setInterval(()=>{if(document.visibilityState==="visible")void load()},30000)
     return()=>{disposed=true;clearInterval(timer)}
   },[domain,refresh])
   const format=(value:string)=>new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "zh-CN",{timeZone:data?.timezone || "UTC",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).format(new Date(value))
   const rows=data?.rows.filter(row=>!onlyActive || row.active) || []
   return createPortal(<dialog ref={dialog} className="squircle recent-visitors-dialog" aria-labelledby="recent-visitors-title" onCancel={onClose} onClick={event=>{if(event.target===event.currentTarget)onClose()}}>
-    <header><div className="flex min-w-0 items-center gap-2"><h2 id="recent-visitors-title">{t("最近访客")}</h2><HelpHint><p>{t("近 5 分钟有事件上报视为活跃，不代表持续连接在线。")}</p><p>{t("全站最近访客，不受统计页日期和筛选影响；每 15 秒刷新。")}</p><p>{t("匿名标识用于区分访客，不包含姓名或原始 IP。")}</p></HelpHint></div><ActionButton className="ui-icon-button" aria-label={t("关闭")} onClick={onClose}><UIIcon name="close"/></ActionButton></header>
+    <header><div className="flex min-w-0 items-center gap-2"><h2 id="recent-visitors-title">{t("最近访客")}</h2><HelpHint><p>{t("近 5 分钟有事件上报视为活跃，不代表持续连接在线。")}</p><p>{t("全站最近访客，不受统计页日期和筛选影响；每 30 秒刷新。")}</p><p>{t("匿名标识用于区分访客，不包含姓名或原始 IP。")}</p></HelpHint></div><ActionButton className="ui-icon-button" aria-label={t("关闭")} onClick={onClose}><UIIcon name="close"/></ActionButton></header>
     <div className="recent-visitors-controls"><div className="squircle segmented-control" role="group" aria-label={t("访客范围")}><button className="squircle" aria-pressed={!onlyActive} onClick={()=>setOnlyActive(false)}>{t("近 30 分钟")} <strong>{data?.total ?? "—"}</strong></button><button className="squircle" aria-pressed={onlyActive} onClick={()=>setOnlyActive(true)}>{t("当前活跃")} <strong>{data?.online ?? "—"}</strong></button></div><ActionButton icon="refresh" disabled={busy} onClick={()=>setRefresh(n=>n+1)}>{t(busy ? "刷新中…" : "刷新")}</ActionButton></div>
     {error ? <p role="alert" className="squircle settings-feedback is-error">{t("刷新失败，请重试")}</p> : null}
     <div className="recent-visitors-list">

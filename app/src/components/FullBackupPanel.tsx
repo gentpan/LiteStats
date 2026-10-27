@@ -4,7 +4,7 @@ import {Field} from "./SettingsForm"
 import {Tile} from "./ui"
 import {useT} from "~/lib/i18n"
 import {formatTimestamp} from "~/lib/format"
-import type {FullBackupList,FullBackupJob,FullBackupSummary} from "~/lib/instance-backup-types"
+import type {FullBackupList,FullBackupJob,FullBackupSummary} from "~/lib/instance-backup-handler"
 const endpoint="/api/instance-backups",storageKey="litestats.full-backup-job"
 const phases:Record<string,string>={prepared:"准备完成",validating:"正在校验备份",pausing:"正在暂停应用","backing-up":"正在备份两个数据库","safety-backup":"正在保存恢复前备份",restoring:"正在还原到新数据库",restarting:"正在重启并检查应用",completed:"操作完成",failed:"操作失败",interrupted:"作业中断"}
 async function result<T>(response:Response):Promise<T>{

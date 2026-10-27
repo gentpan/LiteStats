@@ -4,6 +4,7 @@ import { PageState } from "~/components/PageState"
 import { Shell } from "~/components/Shell"
 import { shareDashboardFn } from "~/lib/actions"
 import { dashInput, parseDashSearch, type DashSearch } from "~/lib/range"
+import { useRouterAutoRefresh } from "~/lib/router-refresh"
 
 export const Route = createFileRoute("/share/$slug")({
   validateSearch: (search: Partial<DashSearch> & SearchSchemaInput) => parseDashSearch(search),
@@ -23,6 +24,7 @@ function SharePage() {
   const search = Route.useSearch()
   const { slug } = Route.useParams()
   const router = useRouter()
+  useRouterAutoRefresh()
   return <Shell layout="analytics"><AnalyticsDashboard data={data} domain={data.site.domain} search={search}
     onSearch={next => { void router.navigate({to: "/share/$slug", params: {slug}, search: next}) }}
   /></Shell>

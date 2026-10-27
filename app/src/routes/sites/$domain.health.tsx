@@ -1,13 +1,14 @@
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Shell } from "~/components/Shell"
-import { ManagementHeader } from "~/components/ManagementHeader"
+import { ManagementHeader } from "~/components/SettingsChrome"
 import { PageState } from "~/components/PageState"
 import { ActionButton, ActionLink } from "~/components/ActionButton"
 import { SiteHealthPanel } from "~/components/SiteHealthPanel"
 import { meFn } from "~/lib/actions"
 import { siteCheckFn, runSiteCheckFn } from "~/lib/site-check-actions"
 import { useT } from "~/lib/i18n"
+import { useRouterAutoRefresh } from "~/lib/router-refresh"
 
 export const Route = createFileRoute("/sites/$domain/health")({
   loader: async ({params}) => {
@@ -26,15 +27,7 @@ function SiteHealthPage() {
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
-  useEffect(() => {
-    let refreshing = false
-    const timer = setInterval(() => {
-      if (document.visibilityState !== "visible" || refreshing || pending) return
-      refreshing = true
-      void router.invalidate().catch(() => setError(t("刷新失败，请重试"))).finally(() => {refreshing = false})
-    }, 30_000)
-    return () => clearInterval(timer)
-  }, [router, pending, t])
+  useRouterAutoRefresh({enabled: !pending, onError: () => setError(t("刷新失败，请重试"))})
   async function perform(action: () => Promise<unknown>) {
     setPending(true); setError("")
     try { await action(); await router.invalidate() }

@@ -6,7 +6,6 @@ import { MAPBOX_STYLES, type MapboxStyleId } from "~/lib/mapbox-styles"
 import { useMapStyle } from "~/lib/map-preferences"
 import { saveMapStyleFn } from "~/lib/mapbox-actions"
 import { useT } from "~/lib/i18n"
-import "~/styles/map-style-picker.css"
 
 export function MapStylePicker() {
   const {t} = useT()

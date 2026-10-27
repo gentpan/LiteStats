@@ -1,7 +1,7 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router"
 import { useRef, useState } from "react"
 import { Shell } from "~/components/Shell"
-import { ManagementHeader } from "~/components/ManagementHeader"
+import { ManagementHeader } from "~/components/SettingsChrome"
 import { HelpHint } from "~/components/HelpHint"
 import { PageState } from "~/components/PageState"
 import { ActionLink } from "~/components/ActionButton"

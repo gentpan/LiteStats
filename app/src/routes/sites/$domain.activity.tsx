@@ -1,6 +1,6 @@
-import { ManagementHeader } from "~/components/ManagementHeader"
+import { ManagementHeader } from "~/components/SettingsChrome"
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { ActivityLog } from "~/components/ActivityLog"
 import { ActionButton, ActionLink } from "~/components/ActionButton"
 import { PageState } from "~/components/PageState"
@@ -9,6 +9,7 @@ import { SiteSwitcher } from "~/components/SiteSwitcher"
 import { UIIcon } from "~/components/UIIcon"
 import { activityFn, meFn } from "~/lib/actions"
 import { useT } from "~/lib/i18n"
+import { useRouterAutoRefresh } from "~/lib/router-refresh"
 
 type Window = "30m" | "24h" | "7d"
 export const Route = createFileRoute("/sites/$domain/activity")({
@@ -31,16 +32,7 @@ function ActivityPage() {
   const [auto,setAuto]=useState(true)
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState("")
-  useEffect(()=>{
-    if(!auto)return
-    let updating=false
-    const id=setInterval(()=>{
-      if(document.visibilityState!=="visible" || updating)return
-      updating=true
-      void router.invalidate().catch(()=>setError(t("刷新失败，请重试"))).finally(()=>{updating=false})
-    },30000)
-    return ()=>clearInterval(id)
-  },[auto,router,t])
+  useRouterAutoRefresh({enabled: auto, onError: () => setError(t("刷新失败，请重试"))})
   return <Shell user={me}>
     <ManagementHeader title={t("活动日志")}><ActionLink to="/sites/$domain" params={{domain}}><UIIcon name="arrow" className="rotate-180"/>{t("返回统计")}</ActionLink></ManagementHeader>
     <div className="squircle activity-page-toolbar"><SiteSwitcher domain={domain}/><div>

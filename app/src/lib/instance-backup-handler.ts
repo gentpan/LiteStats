@@ -1,5 +1,9 @@
 import {readJson} from "./request-validation"
-import type {FullBackupJob} from "./instance-backup-types"
+
+export type FullBackupSummary={createdAt:string;sites:number;users:number;events:number;release:string}
+export type FullBackupItem={id:string;bytes:number;createdAt:string;summary?:FullBackupSummary}
+export type FullBackupList={available:boolean;items:FullBackupItem[];active:string|null;maxUploadBytes:number}
+export type FullBackupJob={id:string;kind:"backup"|"verify"|"restore";archive:string;state:"prepared"|"running"|"succeeded"|"failed";phase:string;summary?:FullBackupSummary;error?:string;ticket?:string}
 
 type Agent=(path:string,options?:{method?:string;body?:BodyInit|null;headers?:Record<string,string>})=>Promise<Response>
 type Dependencies={admin:()=>Promise<{id:number}>;password:(id:number,password:string)=>Promise<boolean>;agent:Agent;hold:()=>Promise<()=>void>}

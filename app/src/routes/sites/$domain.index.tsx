@@ -1,10 +1,10 @@
-import { useEffect } from "react"
 import { Navigate, createFileRoute, redirect, useRouter, type SearchSchemaInput } from "@tanstack/react-router"
 import { AnalyticsDashboard } from "~/components/AnalyticsDashboard"
 import { PageState } from "~/components/PageState"
 import { Shell } from "~/components/Shell"
 import { dashboardFn, meFn } from "~/lib/actions"
 import { compactDashSearch, dashInput, parseDashSearch, type DashSearch } from "~/lib/range"
+import { useRouterAutoRefresh } from "~/lib/router-refresh"
 
 export const Route = createFileRoute("/sites/$domain/")({
   validateSearch: (search: Partial<DashSearch> & SearchSchemaInput) => parseDashSearch(search),
@@ -33,10 +33,7 @@ function Dashboard() {
   const { domain } = Route.useParams()
   const search = Route.useSearch()
   const router = useRouter()
-  useEffect(() => {
-    const id = window.setInterval(() => { if (document.visibilityState === "visible") void router.invalidate() }, search.period === "realtime" ? 8000 : 20000)
-    return () => window.clearInterval(id)
-  }, [router, search.period])
+  useRouterAutoRefresh()
   if (!me && !data.site.public) return <Navigate to="/login" />
   return <Shell user={me} layout="analytics"><AnalyticsDashboard data={data} domain={domain} search={search}
     readonly={!data.access.member} canManage={data.access.canManage}

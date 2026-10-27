@@ -8,8 +8,8 @@ import {
 } from "../src/lib/site-layout-preference"
 
 test("site layout bootstrap restores both layouts without changing color or dark mode", () => {
-  for (const value of ["list", "grid", "compact"]) {
-    const dataset = { theme: "dark", accent: "green", siteLayout: "list" }
+  for (const value of ["grid", "compact"]) {
+    const dataset = { theme: "dark", accent: "green", siteLayout: "compact" }
     const keys: string[] = []
     runInNewContext(SITE_LAYOUT_BOOTSTRAP_SCRIPT, {
       document: { documentElement: { dataset } },
@@ -27,21 +27,21 @@ test("invalid or blocked storage retains the existing list default before hydrat
       document: { documentElement: { dataset } },
       localStorage: { getItem: () => value },
     })
-    expect(dataset.siteLayout).toBe("list")
+    expect(dataset.siteLayout).toBe("compact")
   }
   const dataset: Record<string, string> = {}
   runInNewContext(SITE_LAYOUT_BOOTSTRAP_SCRIPT, {
     document: { documentElement: { dataset } },
     get localStorage() { throw new Error("Storage unavailable") },
   })
-  expect(dataset.siteLayout).toBe("list")
+  expect(dataset.siteLayout).toBe("compact")
 })
 
 // Keep these browser stubs synchronous and restore every descriptor even when an
 // assertion fails; the rest of the suite also renders UI on the server.
 function withBrowser(run: (browser: EventTarget, dataset: Record<string, string>, storage: StorageStub) => void) {
   const descriptors = Object.fromEntries(["document", "window", "localStorage"].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
-  const dataset: Record<string, string> = { theme: "dark", accent: "green", siteLayout: "list" }
+  const dataset: Record<string, string> = { theme: "dark", accent: "green", siteLayout: "compact" }
   const browser = new EventTarget()
   const values = new Map<string, string>()
   const storage = {
@@ -75,21 +75,21 @@ test("server rendering and malformed DOM values return a stable list snapshot", 
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, "document")
   try {
     Reflect.deleteProperty(globalThis, "document")
-    expect(readSiteLayout()).toBe("list")
+    expect(readSiteLayout()).toBe("compact")
   } finally {
     if (descriptor) Object.defineProperty(globalThis, "document", descriptor)
   }
   withBrowser((_browser, dataset) => {
-    for (const value of ["list", "grid", "compact"] as const) {
+    for (const value of ["grid", "compact"] as const) {
       dataset.siteLayout = value
       expect(readSiteLayout()).toBe(value)
     }
     for (const value of ["", "GRID", "other", "__proto__"]) {
       dataset.siteLayout = value
-      expect(readSiteLayout()).toBe("list")
+      expect(readSiteLayout()).toBe("compact")
     }
     delete dataset.siteLayout
-    expect(readSiteLayout()).toBe("list")
+    expect(readSiteLayout()).toBe("compact")
   })
 })
 
@@ -103,8 +103,8 @@ test("layout changes persist and notify while blocked storage still permits loca
       expect(storage.values.get("litestats:site-layout")).toBe("grid")
       expect(changes).toBe(1)
       storage.blocked = true
-      expect(setSiteLayout("list")).toBe(false)
-      expect(readSiteLayout()).toBe("list")
+      expect(setSiteLayout("compact")).toBe(false)
+      expect(readSiteLayout()).toBe("compact")
       expect(storage.values.get("litestats:site-layout")).toBe("grid")
       expect(changes).toBe(2)
       expect(dataset.theme).toBe("dark")
@@ -130,20 +130,20 @@ test("other tabs synchronize layout; unrelated and session storage events are ig
       expect(readSiteLayout()).toBe("grid")
       expect(changes).toBe(1)
       dispatchStorage("litestats:accent", "blue")
-      dispatchStorage("litestats:site-layout", "list", {})
+      dispatchStorage("litestats:site-layout", "compact", {})
       expect(readSiteLayout()).toBe("grid")
       expect(changes).toBe(1)
       dispatchStorage("litestats:site-layout", "malformed")
-      expect(readSiteLayout()).toBe("list")
+      expect(readSiteLayout()).toBe("compact")
       dispatchStorage("litestats:site-layout", "grid")
       dispatchStorage(null, null)
-      expect(readSiteLayout()).toBe("list")
+      expect(readSiteLayout()).toBe("compact")
       expect(changes).toBe(4)
       expect(dataset.theme).toBe("dark")
       expect(dataset.accent).toBe("green")
       stop()
       dispatchStorage("litestats:site-layout", "grid")
-      expect(readSiteLayout()).toBe("list")
+      expect(readSiteLayout()).toBe("compact")
       expect(changes).toBe(4)
     } finally { stop() }
   })

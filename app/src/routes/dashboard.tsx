@@ -10,6 +10,7 @@ import { numberShort } from "~/lib/format"
 import { useT } from "~/lib/i18n"
 import { readSiteLayout, setSiteLayout, subscribeSiteLayout, type SiteLayout } from "~/lib/site-layout-preference"
 import { expiryState } from "~/lib/site-check-view"
+import { useRouterAutoRefresh } from "~/lib/router-refresh"
 
 export const Route = createFileRoute("/dashboard")({
   validateSearch: (search: Record<string, unknown>): {gsc?: "expired"} => ({gsc: search.gsc === "expired" ? "expired" : undefined}),
@@ -27,8 +28,9 @@ function DashboardPage() {
   const { t } = useT()
   const [q, setQ] = useState("")
   const [menu, setMenu] = useState<string | null>(null)
-  const layout = useSyncExternalStore(subscribeSiteLayout, readSiteLayout, () => "list")
+  const layout = useSyncExternalStore(subscribeSiteLayout, readSiteLayout, () => "compact")
   const [layoutSaveFailed, setLayoutSaveFailed] = useState(false)
+  useRouterAutoRefresh()
   function changeLayout(value: SiteLayout) {
     setMenu(null)
     setLayoutSaveFailed(!setSiteLayout(value))
@@ -103,10 +105,6 @@ function DashboardPage() {
                 <UIIcon name="grid" className="size-4" />
                 <span className="management-tool-label">{t("卡片")}</span>
               </button>
-              <button className="squircle btn" data-layout="list" type="button" aria-label={t("列表")} title={t("列表")} aria-pressed={layout === "list"} onClick={() => changeLayout("list")}>
-                <UIIcon name="list" className="size-4" />
-                <span className="management-tool-label">{t("列表")}</span>
-              </button>
               <button className="squircle btn" data-layout="compact" type="button" aria-label={t("紧凑")} title={t("紧凑")} aria-pressed={layout === "compact"} onClick={() => changeLayout("compact")}>
                 <UIIcon name="activity" className="size-4" />
                 <span className="management-tool-label">{t("紧凑")}</span>
@@ -139,11 +137,10 @@ function DashboardPage() {
                     <div className="management-site-identity flex w-full items-center gap-x-2.5">
                       <SiteFavicon domain={site.domain} className="size-[18px]" />
                       <div className="management-site-name min-w-0 flex-1">
-                        <h3 title={site.name || site.domain} className="management-site-title text-base leading-6 font-semibold text-gray-900">{site.name || site.domain}</h3>
-                        {site.name && site.name.toLowerCase() !== site.domain.toLowerCase() ? (
-                          <p title={site.domain} className="truncate text-xs font-normal text-gray-400 mt-0.5">{site.domain}</p>
-                        ) : null}
-                        <p className="management-site-ssl"><UIIcon name="shield"/>SSL {expiryState(site.certificateExpiresAt, now).days ?? "—"}{expiryState(site.certificateExpiresAt, now).days === null ? "" : ` ${t("天")}`}</p>
+                        <div className="management-site-heading">
+                          <h3 title={site.name || site.domain} className="management-site-title text-base leading-6 font-semibold text-gray-900">{site.name || site.domain}</h3>
+                          <p className={`management-site-ssl${(expiryState(site.certificateExpiresAt, now).days ?? Infinity) < 30 ? " is-expiring" : ""}`}><UIIcon name="shield"/>SSL {expiryState(site.certificateExpiresAt, now).days ?? "—"}{expiryState(site.certificateExpiresAt, now).days === null ? "" : ` ${t("天")}`}</p>
+                        </div>
                       </div>
                     </div>
                     <div className="management-site-data">
@@ -151,19 +148,22 @@ function DashboardPage() {
                         <span className="h-12 max-w-sm text-indigo-500 sm:max-w-none">
                           <Sparkline values={site.sparkline || []} />
                         </span>
-                        <div className="flex items-end justify-between max-lg:col-span-full">
+                        <div className="flex items-center justify-between max-lg:col-span-full">
                           <div className="flex flex-col">
                             <p className="text-lg font-bold text-gray-900 sm:text-xl">{numberShort(site.visitors || 0)}</p>
                             <p className="text-gray-600">{site.visitors === 1 ? t("位访客（近 24 小时）") : t("位访客（近 24 小时）")}</p>
                           </div>
-                          <p className="text-sm text-gray-900">
-                            {site.change > 0 ? (
-                              <UIIcon name="arrow-up-right" className="mr-0.5 inline-block h-3 w-3 text-green-500" />
-                            ) : site.change < 0 ? (
-                              <UIIcon name="arrow-down-right" className="mr-0.5 inline-block h-3 w-3 text-red-500" />
-                            ) : null}
-                            {Math.abs(site.change || 0)}%
-                          </p>
+                          <div className="management-site-trend">
+                            <p className="management-site-online"><i/>{t("当前在线")} {site.live}</p>
+                            <p className="text-sm text-gray-900">
+                              {site.change > 0 ? (
+                                <UIIcon name="arrow-up-right" className="mr-0.5 inline-block h-3 w-3 text-green-500" />
+                              ) : site.change < 0 ? (
+                                <UIIcon name="arrow-down-right" className="mr-0.5 inline-block h-3 w-3 text-red-500" />
+                              ) : null}
+                              {Math.abs(site.change || 0)}%
+                            </p>
+                          </div>
                         </div>
                       </>}
                     </div>
@@ -204,7 +204,10 @@ export function CompactMetrics({site}: {site: Awaited<ReturnType<typeof sitesFn>
     [t("浏览量"), site.pageviews],
     [t("当前在线"), site.live],
   ]
-  return <div className="management-compact-metrics">{metrics.map(([label,value]) => <div key={label}><strong>{numberShort(value)}</strong><span>{label}</span></div>)}</div>
+  return <>
+    <span className="management-compact-spark"><Sparkline values={site.sparkline}/></span>
+    <div className="management-compact-metrics">{metrics.map(([label,value]) => <div key={label} className={label === t("当前在线") ? "is-online" : ""}><strong>{numberShort(value)}</strong><span>{label}</span></div>)}</div>
+  </>
 }
 
 function Sparkline({ values }: { values: number[] }) {
@@ -216,7 +219,7 @@ function Sparkline({ values }: { values: number[] }) {
   const d = pts.map((v, i) => `${i === 0 ? "M" : "L"}${i * step},${h - (v / max) * (h - 4) - 2}`).join(" ")
   const area = `${d} L${(pts.length - 1) * step},${h} L0,${h} Z`
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="h-12 w-full">
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-12 w-full">
       <path d={area} fill="currentColor" opacity="0.12" />
       <path d={d} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
     </svg>
