@@ -99,13 +99,16 @@ test("runtime favicon synchronization is idempotent, accepts only known colors, 
   }
 })
 
-test("all favicon variants keep a full-bleed background and raised white bars", () => {
+test("all favicon variants use the page LogoMark geometry", () => {
   const base = readFileSync(new URL("../public/favicon.svg", import.meta.url), "utf8")
   for (const [, path, color] of variants) {
     const svg = readFileSync(new URL(`../public${path.split("?")[0]}`, import.meta.url), "utf8")
     expect(svg).toBe(base.replace("#4f46e5", color))
-    expect(svg).toContain('viewBox="0.25 0.25 63.5 63.5"')
-    expect(svg).toContain('<g fill="#fff" transform="translate(0 -3)">')
+    expect(svg).toContain('viewBox="0 0 64 64"')
+    expect(svg).toContain('<g fill="#fff">')
+    expect(svg).toContain('<rect x="16" y="35" width="8" height="14" rx="2.5"/>')
+    expect(svg).toContain('<rect x="28" y="15" width="8" height="34" rx="2.5"/>')
+    expect(svg).toContain('<rect x="40" y="25" width="8" height="24" rx="2.5"/>')
     expect(svg.match(/<rect /g)).toHaveLength(3)
   }
 })
