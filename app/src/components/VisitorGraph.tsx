@@ -2,6 +2,7 @@ import { Surface } from "~/components/Surface"
 import { useT } from "~/lib/i18n"
 import { TrendChart } from "~/components/TrendChart"
 import { Card, formatDuration } from "~/components/ui"
+import { numberShort } from "~/lib/format"
 import type { VisitorMode } from "~/lib/visitor-mode-preference"
 import type { MetricKey, Overview, SeriesBy } from "~/lib/ch"
 import type { Point } from "~/lib/ch"
@@ -30,13 +31,17 @@ export function VisitorGraph({
   realtime?: boolean
   onZoom?: (date: string) => void
 }) {
-  const { t } = useT()
+  const { t, locale } = useT()
   const sessions = visitorMode === "sessions"
+  const visitorValue = sessions ? overview.session_visitors : overview.visitors
+  const visitorText = overview.visitors !== overview.session_visitors && numberShort(overview.visitors) === numberShort(overview.session_visitors)
+    ? visitorValue.toLocaleString(locale)
+    : undefined
   const points = sessions && metric === "visitors" ? seriesBy?.session_visitors || series : seriesBy?.[metric] || series
   return (
     <Surface className="visitor-graph analytics-panel col-span-full">
       <div className="metric-grid">
-        <Card icon="user" index={0} label={t(sessions ? "会话访客" : "独立访客")} selected={metric === "visitors"} onSelect={() => onMetric("visitors")} value={sessions ? overview.session_visitors : overview.visitors} prev={sessions ? compare.session_visitors : compare.visitors} />
+        <Card icon="user" index={0} label={t(sessions ? "会话访客" : "独立访客")} selected={metric === "visitors"} onSelect={() => onMetric("visitors")} value={visitorValue} text={visitorText} prev={sessions ? compare.session_visitors : compare.visitors} />
         <Card icon="activity" index={1} label={t("访问次数")} selected={metric === "visits"} onSelect={() => onMetric("visits")} value={overview.visits} prev={compare.visits} />
         <Card icon="eye" index={2} label={t("浏览量")} selected={metric === "pageviews"} onSelect={() => onMetric("pageviews")} value={overview.pageviews} prev={compare.pageviews} />
         <Card icon="copy" index={3} label={t("每次访问浏览量")} selected={metric === "views_per_visit"} onSelect={() => onMetric("views_per_visit")} value={overview.views_per_visit} prev={compare.views_per_visit} text={overview.views_per_visit.toFixed(2)} />

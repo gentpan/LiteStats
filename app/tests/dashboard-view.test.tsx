@@ -3,6 +3,7 @@ import { renderToString } from "react-dom/server"
 import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from "@tanstack/react-router"
 import type { ComponentProps } from "react"
 import { AnalyticsDashboard } from "../src/components/AnalyticsDashboard"
+import { VisitorGraph } from "../src/components/VisitorGraph"
 import { I18nProvider, type Locale } from "../src/lib/i18n"
 import { List } from "../src/components/ui"
 import { parseDashSearch } from "../src/lib/range"
@@ -50,6 +51,17 @@ test("member and share views retain the same metrics, report groups and active f
     expect(html).not.toContain("Google Maps")
     expect(html).not.toContain("Mapbox")
   }
+})
+
+test("visitor modes reveal different values when compact labels would be identical", () => {
+  const overview = {...data.overview, visitors: 13338, session_visitors: 13373}
+  const graph = (visitorMode: "persistent" | "sessions") => renderToString(
+    <I18nProvider locale="zh-CN"><VisitorGraph overview={overview} compare={data.compare} series={[]} seriesBy={data.seriesBy}
+      metric="visitors" visitorMode={visitorMode} onMetric={() => {}} /></I18nProvider>,
+  )
+  expect(graph("persistent")).toContain("13,338")
+  expect(graph("sessions")).toContain("13,373")
+  expect(graph("persistent")).not.toContain("13.3k")
 })
 
 test("member dashboard shows compact health status while shared views keep it private", async () => {
