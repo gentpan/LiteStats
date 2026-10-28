@@ -272,7 +272,7 @@ export function DashTopBar({
                     <button type="button" aria-pressed={visitorMode === "sessions"} className="squircle rounded px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-900" onClick={() => onVisitorMode("sessions")}>{t("会话访客")}</button>
                   </div>
                 </div>
-                <p className="px-4 pb-2 text-xs leading-relaxed font-normal text-gray-500">{t(visitorMode === "sessions" ? "按每月匿名身份去重，多次访问只计一次；IP、浏览器标识或月份变化会重新计数，接近 Umami 访客口径。" : "按持久匿名 ID 去重，同一访客的多次访问只计一次，更适合 UV。")}</p>
+                <p className="px-4 pb-2 text-xs leading-relaxed font-normal text-gray-500">{t(visitorMode === "sessions" ? "按每月匿名身份去重，多次访问只计一次；IP、浏览器标识或月份变化会重新计数。" : "按持久匿名 ID 去重，同一访客的多次访问只计一次，更适合 UV。")}</p>
                 <button
                   type="button"
                   className="squircle control-menu-item flex w-full items-center justify-between rounded-md px-4 py-2.5 text-sm leading-tight hover:bg-gray-100 hover:text-gray-900"
