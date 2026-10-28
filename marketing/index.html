@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="LiteStats 是简单、隐私友好的网站统计平台。实时了解访客、来源、页面和地区，支持自托管与多用户管理。">
+  <meta name="theme-color" content="#15803d">
+  <title>LiteStats · 简单、隐私友好的网站统计</title>
+  <link rel="icon" href="/favicon-green.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav container" aria-label="主导航">
+      <a class="brand" href="/" aria-label="LiteStats 首页">
+        <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M63.75 32L63.7 37.15L63.57 40.17L63.34 42.68L63.02 44.89L62.62 46.9L62.12 48.74L61.53 50.43L60.85 52L60.07 53.46L59.21 54.81L58.25 56.05L57.2 57.2L56.05 58.25L54.81 59.21L53.46 60.07L52 60.85L50.43 61.53L48.74 62.12L46.9 62.62L44.89 63.02L42.68 63.34L40.17 63.57L37.15 63.7L32 63.75L26.85 63.7L23.83 63.57L21.32 63.34L19.11 63.02L17.1 62.62L15.26 62.12L13.57 61.53L12 60.85L10.54 60.07L9.19 59.21L7.95 58.25L6.8 57.2L5.75 56.05L4.79 54.81L3.93 53.46L3.15 52L2.47 50.43L1.88 48.74L1.38 46.9L0.98 44.89L0.66 42.68L0.43 40.17L0.3 37.15L0.25 32L0.3 26.85L0.43 23.83L0.66 21.32L0.98 19.11L1.38 17.1L1.88 15.26L2.47 13.57L3.15 12L3.93 10.54L4.79 9.19L5.75 7.95L6.8 6.8L7.95 5.75L9.19 4.79L10.54 3.93L12 3.15L13.57 2.47L15.26 1.88L17.1 1.38L19.11 0.98L21.32 0.66L23.83 0.43L26.85 0.3L32 0.25L37.15 0.3L40.17 0.43L42.68 0.66L44.89 0.98L46.9 1.38L48.74 1.88L50.43 2.47L52 3.15L53.46 3.93L54.81 4.79L56.05 5.75L57.2 6.8L58.25 7.95L59.21 9.19L60.07 10.54L60.85 12L61.53 13.57L62.12 15.26L62.62 17.1L63.02 19.11L63.34 21.32L63.57 23.83L63.7 26.85Z"/><g fill="#fff"><rect x="16" y="35" width="8" height="14" rx="2.5"/><rect x="28" y="15" width="8" height="34" rx="2.5"/><rect x="40" y="25" width="8" height="24" rx="2.5"/></g></svg>
+        <span>LiteStats</span>
+      </a>
+      <input class="nav-toggle" id="nav-toggle" type="checkbox" aria-label="展开导航">
+      <label class="nav-toggle-label" for="nav-toggle" aria-hidden="true"><span></span><span></span><span></span></label>
+      <div class="nav-links">
+        <a href="#features">产品功能</a>
+        <a href="#privacy">隐私保护</a>
+        <a href="#self-host">自托管</a>
+        <a href="https://github.com/gentpan/LiteStats" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </div>
+      <div class="nav-actions">
+        <a class="login-link" href="/login">登录</a>
+        <a class="button button-small button-primary" href="/register">免费开始 <span aria-hidden="true">→</span></a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero container">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="status-dot"></span> OPEN ANALYTICS PLATFORM</div>
+        <h1>读懂每一次访问，<br><span>不必牺牲隐私。</span></h1>
+        <p class="hero-description">简单、专业、可自托管的网站统计。实时了解访客来自哪里、看了什么，以及哪些内容真正受欢迎。</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="/register">免费创建站点 <span aria-hidden="true">→</span></a>
+          <a class="button button-secondary" href="#features">了解产品功能</a>
+        </div>
+        <ul class="hero-assurances" aria-label="产品特点">
+          <li>无 Cookie</li><li>不存原始 IP</li><li>支持自托管</li>
+        </ul>
+      </div>
+
+      <div class="hero-product" aria-label="LiteStats 产品界面预览">
+        <div class="product-glow"></div>
+        <div class="dashboard-preview">
+          <div class="preview-topbar"><div class="preview-site"><span class="site-dot"></span><strong>cleanip.io</strong><span class="preview-range">近 24 小时⌄</span></div><span class="live-pill"><i></i> 当前在线 93</span></div>
+          <div class="preview-metrics">
+            <div><span>独立访客</span><strong>12.3k</strong><small>↗ 12%</small></div>
+            <div><span>访问次数</span><strong>14.7k</strong><small>↗ 8%</small></div>
+            <div><span>浏览量</span><strong>37.5k</strong><small>↗ 18%</small></div>
+          </div>
+          <div class="preview-chart">
+            <div class="chart-title"><strong>访问趋势</strong><span>访客</span></div>
+            <svg viewBox="0 0 620 170" preserveAspectRatio="none" role="img" aria-label="访客趋势示意图"><defs><linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#15803d" stop-opacity=".22"/><stop offset="1" stop-color="#15803d" stop-opacity="0"/></linearGradient></defs><path class="chart-grid" d="M0 35H620M0 85H620M0 135H620"/><path class="chart-area" d="M0 140 C45 132 62 106 95 112 S145 85 178 94 S224 60 260 76 S310 40 350 55 S405 96 445 70 S492 25 530 44 S580 75 620 42 L620 170 L0 170Z"/><path class="chart-line" d="M0 140 C45 132 62 106 95 112 S145 85 178 94 S224 60 260 76 S310 40 350 55 S405 96 445 70 S492 25 530 44 S580 75 620 42"/></svg>
+            <div class="chart-labels"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>现在</span></div>
+          </div>
+          <div class="preview-reports">
+            <div><strong>热门来源</strong><span>访客</span><p><i class="source-icon">G</i> Google <b>6.8k</b></p><p><i class="source-icon direct">↗</i> 直接访问 <b>3.9k</b></p></div>
+            <div><strong>国家 / 地区</strong><span>访客</span><p>美国 <b>5.2k</b></p><p>中国 <b>3.1k</b></p></div>
+          </div>
+        </div>
+        <div class="floating-card floating-privacy"><span class="floating-icon">✓</span><div><strong>隐私友好</strong><small>无需 Cookie 横幅</small></div></div>
+        <div class="floating-card floating-realtime"><span class="pulse-dot"></span><div><strong>实时数据</strong><small>每 30 秒自动更新</small></div></div>
+      </div>
+    </section>
+
+    <section class="proof container"><p>为个人创作者、独立开发者和小团队而生</p><div><span>简单清晰</span><span>实时可靠</span><span>数据自主</span><span>轻松部署</span></div></section>
+
+    <section class="features container" id="features">
+      <div class="section-heading"><div class="eyebrow">ANALYTICS WITHOUT COMPLEXITY</div><h2>你需要的统计，<br>刚刚好。</h2><p>没有复杂配置和信息噪音。打开后台，就能读懂网站表现。</p></div>
+      <div class="feature-grid">
+        <article class="feature-card feature-wide"><div class="feature-icon">↗</div><h3>重要指标，一眼掌握</h3><p>独立访客、访问次数、浏览量、跳出率和访问时长，配合趋势与同期对比，快速判断网站变化。</p><div class="mini-metrics"><span><b>12.3k</b>独立访客</span><span><b>37.5k</b>页面浏览</span><span><b>2.56</b>每次访问浏览量</span></div></article>
+        <article class="feature-card"><div class="feature-icon">◷</div><h3>实时了解正在发生什么</h3><p>当前在线、实时趋势和最近访客每 30 秒自动更新，不需要手动刷新页面。</p></article>
+        <article class="feature-card"><div class="feature-icon">⌖</div><h3>看清访客来自哪里</h3><p>来源、页面、国家、地区、城市、设备与浏览器，多维度拆解每一次访问。</p></article>
+        <article class="feature-card"><div class="feature-icon">▤</div><h3>报告简洁，也能深入</h3><p>从热门页面到搜索关键词，从活动日志到事件转化，需要细节时自然展开。</p></article>
+        <article class="feature-card feature-accent" id="privacy"><div class="feature-icon">✓</div><h3>隐私保护，默认开启</h3><p>无 Cookie、不存原始 IP，使用匿名访客标识。只收集理解网站表现所需的数据。</p><ul><li>无跨站追踪</li><li>无广告画像</li><li>数据由你掌握</li></ul></article>
+      </div>
+    </section>
+
+    <section class="self-host container" id="self-host">
+      <div class="self-host-copy"><div class="eyebrow">YOUR DATA, YOUR RULES</div><h2>自己的数据，<br>自己说了算。</h2><p>LiteStats 支持自托管。账号、站点和访问事件都保存在你的实例中，适合重视数据主权与长期维护的团队。</p><div class="self-host-points"><span><b>01</b> 独立实例与账号权限</span><span><b>02</b> PostgreSQL + ClickHouse</span><span><b>03</b> 加密备份与恢复</span></div><a class="text-link" href="https://github.com/gentpan/LiteStats" target="_blank" rel="noopener noreferrer">查看部署文档 <span aria-hidden="true">→</span></a></div>
+      <div class="terminal" aria-label="部署命令示例"><div class="terminal-top"><span></span><span></span><span></span><small>your-server</small></div><pre><code><i>$</i> git clone https://github.com/gentpan/LiteStats.git
+<i>$</i> cd LiteStats
+<i>$</i> python3 deploy/litestats.py install
+
+<span>✓ PostgreSQL ready
+✓ ClickHouse ready
+✓ LiteStats is healthy</span></code></pre></div>
+    </section>
+
+    <section class="final-cta container"><div><div class="eyebrow">START UNDERSTANDING YOUR AUDIENCE</div><h2>让网站统计，回归简单。</h2><p>创建你的第一个站点，开始看清每一次访问。</p></div><a class="button button-primary" href="/register">免费开始 <span aria-hidden="true">→</span></a></section>
+  </main>
+
+  <footer class="site-footer container"><a class="brand footer-brand" href="/">LiteStats</a><p>简单、隐私友好的网站统计。</p><div><a href="#features">产品功能</a><a href="/login">登录</a><a href="https://github.com/gentpan/LiteStats" target="_blank" rel="noopener noreferrer">GitHub</a></div><small>© 2026 LiteStats</small></footer>
+</body>
+</html>
