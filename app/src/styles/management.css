@@ -1,6 +1,8 @@
 /* Management workspace. Deliberately isolated from analytics/report pages. */
 .management-shell .management-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; margin:32px 0 24px; }
 .management-heading > div:first-child { min-width:0; }
+.management-heading > div:first-child:has(> p) { display:flex; align-items:baseline; gap:12px; }
+.management-heading > div:first-child > p { margin-top:0; white-space:nowrap; }
 .management-heading h1 { font-size:var(--ui-text-page); line-height:1.35; font-weight:600; letter-spacing:-.025em; overflow-wrap:anywhere; color:var(--color-gray-900); }
 .management-heading-title { display:flex; align-items:center; gap:10px; }
 .management-heading-title > .ui-icon { width:22px; height:22px; flex:none; color:var(--analytics-accent); }

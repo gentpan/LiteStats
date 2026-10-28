@@ -1,6 +1,6 @@
 import { UIIcon } from "./UIIcon"
 import { HelpHint } from "./HelpHint"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Surface } from "./Surface"
 import { TrafficHeatmap } from "./TrafficHeatmap"
 import { DashTopBar } from "./DashTopBar"
@@ -19,6 +19,7 @@ import type { dashboardFn } from "~/lib/actions"
 import type { MetricKey } from "~/lib/ch"
 import { downloadDashboardZip } from "~/lib/export"
 import { isoDate, parseDashSearch, parseDate, type DashSearch } from "~/lib/range"
+import { readVisitorMode, saveVisitorMode, type VisitorMode } from "~/lib/visitor-mode-preference"
 
 type DashboardData = Omit<Awaited<ReturnType<typeof dashboardFn>>, "access">
 
@@ -33,6 +34,12 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
 }) {
   const { t, locale } = useT()
   const [metric, setMetric] = useState<MetricKey>("visitors")
+  const [visitorMode, setVisitorMode] = useState<VisitorMode>("persistent")
+  useEffect(() => { setVisitorMode(readVisitorMode(window.localStorage)) }, [])
+  function chooseVisitorMode(next: VisitorMode) {
+    setVisitorMode(next)
+    saveVisitorMode(next, window.localStorage)
+  }
   const [visitorsOpen, setVisitorsOpen] = useState(false)
   const [sourceTab, setSourceTab] = useState("source")
   const [pageTab, setPageTab] = useState("pages")
@@ -72,6 +79,8 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
         </div> : null}
         filterOptions={{page:data.pages,source:data.sources.map(row=>({...row,label:isDirectSource(row.name) ? t("直接访问") : row.name})),country:data.countries.map(row=>({...row,label:countryName(row.name,locale)})),device:data.devices,browser:data.browsers,os:data.os}}
         search={search}
+        visitorMode={visitorMode}
+        onVisitorMode={chooseVisitorMode}
         health={data.health}
         onPeriod={go}
         readonly={readonly}
@@ -106,6 +115,7 @@ export function AnalyticsDashboard({data, domain, search, onSearch, readonly = t
         series={data.series}
         seriesBy={data.seriesBy}
         metric={metric}
+        visitorMode={visitorMode}
         onMetric={setMetric}
         interval={search.interval}
         realtime={search.period === "realtime"}

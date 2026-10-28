@@ -8,6 +8,7 @@ import { ReportFilter } from "./ReportFilter"
 import { INTERVAL_LABEL, PERIOD_LABEL, availableIntervals, intervalStorageKey, periodLabel, type DashSearch, type Interval, type Period } from "~/lib/range"
 import { expiryState } from "~/lib/site-check-view"
 import type { SiteCheckReport } from "~/lib/site-checks"
+import type { VisitorMode } from "~/lib/visitor-mode-preference"
 
 const GROUPS: Period[][] = [
   ["today", "yesterday", "realtime"],
@@ -46,6 +47,8 @@ export function DashTopBar({
   domain,
   filters,
   search,
+  visitorMode,
+  onVisitorMode,
   onPeriod,
   readonly,
   canManage = !readonly,
@@ -56,6 +59,8 @@ export function DashTopBar({
   domain: string
   filters?: ReactNode
   search: DashSearch
+  visitorMode: VisitorMode
+  onVisitorMode: (mode: VisitorMode) => void
   onPeriod: (next: Partial<DashSearch>) => void
   readonly?: boolean
   canManage?: boolean
@@ -260,6 +265,14 @@ export function DashTopBar({
                     </div>
                   )
                 })()}
+                <div className="flex w-full items-center justify-between gap-x-2 py-1 pr-2 pl-4">
+                  <span className="shrink-0 text-sm font-medium text-gray-700">{t("访客口径")}</span>
+                  <div className="squircle segmented-control flex rounded-md bg-gray-100" role="group" aria-label={t("访客统计口径")}>
+                    <button type="button" aria-pressed={visitorMode === "persistent"} className="squircle rounded px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-900" onClick={() => onVisitorMode("persistent")}>{t("独立访客")}</button>
+                    <button type="button" aria-pressed={visitorMode === "sessions"} className="squircle rounded px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-900" onClick={() => onVisitorMode("sessions")}>{t("会话访客")}</button>
+                  </div>
+                </div>
+                <p className="px-4 pb-2 text-xs leading-relaxed font-normal text-gray-500">{t(visitorMode === "sessions" ? "按会话去重，重复访问可能增加人数；接近 Umami 会话口径，但不保证完全一致。" : "按持久匿名 ID 去重，同一访客的多次访问只计一次，更适合 UV。")}</p>
                 <button
                   type="button"
                   className="squircle control-menu-item flex w-full items-center justify-between rounded-md px-4 py-2.5 text-sm leading-tight hover:bg-gray-100 hover:text-gray-900"
