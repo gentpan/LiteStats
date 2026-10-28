@@ -32,7 +32,7 @@ async function render(readonly: boolean, source = "Google", locale: Locale = "zh
 test("member and share views retain the same metrics, report groups and active filters", async () => {
   for (const readonly of [false, true]) {
     const html = await render(readonly)
-    for (const text of ["访客", "访问次数", "浏览量", "访客分布", "热门页面", "浏览器", "来源 Google", "清除筛选"]) {
+    for (const text of ["独立访客", "会话访客", "访客统计口径", "采集身份和会话边界不同", "访问次数", "浏览量", "访客分布", "热门页面", "浏览器", "来源 Google", "清除筛选"]) {
       expect(html).toContain(text)
     }
     expect(html.includes("/sites/view.test/activity")).toBe(!readonly)
