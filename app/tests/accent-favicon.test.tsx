@@ -99,12 +99,13 @@ test("runtime favicon synchronization is idempotent, accepts only known colors, 
   }
 })
 
-test("all favicon variants share the full-bleed favicon geometry and white bars", () => {
+test("all favicon variants share safe outer padding and white bars", () => {
   const base = readFileSync(new URL("../public/favicon.svg", import.meta.url), "utf8")
   for (const [, path, color] of variants) {
     const svg = readFileSync(new URL(`../public${path.split("?")[0]}`, import.meta.url), "utf8")
     expect(svg).toBe(base.replace("#4f46e5", color))
-    expect(svg).toContain('viewBox="0.25 0.25 63.5 63.5"')
+    expect(svg).toContain('viewBox="0 0 64 64"')
+    expect(svg).toContain('transform="translate(4 4) scale(.875)"')
     expect(svg).toContain('<g fill="#fff">')
     expect(svg.match(/<rect /g)).toHaveLength(3)
   }
