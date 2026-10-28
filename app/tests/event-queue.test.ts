@@ -3,7 +3,7 @@ import { ch, flushEventQueue, queueEvent, type EventPayload } from "../src/lib/c
 
 const event = (id: number): EventPayload => ({
   siteId: 1, name: "pageview", hostname: "queue.test", pathname: `/${id}`,
-  referrer: "", referrerSource: "Direct", userId: `visitor-${id}`, sessionId: `session-${id}`,
+  referrer: "", referrerSource: "Direct", userId: `visitor-${id}`, sessionVisitorId: `monthly-${id}`, sessionId: `session-${id}`,
 })
 type QueuedRow = {pathname: string; timestamp: number; user_id: string; session_id: string}
 

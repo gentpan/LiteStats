@@ -242,7 +242,8 @@ def convert_event(event, website, session, properties, site_id):
     record = {
         "timestamp": timestamp,
         "name": "pageview" if event["event_type"] == 1 else event["event_name"],
-        "site_id": site_id, "user_id": event["session_id"], "session_id": event["visit_id"],
+        "site_id": site_id, "user_id": event["session_id"], "session_visitor_id": event["session_id"],
+        "session_id": event["visit_id"],
         "hostname": values["hostname"] or website.get("domain") or "", "pathname": values["url_path"] or "/",
         "referrer": referrer, "referrer_source": source,
         "browser": normalize_browser(session_values["browser"]), "browser_version": "",
@@ -340,6 +341,7 @@ def migrate(snapshot_path, mapping_path, output_path, manifest_path, timezone_na
                               for key in sorted(websites)],
                     "semantics": {
                         "user_id": "Original Umami session_id; distinct_id is preserved only in source metadata",
+                        "session_visitor_id": "Original Umami session_id for Umami-compatible visitor reporting",
                         "session_id": "Original Umami visit_id",
                         "timestamp": "Exact floor to UTC epoch seconds; original subsecond value in umami.created_at",
                         "referrer_source": "utm_source, else lowercase referrer hostname without www., else Direct (matches live collector)",

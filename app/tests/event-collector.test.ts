@@ -68,6 +68,20 @@ test("privacy headers do not suppress collection and persistent visitor IDs rema
   })
 })
 
+test("session visitor identity is independent of persistent IDs and visit IDs", async () => {
+  await withCollector(async ({queue}) => {
+    const headers = {"cf-connecting-ip": "203.0.113.10", "user-agent": "Fixture Browser"}
+    await collect({request: request(headers, {v: "persistent-a"})})
+    await collect({request: request(headers, {v: "persistent-b"})})
+    const first = queue.mock.calls[0][0]
+    const second = queue.mock.calls[1][0]
+    expect(first.userId).not.toBe(second.userId)
+    expect(first.sessionVisitorId).toBe(second.sessionVisitorId)
+    expect(first.sessionVisitorId).toMatch(/^[a-f0-9]{64}$/)
+    expect(first.sessionVisitorId).not.toBe(first.sessionId)
+  })
+})
+
 test("invalid payloads and unknown sites do not enqueue analytics", async () => {
   await withCollector(async ({find, session, queue}) => {
     expect((await collect({request: request({}, {n: ""})})).status).toBe(400)

@@ -4,6 +4,7 @@ import { isDateRange } from "./date-time"
 export type MetricRow = {
   date: string
   visitors: string
+  session_visitors: string
   visits: string
   pageviews: string
   bounce_rate: string
@@ -31,7 +32,7 @@ export function fillSeries(rows: MetricRow[], range: Range, interval: Interval):
   while (cursor <= end && out.length < 4000) {
     const date = cursor.toISOString().slice(0, timed ? 19 : 10).replace("T", " ")
     out.push(byDate.get(date.slice(0, keyLength)) || {
-      date, visitors: "0", visits: "0", pageviews: "0", bounce_rate: "0", views_per_visit: "0", visit_duration: "0",
+      date, visitors: "0", session_visitors: "0", visits: "0", pageviews: "0", bounce_rate: "0", views_per_visit: "0", visit_duration: "0",
     })
     if (interval === "minute") cursor.setUTCMinutes(cursor.getUTCMinutes() + 1)
     else if (interval === "hour") cursor.setUTCHours(cursor.getUTCHours() + 1)

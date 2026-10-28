@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import { fillSeries, type MetricRow } from "../src/lib/series"
 
 const row = (date: string, visitors: string): MetricRow => ({
-  date, visitors, visits: visitors, pageviews: visitors, bounce_rate: "0", views_per_visit: "1", visit_duration: "3",
+  date, visitors, session_visitors: visitors, visits: visitors, pageviews: visitors, bounce_rate: "0", views_per_visit: "1", visit_duration: "3",
 })
 
 test("weekly series retain partial first and last weeks and fill missing Mondays", () => {

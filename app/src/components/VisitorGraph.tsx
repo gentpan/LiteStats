@@ -32,12 +32,11 @@ export function VisitorGraph({
 }) {
   const { t } = useT()
   const sessions = visitorMode === "sessions"
-  const trendMetric = sessions && metric === "visitors" ? "visits" : metric
-  const points = seriesBy?.[trendMetric] || series
+  const points = sessions && metric === "visitors" ? seriesBy?.session_visitors || series : seriesBy?.[metric] || series
   return (
     <Surface className="visitor-graph analytics-panel col-span-full">
       <div className="metric-grid">
-        <Card icon="user" index={0} label={t(sessions ? "会话访客" : "独立访客")} selected={metric === "visitors"} onSelect={() => onMetric("visitors")} value={sessions ? overview.visits : overview.visitors} prev={sessions ? compare.visits : compare.visitors} />
+        <Card icon="user" index={0} label={t(sessions ? "会话访客" : "独立访客")} selected={metric === "visitors"} onSelect={() => onMetric("visitors")} value={sessions ? overview.session_visitors : overview.visitors} prev={sessions ? compare.session_visitors : compare.visitors} />
         <Card icon="activity" index={1} label={t("访问次数")} selected={metric === "visits"} onSelect={() => onMetric("visits")} value={overview.visits} prev={compare.visits} />
         <Card icon="eye" index={2} label={t("浏览量")} selected={metric === "pageviews"} onSelect={() => onMetric("pageviews")} value={overview.pageviews} prev={compare.pageviews} />
         <Card icon="copy" index={3} label={t("每次访问浏览量")} selected={metric === "views_per_visit"} onSelect={() => onMetric("views_per_visit")} value={overview.views_per_visit} prev={compare.views_per_visit} text={overview.views_per_visit.toFixed(2)} />
@@ -46,7 +45,7 @@ export function VisitorGraph({
       </div>
       <div className="trend-section">
         <div className="analytics-heading"><h3 title={t("点击上方指标切换图表")}>{t("访问趋势")}</h3></div>
-        <TrendChart points={points} metric={trendMetric} interval={interval} realtime={realtime} onZoom={onZoom} />
+        <TrendChart points={points} metric={metric} interval={interval} realtime={realtime} onZoom={onZoom} />
       </div>
     </Surface>
   )

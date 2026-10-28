@@ -106,6 +106,7 @@ export function downloadDashboardZip(input: {
 }) {
   const seriesBy = input.seriesBy || {
     visitors: input.series || [],
+    session_visitors: input.series || [],
     visits: [],
     pageviews: [],
     views_per_visit: [],

@@ -13,7 +13,7 @@ const bucket=`litestats-test-${Date.now()}`
 await client.send(new CreateBucketCommand({Bucket:bucket}))
 await saveBackupSettings({provider:'s3',endpoint,region:'us-east-1',bucket,prefix:'test',access_key:credentials.accessKeyId,secret_key:credentials.secretAccessKey,schedule:'off',hour:3,minute:0,weekday:0,enabled:false})
 await ensureEventColumns()
-for(let i=0;i<450;i++)queueEvent({siteId:1,name:"pageview",hostname:"fixture.example",pathname:"/",referrer:"",referrerSource:"",userId:`fixture-${i}`,sessionId:`fixture-${i}`})
+for(let i=0;i<450;i++)queueEvent({siteId:1,name:"pageview",hostname:"fixture.example",pathname:"/",referrer:"",referrerSource:"",userId:`fixture-${i}`,sessionVisitorId:`monthly-${i}`,sessionId:`fixture-${i}`})
 await drainEventQueue()
 const user=await(await db()).query<{id:number,name:string}>("SELECT id,name FROM users ORDER BY id LIMIT 1")
 assert.ok(user.rows[0],"Isolated fixture needs an account")

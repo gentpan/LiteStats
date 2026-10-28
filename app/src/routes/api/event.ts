@@ -57,6 +57,8 @@ export const Route = createFileRoute("/api/event")({
         const day = dateInTimezone(site.timezone)
         const identity = String(body.v || body.visitor || "") || `${ip}|${ua}|${day}`
         const visitorId = createHmac("sha256", SESSION_KEY).update(`${site.id}|${identity}`).digest("hex")
+        const month = new Date().toISOString().slice(0, 7)
+        const sessionVisitorId = createHmac("sha256", SESSION_KEY).update(`${site.id}|${ip}|${ua}|${month}`).digest("hex")
         const sessionId = await eventSession(visitorId)
         const propsRaw = (body.p || body.props || body.m || body.meta || {}) as Record<string, unknown>
         const props: Record<string, string> = {}
@@ -82,6 +84,7 @@ export const Route = createFileRoute("/api/event")({
           referrer,
           referrerSource: source,
           userId: visitorId,
+          sessionVisitorId,
           sessionId,
           browser: parsed.browser,
           browserVersion: parsed.browserVersion,

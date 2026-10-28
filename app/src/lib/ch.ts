@@ -71,6 +71,7 @@ function where(siteId: number, range: Range, filter: Filter = {}, extra = "") {
 
 export type Overview = {
   visitors: number
+  session_visitors: number
   pageviews: number
   visits: number
   bounce_rate: number
@@ -81,7 +82,7 @@ export type Overview = {
 export type Row = { name: string, value: number, code?: string, label?: string }
 export type Point = { date: string, value: number }
 export type MetricKey = "visitors" | "visits" | "pageviews" | "views_per_visit" | "bounce_rate" | "visit_duration"
-export type SeriesBy = Record<MetricKey, Point[]>
+export type SeriesBy = Record<MetricKey, Point[]> & { session_visitors: Point[] }
 
 async function query<T>(sql: string): Promise<T[]> {
   const res = await ch().query({ query: sql, format: "JSONEachRow" })
@@ -115,9 +116,10 @@ async function overviewOnce(siteId: number, range: Range, filter: Filter, interv
   const w = where(siteId, range, filter)
   const sessionBucket = bucketLabelSql(range, interval, "sess.mn")
   const eventBucket = bucketLabelSql(range, interval, "timestamp")
-  const [over] = await query<{ visitors: string, pageviews: string, visits: string, bounces: string, duration: string }>(`
+  const [over] = await query<{ visitors: string, session_visitors: string, pageviews: string, visits: string, bounces: string, duration: string }>(`
     SELECT
       toString(uniqExact(sess.uid)) AS visitors,
+      toString(uniqExact(sess.session_uid)) AS session_visitors,
       toString(sum(sess.pv)) AS pageviews,
       toString(uniqExact(sess.sid)) AS visits,
       toString(countIf(sess.pv = 1)) AS bounces,
@@ -125,6 +127,7 @@ async function overviewOnce(siteId: number, range: Range, filter: Filter, interv
     FROM (
       SELECT
         user_id AS uid,
+        any(if(session_visitor_id = '', user_id, session_visitor_id)) AS session_uid,
         session_id AS sid,
         countIf(name = 'pageview') AS pv,
         greatest(dateDiff('second', min(timestamp), max(timestamp)), 0) AS dur
@@ -136,10 +139,11 @@ async function overviewOnce(siteId: number, range: Range, filter: Filter, interv
   // Activity belongs to the time each event happened. Keep session metrics at
   // the first event so crossing a bucket cannot create another visit or bounce.
   const [activity, sessions] = includeSeries ? await Promise.all([
-    query<Pick<MetricRow, "date" | "visitors" | "pageviews">>(`
+    query<Pick<MetricRow, "date" | "visitors" | "session_visitors" | "pageviews">>(`
       SELECT
         toString(${eventBucket}) AS date,
         toString(uniqExact(user_id)) AS visitors,
+        toString(uniqExact(if(session_visitor_id = '', user_id, session_visitor_id))) AS session_visitors,
         toString(countIf(name = 'pageview')) AS pageviews
       FROM events_v2
       WHERE ${w}
@@ -171,7 +175,7 @@ async function overviewOnce(siteId: number, range: Range, filter: Filter, interv
     ...row, visits: "0", bounce_rate: "0", views_per_visit: "0", visit_duration: "0",
   })
   for (const row of sessions) daily.set(row.date, {
-    visitors: "0", pageviews: "0", ...daily.get(row.date), ...row,
+    visitors: "0", session_visitors: "0", pageviews: "0", ...daily.get(row.date), ...row,
   })
   const filled = includeSeries ? fillSeries([...daily.values()].sort((a, b) => a.date.localeCompare(b.date)), range, interval) : []
   const visits = Number(over?.visits || 0)
@@ -179,6 +183,7 @@ async function overviewOnce(siteId: number, range: Range, filter: Filter, interv
   const pageviews = Number(over?.pageviews || 0)
   const seriesBy: SeriesBy = {
     visitors: filled.map((p) => ({ date: p.date, value: Number(p.visitors) })),
+    session_visitors: filled.map((p) => ({ date: p.date, value: Number(p.session_visitors) })),
     visits: filled.map((p) => ({ date: p.date, value: Number(p.visits) })),
     pageviews: filled.map((p) => ({ date: p.date, value: Number(p.pageviews) })),
     bounce_rate: filled.map((p) => ({ date: p.date, value: Number(p.bounce_rate) })),
@@ -188,6 +193,7 @@ async function overviewOnce(siteId: number, range: Range, filter: Filter, interv
   return {
     overview: {
       visitors: Number(over?.visitors || 0),
+      session_visitors: Number(over?.session_visitors || 0),
       pageviews,
       visits,
       bounce_rate: visits ? Math.round((bounces / visits) * 100) : 0,
@@ -249,6 +255,7 @@ export async function ensureEventColumns() {
         name LowCardinality(String),
         site_id UInt64,
         user_id String,
+        session_visitor_id String,
         session_id String,
         hostname String,
         pathname String,
@@ -282,6 +289,7 @@ export async function ensureEventColumns() {
     `,
   }).catch(() => undefined)
   const cols = [
+    ["session_visitor_id", "String DEFAULT ''"],
     ["page_title", "String DEFAULT ''"],
     ["browser_language", "LowCardinality(String) DEFAULT ''"],
     ["screen_resolution", "LowCardinality(String) DEFAULT ''"],
@@ -531,6 +539,7 @@ export type EventPayload = {
   referrer: string
   referrerSource: string
   userId: string
+  sessionVisitorId: string
   sessionId: string
   browser?: string
   browserVersion?: string
@@ -558,6 +567,7 @@ function toClickHouseRow(ev: EventPayload) {
     name: ev.name || "pageview",
     site_id: ev.siteId,
     user_id: ev.userId,
+    session_visitor_id: ev.sessionVisitorId,
     session_id: ev.sessionId,
     hostname: ev.hostname,
     pathname: ev.pathname || "/",
