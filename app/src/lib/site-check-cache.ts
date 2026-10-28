@@ -11,11 +11,18 @@ export function expiryRefreshDue(snapshot: ExpirySnapshot | null, now = Date.now
 /** Keep each last observed date independently, while retaining the latest error. */
 export function mergeExpiry(previous: ExpirySnapshot | null, current: ExpirySnapshot): ExpirySnapshot {
   function merge<T extends ExpirySnapshot["domain"] | ExpirySnapshot["certificate"]>(old: T | undefined, next: T): T {
-    if (next.expiresAt) return {...next, stale: false, lastSuccessAt: current.checkedAt}
+    const oldMetadata = old as {registeredAt?: string | null; registrar?: string | null; validation?: "DV" | "OV" | "EV" | null} | undefined
+    const following = next as {registeredAt?: string | null; registrar?: string | null; validation?: "DV" | "OV" | "EV" | null}
+    const retained: typeof following = {}
+    if (following.registeredAt == null && oldMetadata?.registeredAt != null) retained.registeredAt = oldMetadata.registeredAt
+    if (following.registrar == null && oldMetadata?.registrar != null) retained.registrar = oldMetadata.registrar
+    if (following.validation == null && oldMetadata?.validation != null) retained.validation = oldMetadata.validation
+    const merged = {...next, ...retained}
+    if (next.expiresAt) return {...merged, stale: false, lastSuccessAt: current.checkedAt}
     if (next.error && old?.expiresAt) {
-      return {...next, expiresAt: old.expiresAt, stale: true, lastSuccessAt: old.lastSuccessAt || previous!.checkedAt}
+      return {...merged, expiresAt: old.expiresAt, stale: true, lastSuccessAt: old.lastSuccessAt || previous!.checkedAt}
     }
-    return next
+    return merged
   }
   return {...current, domain: merge(previous?.domain, current.domain), certificate: merge(previous?.certificate, current.certificate)}
 }

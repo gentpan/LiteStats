@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { isPublicAddress, publicUrl, publicAddresses, followPublic } from "../src/lib/site-check-network"
+import { isPublicAddress, publicUrl, publicAddresses, followPublic, certificateValidationFromPolicies } from "../src/lib/site-check-network"
 import { rdapExpiry, siteCheckUrl, type HttpCheck } from "../src/lib/site-check-probe"
 import { checkSummary, expiryState, responseSegments } from "../src/lib/site-check-view"
 
@@ -37,6 +37,14 @@ test("check paths stay on the selected site and RDAP uses expiration events only
   expect(rdapExpiry({events: [{eventAction: "last changed", eventDate: "2027-03-01T00:00:00Z"}]})).toBeNull()
   expect(rdapExpiry({events: [{eventAction: "expiration", eventDate: "invalid"}]})).toBeNull()
   expect(rdapExpiry(null)).toBeNull()
+})
+
+test("certificate policy OIDs identify validation levels without issuer guesses", () => {
+  expect(certificateValidationFromPolicies(["2.23.140.1.2.1"])).toBe("DV")
+  expect(certificateValidationFromPolicies(["2.23.140.1.2.2"])).toBe("OV")
+  expect(certificateValidationFromPolicies(["2.23.140.1.1"])).toBe("EV")
+  expect(certificateValidationFromPolicies(["1.2.3.4"])).toBeNull()
+  expect(certificateValidationFromPolicies([])).toBeNull()
 })
 
 test("expiry and availability distinguish missing data, expiry, warnings and observed samples", () => {

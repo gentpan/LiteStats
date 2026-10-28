@@ -20,12 +20,16 @@ test("health view keeps unknown data neutral and distinguishes paused and stale 
 test("health view shows expiry countdowns and HTTP failures without host/provider details", () => {
   const check = {checkedAt: "2026-10-22T11:59:00Z", ok: false, status: 503, durationMs: 100, error: "HTTP 503"}
   const html = renderToStaticMarkup(<SiteHealthPanel report={{...report, enabled: true, latest: check, checks: [check], expiry: {
-    checkedAt: report.now, domain: {domain: "example.com", expiresAt: "2027-01-01T00:00:00Z", error: null}, certificate: {expiresAt: "2026-11-01T00:00:00Z", valid: true, error: null},
+    checkedAt: report.now, domain: {domain: "example.com", expiresAt: "2027-01-01T00:00:00Z", registeredAt: "2020-05-01T00:00:00Z", registrar: "Example Registrar", error: null}, certificate: {expiresAt: "2026-11-01T00:00:00Z", valid: true, validation: "DV", error: null},
   }}}/>)
   expect(html).toContain("访问异常")
   expect(html).toContain("HTTP 503")
   expect(html).toContain("域名到期")
   expect(html).toContain("证书到期")
+  expect(html).toContain("注册日期")
+  expect(html).toContain("2020年5月1日")
+  expect(html).toContain("Example Registrar")
+  expect(html).toContain("DV · 域名验证")
   expect(html).toContain("0.0%")
   expect(html).not.toContain("运营商")
   expect(html).not.toContain("服务器性能")

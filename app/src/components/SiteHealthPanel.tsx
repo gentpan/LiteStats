@@ -7,17 +7,30 @@ import { formatTimestamp } from "~/lib/format"
 import type { SiteCheckReport } from "~/lib/site-checks"
 import "~/styles/site-health.css"
 
-function ExpiryCard({kind, date, error, stale, lastSuccessAt, now}: {kind: "domain" | "certificate"; date?: string | null; error?: string | null; stale?: boolean; lastSuccessAt?: string; now: string}) {
+function ExpiryCard({kind, date, error, stale, lastSuccessAt, now, registeredAt, registrar, validation}: {
+  kind: "domain" | "certificate"; date?: string | null; error?: string | null; stale?: boolean; lastSuccessAt?: string; now: string;
+  registeredAt?: string | null; registrar?: string | null; validation?: "DV" | "OV" | "EV" | null
+}) {
   const {t, locale} = useT()
   const state = expiryState(date, now)
   const dateOnly = !!date && /^\d{4}-\d{2}-\d{2}$/.test(date)
   const tone = stale ? state.tone === "bad" ? "bad" : "warning" : error && kind === "certificate" ? "bad" : state.tone
-  const formatted = date ? new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "zh-CN", {timeZone: "UTC", year: "numeric", month: "short", day: "numeric"}).format(new Date(date)) : "—"
+  const formatDate = (value?: string | null) => value ? new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "zh-CN", {timeZone: "UTC", year: "numeric", month: "short", day: "numeric"}).format(new Date(value)) : "—"
+  const validationLabel = validation === "DV" ? t("域名验证") : validation === "OV" ? t("组织验证") : validation === "EV" ? t("扩展验证") : ""
   return <Surface className={`health-card health-tone-${tone}`}>
     <div className="health-card-heading"><span>{t(kind === "domain" ? "域名到期" : "证书到期")}</span><UIIcon name={kind === "domain" ? "globe" : "shield"}/></div>
     <div className="health-card-value">{state.days === null ? "—" : state.days}<small>{t("天")}</small></div>
-    <p>{state.days === null ? t(error ? "未能获取到期信息" : "尚无到期信息") : state.tone === "bad" ? t("已到期") : t("剩余有效期")}</p>
-    <div className="health-card-foot"><span>{formatted}{date && !dateOnly ? " UTC" : ""}</span><span className="health-dot"/></div>
+    <div className="health-card-details">
+      {kind === "domain" ? <>
+        <p><span>{t("注册日期")}</span><span>{formatDate(registeredAt)}</span></p>
+        <p><span>{t("到期日期")}</span><span>{formatDate(date)}{date && !dateOnly ? " UTC" : ""}</span></p>
+        <p title={registrar || undefined}><span>{t("注册商")}</span><span>{registrar || "—"}</span></p>
+      </> : <>
+        <p><span>{t("证书类型")}</span><span>{validation ? `${validation} · ${validationLabel}` : t("未知")}</span></p>
+        <p><span>{t("到期日期")}</span><span>{formatDate(date)}{date && !dateOnly ? " UTC" : ""}</span></p>
+      </>}
+    </div>
+    {state.days === null ? <p className="health-note">{t(error ? "未能获取到期信息" : "尚无到期信息")}</p> : state.tone === "bad" ? <p className="health-note">{t("已到期")}</p> : null}
     {dateOnly ? <p className="health-note">{t("按公开日期估算剩余天数")}</p> : null}
     {error ? <p className="health-note">{t(error)}</p> : null}
     {stale ? <p className="health-note">{t("本次查询失败，显示上次结果")}{lastSuccessAt ? ` · ${t("上次获取")}: ${formatTimestamp(lastSuccessAt, locale)}` : ""}</p> : null}

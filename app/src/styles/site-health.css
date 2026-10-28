@@ -10,6 +10,9 @@
 .health-card-value { min-height:var(--health-value-height); margin-top:24px; font-size:40px; font-weight:600; line-height:1.15; letter-spacing:-.055em; font-variant-numeric:tabular-nums; color:var(--color-gray-900); }
 .health-card-value small { font-size:13px; letter-spacing:0; margin-left:8px; font-weight:400; color:var(--color-gray-500); }
 .health-card p { margin-top:7px; font-size:12px; line-height:1.6; color:var(--color-gray-500); }
+.health-card-details { display:grid; gap:5px; margin-top:14px; padding-top:12px; border-top:1px solid var(--color-gray-100); }
+.health-card .health-card-details p { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0; font-size:11px; line-height:16px; }
+.health-card-details p > span:last-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right; color:var(--color-gray-700); font-variant-numeric:tabular-nums; }
 .health-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--health-tone); flex-shrink:0; }
 .health-status { display:flex; align-items:center; gap:12px; margin-top:24px; min-height:var(--health-value-height); margin-bottom:0; font-size:25px; font-weight:600; letter-spacing:-.035em; color:var(--color-gray-900); }
 .health-status .health-dot { width:10px; height:10px; box-shadow:0 0 0 5px color-mix(in srgb,var(--health-tone) 10%,transparent); }

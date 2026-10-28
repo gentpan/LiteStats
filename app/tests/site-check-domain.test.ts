@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { inspectDomain } from "../src/lib/site-check-probe"
+import { inspectDomain, rdapRegistration, whoGaRegistration } from "../src/lib/site-check-probe"
 import { expiryRefreshDue, mergeExpiry } from "../src/lib/site-check-cache"
 import { expiryState } from "../src/lib/site-check-view"
 
@@ -46,6 +46,16 @@ test("RDAP remains preferred whenever it supplies expiry; other suffixes never u
   expect(absent.calls).toEqual([])
 })
 
+test("RDAP and who.ga expose registration metadata without inventing missing values", () => {
+  const rdap = {
+    events: [{eventAction: "registration", eventDate: "2020-05-01T08:00:00Z"}],
+    entities: [{roles: ["registrar"], vcardArray: ["vcard", [["version", {}, "text", "4.0"], ["fn", {}, "text", "Example Registrar"]]]}],
+  }
+  expect(rdapRegistration(rdap)).toEqual({registeredAt: "2020-05-01T08:00:00.000Z", registrar: "Example Registrar"})
+  expect(rdapRegistration(null)).toEqual({registeredAt: null, registrar: null})
+  expect(whoGaRegistration({registeredAt: "2020-05-01T08:00:00Z", registrar: "Backup Registrar"})).toEqual({registeredAt: "2020-05-01T08:00:00.000Z", registrar: "Backup Registrar"})
+})
+
 test("who.ga supplies expiry when RDAP is unavailable or has no expiration", async () => {
   const {lookup, calls} = fixture({
     fetch: async url => {
@@ -53,7 +63,7 @@ test("who.ga supplies expiry when RDAP is unavailable or has no expiration", asy
       return {status: 200, location: null, url: url.href, body: JSON.stringify({domain: "example.com", expiresAt: "2027-08-13T04:00:00.000Z"})}
     },
   })
-  expect(await inspectDomain("example.com", lookup)).toEqual({domain: "example.com", expiresAt: "2027-08-13T04:00:00.000Z", error: null, retryable: false})
+  expect(await inspectDomain("example.com", lookup)).toEqual({domain: "example.com", expiresAt: "2027-08-13T04:00:00.000Z", registeredAt: null, registrar: null, error: null, retryable: false})
   expect(calls).toEqual([])
 })
 

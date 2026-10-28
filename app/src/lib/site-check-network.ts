@@ -1,9 +1,13 @@
+import "reflect-metadata"
 import { lookup } from "node:dns/promises"
 import { request as httpRequest } from "node:http"
 import { request as httpsRequest } from "node:https"
 import { isIP } from "node:net"
 import { checkServerIdentity, connect } from "node:tls"
 import ipaddr from "ipaddr.js"
+import { X509Certificate } from "@peculiar/x509"
+import { AsnConvert } from "@peculiar/asn1-schema"
+import { CertificatePolicies } from "@peculiar/asn1-x509"
 
 export function isPublicAddress(address: string) {
   try {
@@ -102,7 +106,26 @@ export async function followPublic(url: URL, signal: AbortSignal, bodyLimit = 0,
   }
 }
 
-export type CertificateResult = {expiresAt: string | null; valid: boolean; error: string | null}
+export type CertificateValidation = "DV" | "OV" | "EV"
+export type CertificateResult = {expiresAt: string | null; valid: boolean; error: string | null; validation?: CertificateValidation | null}
+
+export function certificateValidationFromPolicies(policies: string[]): CertificateValidation | null {
+  if (policies.includes("2.23.140.1.1")) return "EV"
+  if (policies.includes("2.23.140.1.2.2")) return "OV"
+  if (policies.includes("2.23.140.1.2.1")) return "DV"
+  return null
+}
+
+export function certificateValidation(raw: Buffer): CertificateValidation | null {
+  try {
+    const certificate = new X509Certificate(new Uint8Array(raw))
+    const extension = certificate.getExtension("2.5.29.32")
+    if (!extension) return null
+    const policies = AsnConvert.parse(extension.value, CertificatePolicies)
+    return certificateValidationFromPolicies(policies.map(policy => policy.policyIdentifier))
+  } catch { return null }
+}
+
 export async function inspectCertificate(host: string, signal: AbortSignal): Promise<CertificateResult> {
   publicUrl(`https://${host}/`)
   const connection = await connectionOptions(host, signal)
@@ -120,6 +143,7 @@ export async function inspectCertificate(host: string, signal: AbortSignal): Pro
       const identityError = cert && checkServerIdentity(host, cert)
       const valid = socket.authorized && !identityError && Number.isFinite(expires) && starts <= Date.now() && expires > Date.now()
       resolve({expiresAt: Number.isFinite(expires) ? new Date(expires).toISOString() : null, valid,
+        validation: cert.raw ? certificateValidation(cert.raw) : null,
         error: valid ? null : expires <= Date.now() ? "证书已过期" : identityError ? "证书域名不匹配" : "证书未通过验证"})
       socket.destroy()
     })
