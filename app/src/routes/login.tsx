@@ -6,19 +6,21 @@ import { BrandMark } from "~/components/BrandMark"
 import { SiteFooter } from "~/components/Shell"
 import { instanceSetupFn, loginFn, meFn } from "~/lib/actions"
 import { loginCapabilitiesFn, passkeyAuthFn, passkeyAuthOptionsFn, verifyLogin2faFn } from "~/lib/auth-actions"
+import { registrationStatusFn } from "~/lib/user-actions"
 import { useT } from "~/lib/i18n"
 
 export const Route = createFileRoute("/login")({
   loader: async () => {
     if (await meFn()) throw redirect({ to: "/dashboard" })
     if ((await instanceSetupFn()).needsSetup) throw redirect({ to: "/setup" })
-    return await loginCapabilitiesFn()
+    const [capabilities, registration] = await Promise.all([loginCapabilitiesFn(), registrationStatusFn()])
+    return {...capabilities, registrationEnabled: registration.enabled}
   },
   component: LoginPage,
 })
 
 function LoginPage() {
-  const { passkeyEnabled } = Route.useLoaderData()
+  const { passkeyEnabled, registrationEnabled } = Route.useLoaderData()
   const router = useRouter()
   const { t } = useT()
   const [email, setEmail] = useState("")
@@ -120,6 +122,7 @@ function LoginPage() {
               </ActionButton> : null}
             </form>
           )}
+          {registrationEnabled && !needs2fa ? <p className="mt-5 text-center text-sm text-gray-500">{t("没有账号？")} <Link to="/register" className="font-medium text-green-700">{t("免费注册")}</Link></p> : null}
         </section>
       </main>
       <SiteFooter showBrand={false} />

@@ -12,7 +12,7 @@ function sign(payload: string, purpose: string) {
 
 export async function writeSession(userId: number) {
   const user = await findUserById(userId)
-  if (!user) throw new Error("UNAUTH")
+  if (!user || user.disabled) throw new Error("UNAUTH")
   const payload = Buffer.from(JSON.stringify({ uid: userId, ver: user.session_version, exp: Date.now() + 14 * 86400_000 })).toString("base64url")
   setCookie(COOKIE, `${payload}.${sign(payload, COOKIE)}`, {
     httpOnly: true,
@@ -118,7 +118,7 @@ export async function currentUser(): Promise<User | null> {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString())
     if (!data.uid || !Number.isFinite(data.exp) || data.exp < Date.now()) return null
     const user = await findUserById(Number(data.uid))
-    return user && user.session_version === data.ver ? user : null
+    return user && !user.disabled && user.session_version === data.ver ? user : null
   } catch {
     return null
   }
@@ -126,7 +126,7 @@ export async function currentUser(): Promise<User | null> {
 
 export async function requireUser() {
   const user = await currentUser()
-  if (!user) throw new Error("UNAUTH")
+  if (!user || user.disabled) throw new Error("UNAUTH")
   return user
 }
 

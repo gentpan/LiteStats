@@ -4,6 +4,7 @@ import { createElement } from "react"
 import { renderToString } from "react-dom/server"
 import * as authActions from "../src/lib/auth-actions"
 import * as actions from "../src/lib/actions"
+import * as userActions from "../src/lib/user-actions"
 import { rootAppearancePreferences } from "../src/lib/theme-appearance"
 import { Route as LoginRoute } from "../src/routes/login"
 import { Route as RegisterRoute } from "../src/routes/register"
@@ -13,8 +14,9 @@ import { Route as SetupRoute } from "../src/routes/setup"
 
 let instanceSetup: ReturnType<typeof spyOn<typeof actions, "instanceSetupFn">>
 let capabilities: ReturnType<typeof spyOn<typeof authActions, "loginCapabilitiesFn">>
-beforeEach(() => {capabilities = spyOn(authActions, "loginCapabilitiesFn").mockResolvedValue({passkeyEnabled: false}); instanceSetup = spyOn(actions, "instanceSetupFn").mockResolvedValue({needsSetup: false})})
-afterEach(() => {instanceSetup.mockRestore(); capabilities.mockRestore()})
+let registration: ReturnType<typeof spyOn<typeof userActions, "registrationStatusFn">>
+beforeEach(() => {capabilities = spyOn(authActions, "loginCapabilitiesFn").mockResolvedValue({passkeyEnabled: false}); instanceSetup = spyOn(actions, "instanceSetupFn").mockResolvedValue({needsSetup: false}); registration = spyOn(userActions, "registrationStatusFn").mockResolvedValue({enabled: false})})
+afterEach(() => {instanceSetup.mockRestore(); capabilities.mockRestore(); registration.mockRestore()})
 
 function routerAt(path: string) {
   const root = createRootRoute({loader: async () => ({...rootAppearancePreferences(null, "zh-CN"), mapboxStyle: "standard" as import("../src/lib/mapbox-styles").MapboxStyleId})})
@@ -60,16 +62,35 @@ test("setup shows the sole administrator form without creating an account on pag
   } finally {me.mockRestore(); createAdmin.mockRestore()}
 })
 
-test("initialized instances close setup and legacy registration to signed-out visitors", async () => {
+test("initialized instances close setup and show registration as unavailable", async () => {
   const me = spyOn(actions, "meFn").mockResolvedValue(null)
   const sites = spyOn(actions, "sitesFn").mockResolvedValue([])
   try {
-    for (const path of ["/setup", "/register"]) {
-      const router = routerAt(path)
-      await router.load()
-      expect(router.state.location.pathname).toBe("/login")
-      expect(router.state.matches.at(-1)?.status).toBe("success")
-    }
+    const setup = routerAt("/setup")
+    await setup.load()
+    expect(setup.state.location.pathname).toBe("/login")
+    expect(setup.state.matches.at(-1)?.status).toBe("success")
+    const register = routerAt("/register")
+    await register.load()
+    expect(register.state.location.pathname).toBe("/register")
+    expect(register.state.matches.at(-1)?.status).toBe("success")
+    expect(renderToString(createElement(RouterProvider, {router: register}))).toContain("当前未开放注册")
+    expect(sites).not.toHaveBeenCalled()
+  } finally {me.mockRestore(); sites.mockRestore()}
+})
+
+test("open registration renders the account form and login link", async () => {
+  registration.mockResolvedValue({enabled: true})
+  const me = spyOn(actions, "meFn").mockResolvedValue(null)
+  const sites = spyOn(actions, "sitesFn").mockResolvedValue([])
+  try {
+    const register = routerAt("/register")
+    await register.load()
+    const html = renderToString(createElement(RouterProvider, {router: register}))
+    expect(html).toContain("创建账号")
+    expect(html).toContain('type="email"')
+    expect(html).toContain('autoComplete="new-password"')
+    expect(html).toContain('href="/login"')
     expect(sites).not.toHaveBeenCalled()
   } finally {me.mockRestore(); sites.mockRestore()}
 })

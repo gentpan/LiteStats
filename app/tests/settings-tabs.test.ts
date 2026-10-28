@@ -9,7 +9,7 @@ test("retired account tabs fall back to preferences while security and backup li
   expect(accountTab("backup")).toBe("system/backup")
   expect(accountTab("system/backup")).toBe("system/backup")
   expect(ACCOUNT_TABS.map(tab => tab.id)).toEqual(["preferences", "security"])
-  expect(SYSTEM_TABS.map(tab => tab.id)).toEqual(["system/mapbox", "system/backup"])
+  expect(SYSTEM_TABS.map(tab => tab.id)).toEqual(["system/users", "system/mapbox", "system/backup"])
 })
 
 test("old map and placeholder bookmarks fall back without hiding sharing or tracking settings", () => {

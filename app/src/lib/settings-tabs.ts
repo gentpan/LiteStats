@@ -4,6 +4,7 @@ export const ACCOUNT_TABS = [
 ] as const
 
 export const SYSTEM_TABS = [
+  { id: "system/users", label: "用户管理", icon: "users" },
   { id: "system/mapbox", label: "访客地图", icon: "map" },
   { id: "system/backup", label: "备份与恢复", icon: "cloud" },
 ] as const

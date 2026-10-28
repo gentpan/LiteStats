@@ -3,6 +3,8 @@ import { mapboxSettingsFn } from "~/lib/mapbox-actions"
 import { UIIcon as TabIcon } from "~/components/UIIcon"
 import { ActionLink } from "~/components/ActionButton"
 import { BackupPanel } from "~/components/BackupPanel"
+import { UserManagementPanel } from "~/components/UserManagementPanel"
+import { userManagementFn } from "~/lib/user-actions"
 import { SettingsLayout, SettingsNav } from "~/components/SettingsLayout"
 import { redirect, Link, createFileRoute, useRouter } from "@tanstack/react-router"
 import { AccountPreferences } from "~/components/AccountPreferences"
@@ -26,13 +28,14 @@ export const Route = createFileRoute("/account")({
     if(deps.tab.startsWith("system/") && !data.user.isAdmin) throw redirect({to:"/account",search:{tab:"preferences"}})
     const backup=deps.tab === "system/backup" ? await backupSettingsFn() : null
     const mapbox=deps.tab === "system/mapbox" ? await mapboxSettingsFn() : null
-    return {data,backup,mapbox}
+    const users=deps.tab === "system/users" ? await userManagementFn() : null
+    return {data,backup,mapbox,users}
   },
   component:AccountPage,
 })
 
 function AccountPage() {
-  const { data, backup, mapbox } = Route.useLoaderData()
+  const { data, backup, mapbox, users } = Route.useLoaderData()
   const { tab } = Route.useSearch()
   const router = useRouter()
   const { t } = useT()
@@ -60,6 +63,7 @@ function AccountPage() {
         </>}>
             {tab === "preferences" ? <AccountPreferences user={user} onSaved={() => router.invalidate()} /> : null}
             {tab === "security" ? <AccountSecurity user={user} passkeys={data.passkeys || []} onSaved={() => router.invalidate()} /> : null}
+            {tab === "system/users" && users ? <UserManagementPanel initial={users} /> : null}
             {tab === "system/mapbox" && mapbox ? <MapboxSettingsPanel initial={mapbox} /> : null}
             {tab === "system/backup" && backup ? <BackupPanel initial={backup} /> : null}
         </SettingsLayout>

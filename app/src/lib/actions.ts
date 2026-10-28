@@ -62,7 +62,7 @@ export const loginFn = createServerFn({ method: "POST" })
   .validator((input: unknown) => z.object({email: text, password: text}).parse(input))
   .handler(async ({ data }) => {
     const user = await findUserByEmail(data.email.trim())
-    if (!user || !(await bcrypt.compare(data.password, user.password_hash))) {
+    if (!user || user.disabled || !(await bcrypt.compare(data.password, user.password_hash))) {
       throw new Error("邮箱或密码不正确")
     }
     if (user.totp_enabled) {

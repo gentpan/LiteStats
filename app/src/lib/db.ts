@@ -25,6 +25,7 @@ export type User = {
   totp_enabled?: boolean
   avatar?: string | null
   locale?: string
+  disabled?: boolean
 }
 export type Passkey = { id: number, name: string, credential_id: string, inserted_at: string }
 export type Site = {
@@ -80,6 +81,13 @@ async function ensureSchema() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_token varchar(64)`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_last_used_at timestamptz`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS previous_email varchar(255)`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS disabled boolean NOT NULL DEFAULT false`)
+  await pool.query(`CREATE TABLE IF NOT EXISTS instance_auth_settings (
+    id integer PRIMARY KEY,
+    registration_enabled boolean NOT NULL DEFAULT true,
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`)
+  await pool.query(`INSERT INTO instance_auth_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING`)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS teams (
       id bigserial PRIMARY KEY,
@@ -292,7 +300,8 @@ export async function findUserByEmail(email: string) {
   const res = await (await db()).query<User & { password_hash: string }>(
     `SELECT id, email, name, COALESCE(type, 'standard') AS type, COALESCE(password_hash, '') AS password_hash,
             COALESCE(totp_enabled, false) AS totp_enabled,
-            COALESCE(avatar, '') AS avatar, COALESCE(locale, 'zh-CN') AS locale
+            COALESCE(avatar, '') AS avatar, COALESCE(locale, 'zh-CN') AS locale,
+            COALESCE(disabled, false) AS disabled
      FROM users WHERE lower(email) = lower($1) LIMIT 1`,
     [email],
   )
@@ -302,7 +311,8 @@ export async function findUserByEmail(email: string) {
 export async function findUserById(id: number) {
   const res = await (await db()).query<User>(
     `SELECT id, email, email_verified, session_version, name, COALESCE(type, 'standard') AS type, COALESCE(theme, 'system') AS theme, COALESCE(totp_enabled, false) AS totp_enabled,
-            COALESCE(avatar, '') AS avatar, COALESCE(locale, 'zh-CN') AS locale
+            COALESCE(avatar, '') AS avatar, COALESCE(locale, 'zh-CN') AS locale,
+            COALESCE(disabled, false) AS disabled
      FROM users WHERE id = $1`,
     [id],
   )
