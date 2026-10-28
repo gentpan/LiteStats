@@ -8,7 +8,6 @@ import { ACCENT_BOOTSTRAP_SCRIPT, ACCENT_FAVICON_BOOTSTRAP_SCRIPT, subscribeAcce
 import { SITE_LAYOUT_BOOTSTRAP_SCRIPT, subscribeSiteLayout } from "~/lib/site-layout-preference"
 import { themeBootstrapScript, type ThemePreference } from "~/lib/theme-appearance"
 import { MapStyleProvider } from "~/lib/map-preferences"
-import { startSquircleFallback } from "~/lib/squircle"
 import appCss from "~/styles/app.css?url"
 
 export const Route = createRootRoute({
@@ -41,7 +40,6 @@ export const Route = createRootRoute({
 })
 
 function RootComponent() {
-  useEffect(() => startSquircleFallback(), [])
   // Keep an open dashboard in sync with color changes made in another tab.
   useEffect(() => {
     syncAccentFavicon()

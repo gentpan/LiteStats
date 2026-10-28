@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#15803d">
   <title>LiteStats · 简单、隐私友好的网站统计</title>
   <link rel="icon" href="/favicon-green.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles.css?v=3">
 </head>
 <body>
   <header class="site-header">
@@ -26,7 +26,7 @@
       </div>
       <div class="nav-actions">
         <a class="login-link" href="/login">登录</a>
-        <a class="button button-small button-primary" href="/register">免费开始 <span aria-hidden="true">→</span></a>
+        <a class="squircle button button-small button-primary" href="/register">免费开始 <span aria-hidden="true">→</span></a>
       </div>
     </nav>
   </header>
@@ -38,8 +38,8 @@
         <h1>读懂每一次访问，<br><span>不必牺牲隐私。</span></h1>
         <p class="hero-description">简单、专业、可自托管的网站统计。实时了解访客来自哪里、看了什么，以及哪些内容真正受欢迎。</p>
         <div class="hero-actions">
-          <a class="button button-primary" href="/register">免费创建站点 <span aria-hidden="true">→</span></a>
-          <a class="button button-secondary" href="#features">了解产品功能</a>
+          <a class="squircle button button-primary" href="/register">免费创建站点 <span aria-hidden="true">→</span></a>
+          <a class="squircle button button-secondary" href="#features">了解产品功能</a>
         </div>
         <ul class="hero-assurances" aria-label="产品特点">
           <li>无 Cookie</li><li>不存原始 IP</li><li>支持自托管</li>
@@ -48,12 +48,12 @@
 
       <div class="hero-product" aria-label="LiteStats 产品界面预览">
         <div class="product-glow"></div>
-        <div class="dashboard-preview">
-          <div class="preview-topbar"><div class="preview-site"><span class="site-dot"></span><strong>cleanip.io</strong><span class="preview-range">近 24 小时⌄</span></div><span class="live-pill"><i></i> 当前在线 93</span></div>
+        <div class="squircle dashboard-preview">
+          <div class="preview-topbar"><div class="preview-site"><span class="site-dot"></span><strong>cleanip.io</strong><span class="squircle preview-range">近 24 小时⌄</span></div><span class="live-pill"><i></i> 当前在线 93</span></div>
           <div class="preview-metrics">
-            <div><span>独立访客</span><strong>12.3k</strong><small>↗ 12%</small></div>
-            <div><span>访问次数</span><strong>14.7k</strong><small>↗ 8%</small></div>
-            <div><span>浏览量</span><strong>37.5k</strong><small>↗ 18%</small></div>
+            <div class="squircle"><span>独立访客</span><strong>12.3k</strong><small>↗ 12%</small></div>
+            <div class="squircle"><span>访问次数</span><strong>14.7k</strong><small>↗ 8%</small></div>
+            <div class="squircle"><span>浏览量</span><strong>37.5k</strong><small>↗ 18%</small></div>
           </div>
           <div class="preview-chart">
             <div class="chart-title"><strong>访问趋势</strong><span>访客</span></div>
@@ -61,12 +61,12 @@
             <div class="chart-labels"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>现在</span></div>
           </div>
           <div class="preview-reports">
-            <div><strong>热门来源</strong><span>访客</span><p><i class="source-icon">G</i> Google <b>6.8k</b></p><p><i class="source-icon direct">↗</i> 直接访问 <b>3.9k</b></p></div>
+            <div><strong>热门来源</strong><span>访客</span><p><i class="squircle source-icon">G</i> Google <b>6.8k</b></p><p><i class="squircle source-icon direct">↗</i> 直接访问 <b>3.9k</b></p></div>
             <div><strong>国家 / 地区</strong><span>访客</span><p>美国 <b>5.2k</b></p><p>中国 <b>3.1k</b></p></div>
           </div>
         </div>
-        <div class="floating-card floating-privacy"><span class="floating-icon">✓</span><div><strong>隐私友好</strong><small>无需 Cookie 横幅</small></div></div>
-        <div class="floating-card floating-realtime"><span class="pulse-dot"></span><div><strong>实时数据</strong><small>每 30 秒自动更新</small></div></div>
+        <div class="squircle floating-card floating-privacy"><span class="squircle floating-icon">✓</span><div><strong>隐私友好</strong><small>无需 Cookie 横幅</small></div></div>
+        <div class="squircle floating-card floating-realtime"><span class="pulse-dot"></span><div><strong>实时数据</strong><small>每 30 秒自动更新</small></div></div>
       </div>
     </section>
 
@@ -75,17 +75,17 @@
     <section class="features container" id="features">
       <div class="section-heading"><div class="eyebrow">ANALYTICS WITHOUT COMPLEXITY</div><h2>你需要的统计，<br>刚刚好。</h2><p>没有复杂配置和信息噪音。打开后台，就能读懂网站表现。</p></div>
       <div class="feature-grid">
-        <article class="feature-card feature-wide"><div class="feature-icon">↗</div><h3>重要指标，一眼掌握</h3><p>独立访客、访问次数、浏览量、跳出率和访问时长，配合趋势与同期对比，快速判断网站变化。</p><div class="mini-metrics"><span><b>12.3k</b>独立访客</span><span><b>37.5k</b>页面浏览</span><span><b>2.56</b>每次访问浏览量</span></div></article>
-        <article class="feature-card"><div class="feature-icon">◷</div><h3>实时了解正在发生什么</h3><p>当前在线、实时趋势和最近访客每 30 秒自动更新，不需要手动刷新页面。</p></article>
-        <article class="feature-card"><div class="feature-icon">⌖</div><h3>看清访客来自哪里</h3><p>来源、页面、国家、地区、城市、设备与浏览器，多维度拆解每一次访问。</p></article>
-        <article class="feature-card"><div class="feature-icon">▤</div><h3>报告简洁，也能深入</h3><p>从热门页面到搜索关键词，从活动日志到事件转化，需要细节时自然展开。</p></article>
-        <article class="feature-card feature-accent" id="privacy"><div class="feature-icon">✓</div><h3>隐私保护，默认开启</h3><p>无 Cookie、不存原始 IP，使用匿名访客标识。只收集理解网站表现所需的数据。</p><ul><li>无跨站追踪</li><li>无广告画像</li><li>数据由你掌握</li></ul></article>
+        <article class="squircle feature-card feature-wide"><div class="squircle feature-icon">↗</div><h3>重要指标，一眼掌握</h3><p>独立访客、访问次数、浏览量、跳出率和访问时长，配合趋势与同期对比，快速判断网站变化。</p><div class="mini-metrics"><span class="squircle"><b>12.3k</b>独立访客</span><span class="squircle"><b>37.5k</b>页面浏览</span><span class="squircle"><b>2.56</b>每次访问浏览量</span></div></article>
+        <article class="squircle feature-card"><div class="squircle feature-icon">◷</div><h3>实时了解正在发生什么</h3><p>当前在线、实时趋势和最近访客每 30 秒自动更新，不需要手动刷新页面。</p></article>
+        <article class="squircle feature-card"><div class="squircle feature-icon">⌖</div><h3>看清访客来自哪里</h3><p>来源、页面、国家、地区、城市、设备与浏览器，多维度拆解每一次访问。</p></article>
+        <article class="squircle feature-card"><div class="squircle feature-icon">▤</div><h3>报告简洁，也能深入</h3><p>从热门页面到搜索关键词，从活动日志到事件转化，需要细节时自然展开。</p></article>
+        <article class="squircle feature-card feature-accent" id="privacy"><div class="squircle feature-icon">✓</div><h3>隐私保护，默认开启</h3><p>无 Cookie、不存原始 IP，使用匿名访客标识。只收集理解网站表现所需的数据。</p><ul><li>无跨站追踪</li><li>无广告画像</li><li>数据由你掌握</li></ul></article>
       </div>
     </section>
 
     <section class="self-host container" id="self-host">
       <div class="self-host-copy"><div class="eyebrow">YOUR DATA, YOUR RULES</div><h2>自己的数据，<br>自己说了算。</h2><p>LiteStats 支持自托管。账号、站点和访问事件都保存在你的实例中，适合重视数据主权与长期维护的团队。</p><div class="self-host-points"><span><b>01</b> 独立实例与账号权限</span><span><b>02</b> PostgreSQL + ClickHouse</span><span><b>03</b> 加密备份与恢复</span></div><a class="text-link" href="https://github.com/gentpan/LiteStats" target="_blank" rel="noopener noreferrer">查看部署文档 <span aria-hidden="true">→</span></a></div>
-      <div class="terminal" aria-label="部署命令示例"><div class="terminal-top"><span></span><span></span><span></span><small>your-server</small></div><pre><code><i>$</i> git clone https://github.com/gentpan/LiteStats.git
+      <div class="squircle terminal" aria-label="部署命令示例"><div class="terminal-top"><span></span><span></span><span></span><small>your-server</small></div><pre><code><i>$</i> git clone https://github.com/gentpan/LiteStats.git
 <i>$</i> cd LiteStats
 <i>$</i> python3 deploy/litestats.py install
 
@@ -94,7 +94,7 @@
 ✓ LiteStats is healthy</span></code></pre></div>
     </section>
 
-    <section class="final-cta container"><div><div class="eyebrow">START UNDERSTANDING YOUR AUDIENCE</div><h2>让网站统计，回归简单。</h2><p>创建你的第一个站点，开始看清每一次访问。</p></div><a class="button button-primary" href="/register">免费开始 <span aria-hidden="true">→</span></a></section>
+    <section class="squircle final-cta container"><div><div class="eyebrow">START UNDERSTANDING YOUR AUDIENCE</div><h2>让网站统计，回归简单。</h2><p>创建你的第一个站点，开始看清每一次访问。</p></div><a class="squircle button button-primary" href="/register">免费开始 <span aria-hidden="true">→</span></a></section>
   </main>
 
   <footer class="site-footer container"><a class="brand footer-brand" href="/">LiteStats</a><p>简单、隐私友好的网站统计。</p><div><a href="#features">产品功能</a><a href="/login">登录</a><a href="https://github.com/gentpan/LiteStats" target="_blank" rel="noopener noreferrer">GitHub</a></div><small>© 2026 LiteStats</small></footer>

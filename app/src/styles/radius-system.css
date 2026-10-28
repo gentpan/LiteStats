@@ -1,4 +1,4 @@
-/* Native geometry with SVG painting on browsers without corner-shape. Colors, spacing, borders and shadows stay
+/* Native corner-shape with a 0.54-radius round fallback. Colors, spacing, borders and shadows stay
    with each component. Four optional corner variables support joined surfaces. */
 .squircle,
 .mapbox-stage :is(.mapboxgl-ctrl-attrib, .mapboxgl-ctrl-attrib-button).squircle {
@@ -7,7 +7,7 @@
   --sq-tr: var(--sq-r);
   --sq-br: var(--sq-r);
   --sq-bl: var(--sq-r);
-  border-radius: var(--sq-tl) var(--sq-tr) var(--sq-br) var(--sq-bl);
+  border-radius: calc(var(--sq-tl) * .54) calc(var(--sq-tr) * .54) calc(var(--sq-br) * .54) calc(var(--sq-bl) * .54);
 }
 @supports (corner-shape: squircle) {
   .squircle,
@@ -77,20 +77,3 @@
 .mapbox-stage :is(.mapboxgl-ctrl-attrib, .mapboxgl-ctrl-attrib-button).squircle { --sq-r:11px; }
 
 .squircle.report-tab-trigger { --sq-r:calc(var(--ui-control-compact) * .46); }
-
-/* Paint fill and stroke together, including native inputs. No container clipping. */
-.squircle[data-sq-painted] {
-  transition-property: opacity, transform !important;
-  corner-shape: round !important;
-  border-radius: 0 !important;
-  border-color: transparent !important;
-  background-color: transparent !important;
-  background-image: var(--sq-images) !important;
-  background-size: var(--sq-image-size) !important;
-  background-position: var(--sq-image-position) !important;
-  background-repeat: var(--sq-image-repeat) !important;
-  background-origin: var(--sq-image-origin) !important;
-  background-clip: var(--sq-image-clip) !important;
-}
-.squircle[data-sq-painted]:focus-visible { outline-color: transparent !important; box-shadow: none !important; }
-:is(img,video,canvas,input,textarea,button,select).squircle[data-sq-painted] { clip-path: var(--sq-content-clip); }
