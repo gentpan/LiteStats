@@ -34,7 +34,7 @@ function ActivityPage() {
   const [error,setError]=useState("")
   useRouterAutoRefresh({enabled: auto, onError: () => setError(t("刷新失败，请重试"))})
   return <Shell user={me}>
-    <ManagementHeader title={t("活动日志")}><ActionLink to="/sites/$domain" params={{domain}}><UIIcon name="arrow" className="rotate-180"/>{t("返回统计")}</ActionLink></ManagementHeader>
+    <ManagementHeader title={t("活动日志")} icon="activity"><ActionLink to="/sites/$domain" params={{domain}}><UIIcon name="arrow" className="rotate-180"/>{t("返回统计")}</ActionLink></ManagementHeader>
     <div className="squircle activity-page-toolbar"><SiteSwitcher domain={domain}/><div>
       <label className="activity-window">{t("时间范围")}<select className="squircle input" value={range} onChange={event=>void router.navigate({to:"/sites/$domain/activity",params:{domain},search:{window:event.target.value as Window}})}><option value="30m">{t("近 30 分钟")}</option><option value="24h">{t("近 24 小时")}</option><option value="7d">{t("近 7 天")}</option></select></label>
       <label className="activity-auto"><input type="checkbox" checked={auto} onChange={event=>setAuto(event.target.checked)}/>{t("每 30 秒刷新")}</label>

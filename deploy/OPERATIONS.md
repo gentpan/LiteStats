@@ -42,8 +42,10 @@ health. Only the application loopback port is published. Put your existing HTTPS
 proxy in front of it, then open the site to create the first administrator.
 
 Run the same command from an updated checkout to upgrade. Existing credentials and
-volumes are retained. Before upgrading a healthy managed application it creates an
-encrypted recovery backup. A failed application start restores the previous image
+volumes are retained. Before upgrading a healthy managed application it creates at
+most one encrypted recovery backup per UTC day; repeated upgrades on the same day
+reuse that recovery point and do not stop the application for another backup.
+Manual backups and the separate pre-restore safety backup are not skipped. A failed application start restores the previous image
 setting. It does not undo a PostgreSQL or ClickHouse image upgrade: test database
 major-version upgrades separately. Default images target PostgreSQL 16 and ClickHouse
 26.8 LTS. Never run `down -v` on an instance whose data you need.

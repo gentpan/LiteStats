@@ -1,4 +1,5 @@
 """Run: python3 -m unittest discover -s deploy -p 'test_*.py'"""
+import datetime
 import importlib.util
 import json
 import os
@@ -118,6 +119,17 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual([item.text for item in tree.findall('users/app/allow_databases/database')],['original','litestats_restore_fixture'])
         self.assertEqual([item.text for item in tree.findall('users/unrelated/allow_databases/database')],['other'])
         client.text.assert_called_once_with('SYSTEM RELOAD CONFIG')
+
+    def test_upgrade_backup_is_created_at_most_once_per_utc_day(self):
+        now=datetime.datetime(2026,10,28,3,4,5,tzinfo=datetime.timezone.utc)
+        backups=self.root/'backups'
+        backups.mkdir()
+        first=ops.upgrade_backup_path(self.root,now)
+        self.assertEqual(first.name,'20261028T030405-upgrade.lsb')
+        first.write_bytes(b'encrypted backup')
+        self.assertIsNone(ops.upgrade_backup_path(self.root,now+datetime.timedelta(hours=2)))
+        following=ops.upgrade_backup_path(self.root,now+datetime.timedelta(days=1))
+        self.assertEqual(following.name,'20261029T030405-upgrade.lsb')
 
 if __name__ == "__main__":
     unittest.main()

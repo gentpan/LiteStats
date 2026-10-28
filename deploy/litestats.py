@@ -452,6 +452,15 @@ class Service:
         else:
             stage_restore(args.config, args.archive, args.key_file)
 
+def upgrade_backup_path(directory, now=None):
+    current = now or datetime.datetime.now(datetime.timezone.utc)
+    backups = Path(directory) / "backups"
+    prefix = current.strftime("%Y%m%dT")
+    for archive in backups.glob(prefix + "*-upgrade.lsb"):
+        if archive.is_file() and not archive.is_symlink() and archive.stat().st_size > 0:
+            return None
+    return backups / (current.strftime("%Y%m%dT%H%M%S") + "-upgrade.lsb")
+
 def install(args):
     compose_base=compose_command()
     root = Path(__file__).resolve().parent.parent
@@ -489,13 +498,15 @@ def install(args):
     if containers:
         status=run(["docker","inspect","--format","{{if .State.Health}}{{.State.Health.Status}}{{end}}",containers[0]]).decode().strip()
         if status=="healthy":
-            backup_args=argparse.Namespace(config=config,compose_file=directory/"compose.yml",engine=False,
-                service=None,health_url=None,archive=directory/"backups"/(datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S")+"-upgrade.lsb"),key_file=directory/"backup.key")
-            backup_args.archive.parent.mkdir(mode=0o700,exist_ok=True)
-            service=Service(backup_args)
-            service.stop()
-            try: service.operation("backup")
-            finally: service.start()
+            archive = upgrade_backup_path(directory)
+            if archive:
+                backup_args=argparse.Namespace(config=config,compose_file=directory/"compose.yml",engine=False,
+                    service=None,health_url=None,archive=archive,key_file=directory/"backup.key")
+                backup_args.archive.parent.mkdir(mode=0o700,exist_ok=True)
+                service=Service(backup_args)
+                service.stop()
+                try: service.operation("backup")
+                finally: service.start()
     patch_env(config, {"LITESTATS_IMAGE": tag})
     try:
         run(compose + ["up", "-d", "--wait", "--wait-timeout", "180", "postgres", "clickhouse", "app"])

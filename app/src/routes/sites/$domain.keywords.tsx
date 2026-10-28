@@ -91,7 +91,7 @@ function KeywordWorkspace({domain, data}: {domain: string; data: WorkspaceData})
     : pack.error ? t(({auth_error: "授权已失效或没有该资源的访问权限，请检查接入设置。", property_required: "Google 已授权，请选择并保存本站对应的 Search Console 资源。", request_timeout: "搜索平台响应超时，请稍后重试。"} as Record<string, string>)[pack.error] || "搜索平台暂时无法读取，请稍后重试。")
     : t("当前范围暂无关键词。最近的数据可能延迟，部分低频查询不会公开。")
   return <Shell user={data.me}>
-    <ManagementHeader title={t("搜索关键词")} description={domain}>
+    <ManagementHeader title={t("搜索关键词")} description={domain} icon="search">
       <ActionLink to="/sites/$domain" params={{domain}}>{t("返回统计")}</ActionLink>
       {canManage ? <ActionLink to="/sites/$domain/settings" params={{domain}} search={{tab: "integrations"}}>{t("接入设置")}</ActionLink> : null}
     </ManagementHeader>
