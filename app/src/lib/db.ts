@@ -729,7 +729,10 @@ export async function eventSession(identity: string) {
   const result = await (await db()).query<{session_id: string}>(`
     INSERT INTO event_sessions (identity, session_id, last_seen_at) VALUES ($1, $2, now())
     ON CONFLICT (identity) DO UPDATE SET
-      session_id = CASE WHEN event_sessions.last_seen_at < now() - interval '30 minutes' THEN EXCLUDED.session_id ELSE event_sessions.session_id END,
+      session_id = CASE
+        WHEN event_sessions.last_seen_at < now() - interval '30 minutes'
+          OR date_trunc('hour', event_sessions.last_seen_at) < date_trunc('hour', now())
+        THEN EXCLUDED.session_id ELSE event_sessions.session_id END,
       last_seen_at = now() RETURNING session_id`, [identity, fresh])
   return result.rows[0].session_id
 }

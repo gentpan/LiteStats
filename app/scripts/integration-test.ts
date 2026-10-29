@@ -4,12 +4,13 @@ import { db, createUser, createSite, findSiteForUser, listSites, saveTotpSecret,
 import { asBuffer } from "../src/lib/webauthn"
 import { hashRecoveryCode } from "../src/lib/totp"
 import { ch, ensureEventColumns, queueEvent, flushEventQueue } from "../src/lib/ch"
+import { registerPublicUser } from "../src/lib/user-management"
 // This runner deliberately refuses any existing/remote database endpoint.
 assert.equal(new URL(DATABASE_URL).host, '127.0.0.1:55435', 'Use the isolated local test database')
 assert.equal(new URL(CLICKHOUSE_URL).host, "127.0.0.1:58123", "Only the isolated local ClickHouse is allowed")
 const suffix=Date.now().toString(36)
 const owner=await createUser(`owner-${suffix}@test.invalid`,'test-password','Test owner')
-const viewer=await createUser(`viewer-${suffix}@test.invalid`,'test-password','Test viewer')
+const viewer={id:await registerPublicUser({email:`viewer-${suffix}@test.invalid`,password:'test-password',name:'Test viewer'})}
 const site=await createSite(owner.id,`integration-${suffix}.test`,'Asia/Shanghai')
 assert.equal(await findSiteForUser(viewer.id,site.domain),null)
 await (await db()).query("INSERT INTO team_memberships (user_id, team_id, role) VALUES ($1,$2,'viewer')",[viewer.id,site.team_id])
@@ -27,7 +28,13 @@ const identity = `session-${suffix}`
 const session1 = await eventSession(identity)
 assert.equal(await eventSession(identity), session1)
 await (await db()).query("UPDATE event_sessions SET last_seen_at=now()-interval '31 minutes' WHERE identity=$1", [identity])
-assert.notEqual(await eventSession(identity), session1)
+const session2 = await eventSession(identity)
+assert.notEqual(session2, session1)
+assert.equal(await eventSession(identity), session2)
+await (await db()).query("UPDATE event_sessions SET last_seen_at=date_trunc('hour',now())-interval '1 minute' WHERE identity=$1", [identity])
+const session3 = await eventSession(identity)
+assert.notEqual(session3, session2)
+assert.equal(await eventSession(identity), session3)
 await ensureEventColumns()
 queueEvent({siteId:Number(site.id),name:'pageview',hostname:site.domain,pathname:'/',referrer:'',referrerSource:'Direct',userId:'123',sessionVisitorId:'monthly-123',sessionId:'456',browser:'Test',browserVersion:'1',os:'Linux',osVersion:'',device:'Desktop',country:'',title:'Integration',language:'zh',screen:'1920x1080',query:'',keyword:'',utm:{source:'',medium:'',campaign:''},props:{}})
 await flushEventQueue()
