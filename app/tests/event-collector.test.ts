@@ -70,7 +70,7 @@ test("privacy headers do not suppress collection and persistent visitor IDs rema
 
 test("session visitor identity is independent of persistent IDs and visit IDs", async () => {
   await withCollector(async ({queue}) => {
-    const headers = {"cf-connecting-ip": "203.0.113.10", "user-agent": "Fixture Browser"}
+    const headers = {"cf-connecting-ip": "203.0.113.10", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"}
     await collect({request: request(headers, {v: "persistent-a"})})
     await collect({request: request(headers, {v: "persistent-b"})})
     const first = queue.mock.calls[0][0]
@@ -79,6 +79,20 @@ test("session visitor identity is independent of persistent IDs and visit IDs", 
     expect(first.sessionVisitorId).toBe(second.sessionVisitorId)
     expect(first.sessionVisitorId).toMatch(/^[a-f0-9]{64}$/)
     expect(first.sessionVisitorId).not.toBe(first.sessionId)
+  })
+})
+
+test("known bots are acknowledged without storage work while browser traffic is retained", async () => {
+  await withCollector(async ({find, session, queue}) => {
+    const bot = await collect({request: request({"user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"})})
+    expect(bot.status).toBe(202)
+    expect(find).not.toHaveBeenCalled()
+    expect(session).not.toHaveBeenCalled()
+    expect(queue).not.toHaveBeenCalled()
+
+    const browser = await collect({request: request({"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"})})
+    expect(browser.status).toBe(202)
+    expect(queue).toHaveBeenCalledTimes(1)
   })
 })
 

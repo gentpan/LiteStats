@@ -1,4 +1,5 @@
 import { eventCors } from "~/lib/event-cors"
+import { isbot } from "isbot"
 import { createHmac } from "node:crypto"
 import { SESSION_KEY } from "~/lib/env"
 import { eventSchema, readJson } from "~/lib/request-validation"
@@ -21,6 +22,8 @@ export const Route = createFileRoute("/api/event")({
         } catch {
           return new Response("bad request", { status: 400, headers: eventCors(request) })
         }
+        const ua = request.headers.get("user-agent") || ""
+        if (isbot(ua)) return new Response("ok", { status: 202, headers: eventCors(request) })
         const domain = String(body.d || body.domain || "")
         const rawUrl = String(body.u || body.url || "")
         let host = ""
@@ -53,7 +56,6 @@ export const Route = createFileRoute("/api/event")({
           /* ignore */
         }
         const ip = visitorAddress(request.headers)
-        const ua = request.headers.get("user-agent") || ""
         const day = dateInTimezone(site.timezone)
         const identity = String(body.v || body.visitor || "") || `${ip}|${ua}|${day}`
         const visitorId = createHmac("sha256", SESSION_KEY).update(`${site.id}|${identity}`).digest("hex")
