@@ -1,7 +1,7 @@
 # Plost installation, backup and recovery
 
 Run these commands from a trusted Plost checkout on a single Linux host.
-Existing `litestats` script, service, database and backup identifiers are retained for compatibility.
+Existing service, database and backup identifiers are retained for compatibility.
 The application keeps PostgreSQL for accounts/configuration and ClickHouse for events.
 The default deployment runs one application process. Do not scale application replicas
 while using the coordinated cloud restore feature.
@@ -33,8 +33,12 @@ Requirements: Linux with systemd, root, Docker Engine, Docker Compose v2 or newe
 The production build includes Bun in its build stage; Bun is not needed on the host.
 
 ```sh
-python3 deploy/litestats.py install --directory /opt/litestats-instance --port 3100
+python3 deploy/plost.py install --directory /opt/plost-instance --port 3100
 ```
+
+For an existing instance, keep its original directory and port when upgrading.
+Do not create a new instance just to match the renamed example path. The previous
+command entry point remains supported.
 
 The private directory must be outside the checkout. Installation generates independent
 database passwords, a session/encryption key and `backup.key`; it never prints them.
@@ -58,15 +62,15 @@ files, keys, backups, logs, node_modules and build output are excluded.
 ## Unified encrypted backup
 
 ```sh
-python3 /opt/litestats-instance/litestats.py backup \
-  --config /opt/litestats-instance/.env \
-  --compose-file /opt/litestats-instance/compose.yml
+python3 /opt/plost-instance/plost.py backup \
+  --config /opt/plost-instance/.env \
+  --compose-file /opt/plost-instance/compose.yml
 ```
 
 The command briefly stops the application, lets its accepted event buffer flush,
 exports both databases while application writes/workers are stopped, restarts the
 application and checks health. Files go to `backups/<UTC timestamp>.lsb` by default.
-Use `--archive /opt/litestats-instance/backups/my-backup.lsb` for an explicit path.
+Use `--archive /opt/plost-instance/backups/my-backup.lsb` for an explicit path.
 No existing archive is replaced. Database services keep running; other applications
 and their data are not touched. Requests received during the pause may fail; a backup
 does not guarantee uninterrupted event collection.
@@ -87,14 +91,14 @@ for the backup as well. Do not put either backups or keys into Git.
 ## Verify and recover
 
 ```sh
-python3 /opt/litestats-instance/litestats.py verify \
-  --config /opt/litestats-instance/.env \
-  --archive /opt/litestats-instance/backups/my-backup.lsb
+python3 /opt/plost-instance/plost.py verify \
+  --config /opt/plost-instance/.env \
+  --archive /opt/plost-instance/backups/my-backup.lsb
 
-python3 /opt/litestats-instance/litestats.py restore \
-  --config /opt/litestats-instance/.env \
-  --compose-file /opt/litestats-instance/compose.yml \
-  --archive /opt/litestats-instance/backups/my-backup.lsb
+python3 /opt/plost-instance/plost.py restore \
+  --config /opt/plost-instance/.env \
+  --compose-file /opt/plost-instance/compose.yml \
+  --archive /opt/plost-instance/backups/my-backup.lsb
 ```
 
 Use `--key-file /path/to/backup.key` for the original key. With Compose, the archive

@@ -13,8 +13,10 @@ Open **Settings → System settings → Backup**. The **Full backup and recovery
 Use the [installation and recovery guide](OPERATIONS.md) for the managed Docker Compose installer, encrypted PostgreSQL + ClickHouse + runtime backup packages, verification, staged recovery and native-systemd commands.
 
 ```sh
-python3 deploy/litestats.py install --directory /opt/litestats-instance --port 3100
+python3 deploy/plost.py install --directory /opt/plost-instance --port 3100
 ```
+
+For an existing instance, keep its original directory and port when upgrading.
 
 The existing native deployment below remains supported. It is not converted to Docker during application upgrades. The unified backup script can run directly on that host with its existing private environment file and service.
 

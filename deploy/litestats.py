@@ -487,7 +487,7 @@ def install(args):
     socket_dir.mkdir(mode=0o755,exist_ok=True)
     os.chmod(socket_dir,0o755)
     backup_key(directory / "backup.key", create=True)
-    for name in ("compose.yml", "Ops.Dockerfile", "Ops.Dockerfile.dockerignore", "litestats.py", "ops_agent.py"):
+    for name in ("compose.yml", "Ops.Dockerfile", "Ops.Dockerfile.dockerignore", "plost.py", "litestats.py", "ops_agent.py"):
         shutil.copyfile(root / "deploy" / name, directory / name)
     compose = [*compose_base, "--env-file", str(config), "-f", str(directory / "compose.yml")]
     old = config.read_bytes()
@@ -595,7 +595,7 @@ def main():
             raise
     print("Complete:", args.command, "(old databases retained after recovery)" if args.command == "restore" else "")
 
-if __name__ == "__main__":
+def cli():
     try:
         main()
     except OpsError as error:
@@ -605,3 +605,7 @@ if __name__ == "__main__":
         # Keep even database/URL/parse error messages out of unattended logs.
         print("Plost operation failed; current database files and recovery candidates have been retained.", file=sys.stderr)
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    cli()
