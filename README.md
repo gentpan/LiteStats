@@ -1,6 +1,16 @@
-# Plost Go
-
-轻、快、省、美的网站访问统计，供个人自托管。
+<p align="center">
+  <a href="https://plo.st"><img src="docs/assets/plost-logo.svg" width="240" alt="Plost"></a>
+</p>
+<h1 align="center">Plost Go</h1>
+<p align="center">轻、快、省、美的网站访问统计，供个人自托管。</p>
+<p align="center">
+  <a href="https://go.dev/"><img alt="Go 1.27" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white"></a>
+  <a href="https://www.sqlite.org/"><img alt="SQLite" src="https://img.shields.io/badge/SQLite-Embedded-003B57?logo=sqlite&logoColor=white"></a>
+  <a href="https://react.dev/"><img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white"></a>
+  <a href="https://www.typescriptlang.org/"><img alt="TypeScript 7" src="https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white"></a>
+  <a href="https://vite.dev/"><img alt="Vite 8" src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-22C55E"></a>
+</p>
 
 这是独立于 `self-hosted/` 的 Go + SQLite 版本。一个可执行文件内嵌完整界面、CSS、JavaScript、字体和追踪脚本，运行时不需要 Node、Bun、Go 工具链、Docker 或外部数据库。原版、云版和线上个人实例没有被替换。
 
