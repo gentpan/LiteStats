@@ -12,7 +12,7 @@
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-22C55E"></a>
 </p>
 
-这是独立于 `self-hosted/` 的 Go + SQLite 版本。一个可执行文件内嵌完整界面、CSS、JavaScript、字体和追踪脚本，运行时不需要 Node、Bun、Go 工具链、Docker 或外部数据库。原版、云版和线上个人实例没有被替换。
+Plost 是基于 Go + SQLite 的轻量网站访问统计工具。一个可执行文件内嵌完整界面、CSS、JavaScript、字体和追踪脚本，运行时不需要 Node、Bun、Go 工具链、Docker 或外部数据库。
 
 ## 开始使用
 
