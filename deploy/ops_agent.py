@@ -218,7 +218,7 @@ class Handler(BaseHTTPRequestHandler):
                 _,job=broker.read_job(query.get('id',[''])[0],self.headers.get('X-Job-Ticket',''))
                 return self.reply(200,broker.public_job(job))
             if url.path=='/archive':return self.stream(broker.archive(query.get('id',[''])[0]),'application/octet-stream',query['id'][0])
-            if url.path=='/key':return self.stream(broker.args.key_file,'text/plain','litestats-recovery.key')
+            if url.path=='/key':return self.stream(broker.args.key_file,'text/plain','plost-recovery.key')
             self.reply(404,{'error':'Not found'})
         except (OSError,ValueError,KeyError,ops.OpsError):self.reply(400,{'error':'Invalid backup request'})
     def do_POST(self):

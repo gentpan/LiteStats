@@ -1,4 +1,4 @@
-# LiteStats 本地检查
+# Plost 本地检查
 
 ## 范围
 
