@@ -2,6 +2,7 @@
 @import "./management.css";
 @import "./radius-system.css";
 @import "./accent-colors.css";
+@import "./brand.css";
 
 /* Legacy radius tokens remain for semantic circles and utility compatibility.
    Interactive controls and surfaces use the shared squircle geometry. */
@@ -53,7 +54,6 @@
   --color-gray-900: var(--color-zinc-900);
   --color-gray-950: var(--color-zinc-950);
   --color-indigo-150: rgb(212 220 255);
-  --font-logo: "Sora", ui-sans-serif, system-ui, sans-serif;
   --color-logo-purple: var(--accent-logo);
   --default-ring-width: 2px;
   --default-ring-color: var(--color-indigo-500);
@@ -119,55 +119,15 @@ a {
 /* Preserve original brand artwork, including black logos, on dark report rows. */
 html[data-theme="dark"] .source-brand-icon { background-color:#fff; border-radius:2px; }
 
-.logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5em;
-  line-height: 1;
-  font-size: 1.55rem;
-  color: var(--color-gray-900);
+.logo.plost-logo {
+  --plost-tile-size: 56px;
+  --plost-brand: var(--accent-logo);
+  --plost-brand-ink: var(--accent-logo-on);
+  --plost-ink: var(--color-gray-900);
+  --plost-pill: transparent;
 }
-
-.logo-mark {
-  display: block;
-  height: 1.55em;
-  width: 1.55em;
-  flex-shrink: 0;
-  overflow: visible;
-}
-
-.logo-mark-plate {
-  fill: var(--color-logo-purple);
-}
-
-.logo-mark-bars {
-  fill: var(--accent-logo-on);
-}
-
-.logo-copy {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.18em;
-}
-
-.logo-wordmark {
-  display: inline-flex;
-  align-items: baseline;
-  font-family: var(--font-logo);
-}
-
-.logo-wordmark-lite {
-  font-weight: 600;
-  letter-spacing: -0.045em;
-}
-
-.logo-wordmark-stats {
-  font-weight: 400;
-  letter-spacing: -0.035em;
-  margin-left: 0.025em;
-  color: inherit;
-}
+html[data-theme="dark"] .logo.plost-logo { --plost-pill: transparent; }
+.auth-brand .logo.plost-logo { --plost-tile-size: 64px; }
 
 .site-header {
   position: sticky;
@@ -340,10 +300,7 @@ html[data-theme="dark"] .source-brand-icon { background-color:#fff; border-radiu
   white-space: nowrap;
 }
 
-.site-footer-brand .logo-mark {
-  height: 1.2em;
-  width: 1.2em;
-}
+.site-footer-brand .logo.plost-logo { --plost-tile-size: 40px; --plost-pill: transparent; }
 
 .site-footer-meta {
   grid-area: meta;
@@ -825,7 +782,6 @@ html[data-theme="dark"] :is(.bg-red-50, .bg-red-100) { background-color: #44262f
 html[data-theme="dark"] :is(.text-red-600, .text-red-700) { color: #fda4af; }
 html[data-theme="dark"] .bg-green-50 { background-color: #193d36; }
 html[data-theme="dark"] .text-green-600 { color: #6ee7b7; }
-.site-footer .logo-wordmark-stats { color: #d4d4d8; }
 :where(button, a, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--accent-focus);
   outline-offset: 3px;
@@ -846,7 +802,7 @@ button:disabled { cursor: not-allowed; }
   font-size: 0.875rem;
 }
 @media (max-width: 639px) {
-  .logo { font-size: 1.3rem; }
+  .site-header-brand .logo.plost-logo { --plost-tile-size: 48px; }
   .settings-modal { padding: 0.75rem; }
   .settings-modal-body { padding: 1rem; }
   .settings-modal-foot { padding: 0.75rem 1rem 1rem; flex-wrap: wrap; }
@@ -1289,9 +1245,6 @@ html { scrollbar-gutter: stable; }
 html[data-theme="dark"] .site-footer { background:#000; }
 .trend-axis-label { font-family:var(--ui-font-body); font-size:10px; font-weight:400; font-variant-numeric:tabular-nums; letter-spacing:0; }
 
-@font-face { font-family:"Sora"; font-style:normal; font-weight:400; font-display:swap; src:url("/fonts/sora-regular.ttf") format("truetype"); }
-@font-face { font-family:"Sora"; font-style:normal; font-weight:600; font-display:swap; src:url("/fonts/sora-semibold.ttf") format("truetype"); }
-.logo-wordmark { font-synthesis:none; }
 
 .report-list-pagination { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding-top:16px; margin-top:16px; border-top:1px solid var(--color-gray-200); font-size:12px; color:var(--color-gray-500); }
 .report-list-pagination > div { display:flex; align-items:center; gap:12px; }

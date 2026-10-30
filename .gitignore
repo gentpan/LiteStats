@@ -83,3 +83,9 @@ id_ed25519
 *.before-restore
 *.restore-*.json
 .litestats-ops.lock
+
+# Independent edition and companion workspaces must not enter this public repository.
+/self-hosted/
+/cloud/
+/website/
+/menubar/

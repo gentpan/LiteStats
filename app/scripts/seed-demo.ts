@@ -3,7 +3,7 @@ import { DATABASE_URL, SEED_DEMO } from '../src/lib/env'
 import { db, findUserByEmail, listSites, createSite } from '../src/lib/db'
 import { ch, ensureEventColumns } from '../src/lib/ch'
 assert.ok(SEED_DEMO && new URL(DATABASE_URL).host === '127.0.0.1:55435', 'Demo seed is only allowed in the isolated preview database')
-const user = await findUserByEmail('demo@litestats.dev')
+const user = await findUserByEmail('demo@plost.example')
 assert.ok(user)
 let site = (await listSites(user.id)).find(s=>s.domain==='demo.local.test')
 if(!site) site=await createSite(user.id,'demo.local.test','Asia/Shanghai')

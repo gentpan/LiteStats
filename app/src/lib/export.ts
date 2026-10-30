@@ -134,7 +134,7 @@ export function downloadDashboardZip(input: {
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  a.download = `LiteStats export ${input.domain} ${input.from} to ${input.to} .zip`
+  a.download = `Plost export ${input.domain} ${input.from} to ${input.to} .zip`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

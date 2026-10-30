@@ -122,7 +122,7 @@ export async function runDueSiteChecks() {
     while (cursor < jobs.rows.length) {
       const job = jobs.rows[cursor++]
       try { await runSiteCheck(job.site_id) }
-      catch { console.error("[LiteStats] Site check job failed", {siteId: job.site_id}) }
+      catch { console.error("[Plost] Site check job failed", {siteId: job.site_id}) }
     }
   }))
 }

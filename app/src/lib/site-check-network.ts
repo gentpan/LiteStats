@@ -66,7 +66,7 @@ export async function requestPublic(url: URL, signal: AbortSignal, bodyLimit = 0
   return new Promise((resolve, reject) => {
     const request = (url.protocol === "https:" ? httpsRequest : httpRequest)(url, {
       ...connection, method: "GET", agent: false, signal,
-      headers: {"User-Agent": "LiteStats-SiteCheck/1.0", Accept: bodyLimit ? "application/rdap+json, application/json" : "*/*", "Accept-Encoding": "identity"},
+      headers: {"User-Agent": "Plost-SiteCheck/1.0", Accept: bodyLimit ? "application/rdap+json, application/json" : "*/*", "Accept-Encoding": "identity"},
     }, response => {
       const status = response.statusCode || 0
       const location = response.headers.location || null

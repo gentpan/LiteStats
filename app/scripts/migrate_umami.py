@@ -345,7 +345,7 @@ def migrate(snapshot_path, mapping_path, output_path, manifest_path, timezone_na
                         "session_id": "Original Umami visit_id",
                         "timestamp": "Exact floor to UTC epoch seconds; original subsecond value in umami.created_at",
                         "referrer_source": "utm_source, else lowercase referrer hostname without www., else Direct (matches live collector)",
-                        "acquisition_channel": "Empty, matching current LiteStats live collector; no invented historical attribution",
+                        "acquisition_channel": "Empty, matching current Plost live collector; no invented historical attribution",
                         "source_metadata": "umami.* entries preserve all original event/session/property rows; numeric metadata uses exact decimal strings",
                         "timezone": "Report date grouping only; stored timestamps remain UTC",
                         "consistency": "Caller must export all arrays in one consistent source transaction",

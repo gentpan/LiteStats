@@ -1,6 +1,7 @@
-# Install, backup and recovery
+# Plost installation, backup and recovery
 
-Run these commands from a trusted LiteStats checkout on a single Linux host.
+Run these commands from a trusted Plost checkout on a single Linux host.
+Existing `litestats` script, service, database and backup identifiers are retained for compatibility.
 The application keeps PostgreSQL for accounts/configuration and ClickHouse for events.
 The default deployment runs one application process. Do not scale application replicas
 while using the coordinated cloud restore feature.

@@ -24,8 +24,8 @@ export function generateTotpSecret() {
 }
 
 export function totpUri(email: string, secret: Buffer) {
-  const label = encodeURIComponent(`LiteStats:${email}`)
-  return `otpauth://totp/${label}?secret=${toBase32(secret)}&issuer=LiteStats&period=30&digits=6`
+  const label = encodeURIComponent(`Plost:${email}`)
+  return `otpauth://totp/${label}?secret=${toBase32(secret)}&issuer=Plost&period=30&digits=6`
 }
 
 export function totpCode(secret: Buffer, unix: number) {

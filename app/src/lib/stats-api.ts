@@ -32,10 +32,10 @@ export function createStatsHandler(deps:{
     const domain = url.searchParams.get("domain")
     if (domain !== null && (!domain || domain.length>255)) return fail("invalid_domain","domain must contain 1–255 characters.",400)
     const token = /^Bearer ([a-f0-9]{16})$/i.exec(request.headers.get("authorization") || "")?.[1]
-    if (!token) {headers["WWW-Authenticate"]='Bearer realm="LiteStats"';return fail("unauthorized","A valid site sharing credential is required.",401)}
+    if (!token) {headers["WWW-Authenticate"]='Bearer realm="Plost"';return fail("unauthorized","A valid site sharing credential is required.",401)}
     try {
       const site = await deps.authorize(token)
-      if (!site) {headers["WWW-Authenticate"]='Bearer realm="LiteStats"';return fail("unauthorized","Invalid or revoked sharing credential.",401)}
+      if (!site) {headers["WWW-Authenticate"]='Bearer realm="Plost"';return fail("unauthorized","Invalid or revoked sharing credential.",401)}
       if (domain && domain.toLowerCase() !== site.domain.toLowerCase()) return fail("forbidden","This credential does not grant access to that domain.",403)
       const now = deps.now?.() || new Date()
       for (const [key,value] of windows) if (now.getTime()-value.start>=60_000) windows.delete(key)

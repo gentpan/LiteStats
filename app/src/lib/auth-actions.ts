@@ -139,7 +139,7 @@ export const passkeyRegisterOptionsFn = createServerFn({ method: "POST" }).handl
   const { rpID } = relyingParty()
   const existing = await listPasskeyRecords(user.id)
   const options = await generateRegistrationOptions({
-    rpName: "LiteStats",
+    rpName: "Plost",
     rpID,
     userName: user.email,
     userDisplayName: user.name,

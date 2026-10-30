@@ -6,7 +6,7 @@ import { TrackingDocs } from "../src/components/TrackingDocs"
 test("tracking documentation retains the collector and custom events without retired key APIs", () => {
   for (const locale of ["zh-CN", "en"] as const) {
     const html = renderToStaticMarkup(<I18nProvider locale={locale}><TrackingDocs domain="docs.example.test" /></I18nProvider>)
-    for (const text of ["POST /api/event", "docs.example.test", "/script.js", "litestats.track"]) {
+    for (const text of ["POST /api/event", "docs.example.test", "/script.js", "plost.track"]) {
       expect(html).toContain(text)
     }
     expect(html).not.toContain("/api/v1/")

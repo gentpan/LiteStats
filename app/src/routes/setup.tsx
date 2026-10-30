@@ -29,7 +29,7 @@ function SetupPage() {
     <div className="auth-page">
       <main className="auth-main">
         <div className="auth-panel">
-          <div className="auth-brand"><Link to="/" aria-label="LiteStats"><BrandMark /></Link></div>
+          <div className="auth-brand"><Link to="/" aria-label="Plost"><BrandMark /></Link></div>
           <header className="flex flex-col gap-y-2 text-center">
             <h1 className="auth-heading">{c("创建管理员", "Create an administrator")}</h1>
             <p className="text-pretty text-sm leading-6 text-gray-500">{c("创建此实例的管理员账号。完成后将关闭公开注册。", "Create the administrator account for this instance. Public registration will then close.")}</p>

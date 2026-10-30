@@ -11,7 +11,7 @@ Attribution: GeoNames, https://www.geonames.org/
 License: Creative Commons Attribution 4.0 International,
 https://creativecommons.org/licenses/by/4.0/
 
-Modified by LiteStats: selected non-historic/non-colloquial Chinese alternate
+Modified by Plost (formerly LiteStats): selected non-historic/non-colloquial Chinese alternate
 names, preferred zh-CN/zh-Hans then zh, converted Traditional to Simplified with
 OpenCC, normalized Latin aliases, mapped administrative names to CLDR ISO codes,
 and gzip/base64 packed by country. Records are indexed lazily on the server;

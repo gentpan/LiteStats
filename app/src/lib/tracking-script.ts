@@ -77,5 +77,5 @@ export const trackingScript = `(() => {
     if (trackOutbound && url.host && url.host !== location.host) send({ n: "Outbound Link: Click", p: { url: url.href } });
     if (trackFiles && /\\.(pdf|zip|csv|docx?|xlsx?|pptx?|rar|7z|mp4|mp3)(\\?|#|$)/i.test(url.pathname)) send({ n: "File Download", p: { url: url.href } });
   }, true);
-  window.litestats = { track: function (name, props) { send({ n: name, p: props || {} }); } };
+  window.plost = window.litestats = { track: function (name, props) { send({ n: name, p: props || {} }); } };
 })();`

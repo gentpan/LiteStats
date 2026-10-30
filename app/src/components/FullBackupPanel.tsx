@@ -86,7 +86,7 @@ export function FullBackupPanel(){
     </div>
     {keyDialog?<form className="squircle full-backup-confirm" onSubmit={async e=>{
       e.preventDefault();if(running)return;setBusy("key");setError("")
-      try{const response=await fetch(`${endpoint}?action=key`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:keyPassword})});if(!response.ok)await result(response);download(await response.blob(),"litestats-recovery.key");setKeyPassword("");setKeyDialog(false)}catch(err){setError(err instanceof Error?err.message:t("操作失败，请重试"))}finally{setBusy("")}
+      try{const response=await fetch(`${endpoint}?action=key`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:keyPassword})});if(!response.ok)await result(response);download(await response.blob(),"plost-recovery.key");setKeyPassword("");setKeyDialog(false)}catch(err){setError(err instanceof Error?err.message:t("操作失败，请重试"))}finally{setBusy("")}
     }}><p className="settings-hint">{t("恢复密钥请与备份文件分开保存，丢失后无法解密备份。")}</p>
       <Field label={t("当前管理员密码")}><input className="squircle input" required type="password" maxLength={256} autoComplete="current-password" value={keyPassword} onChange={e=>setKeyPassword(e.target.value)}/></Field>
       <ActionButton type="submit" icon="download" loading={busy==="key"} disabled={running}>{t("确认下载密钥")}</ActionButton></form>:null}
@@ -102,7 +102,7 @@ export function FullBackupPanel(){
     {selected?<form className="squircle full-backup-confirm" onSubmit={e=>{e.preventDefault();void start(verified?"restore":"verify")}}>
       <h3>{t("校验与恢复")}</h3><p className="full-backup-filename">{selected}</p>
       <Field label={t("原备份的恢复密钥")} hint={t("本机备份可留空；其他实例的备份请上传原恢复密钥文件。") }><input className="squircle input" type="file" accept=".key,.txt" disabled={running} onChange={async e=>{const file=e.target.files?.[0];setVerified(null);if(!file){setKey("");return}if(file.size>512){setError(t("无效的恢复密钥"));return}setKey((await file.text()).trim())}}/></Field>
-      {verified?<><p className="settings-hint">{t("校验通过：{0}",{0:summary(verified)})}</p><p className="settings-hint">{t("仅恢复你信任的 LiteStats 实例备份。恢复后账号和密码以备份为准，需要重新登录。")}</p>
+      {verified?<><p className="settings-hint">{t("校验通过：{0}",{0:summary(verified)})}</p><p className="settings-hint">{t("仅恢复你信任的 Plost 实例备份。恢复后账号和密码以备份为准，需要重新登录。")}</p>
         <Field label={t("当前管理员密码")}><input className="squircle input" type="password" required maxLength={256} autoComplete="current-password" disabled={running} value={password} onChange={e=>setPassword(e.target.value)}/></Field>
         <Field label={t("输入 RESTORE 确认恢复")}><input className="squircle input" required pattern="RESTORE" autoComplete="off" spellCheck={false} disabled={running} value={confirmation} onChange={e=>setConfirmation(e.target.value)}/></Field></>:null}
       <div className="backup-run-actions"><ActionButton type="submit" icon={verified?"refresh":"shield"} className={verified?"btn btn-danger":""} loading={busy==="verify"||busy==="restore"} disabled={running}>{t(verified?"恢复此完整备份":"校验备份文件")}</ActionButton><ActionButton disabled={running} onClick={()=>{setSelected("");setKey("");setVerified(null)}}>{t("取消")}</ActionButton></div>

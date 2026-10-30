@@ -12,7 +12,7 @@ export default definePlugin(app => {
     if (stopped) return
     const release=enterBackgroundJob()
     if(!release){timer=setTimeout(tick,30_000);timer.unref();return}
-    running = runDueSiteChecks().catch(() => console.error("[LiteStats] Site check scheduler unavailable"))
+    running = runDueSiteChecks().catch(() => console.error("[Plost] Site check scheduler unavailable"))
       .finally(() => { release(); if (!stopped) {timer = setTimeout(tick, 30_000); timer.unref()} })
   }
   timer = setTimeout(tick, 5_000)

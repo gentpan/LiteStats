@@ -49,7 +49,7 @@ export function TrackingDocs({ domain }: { domain: string }) {
             <p>
               {en
                 ? "Ingest pageviews and custom conversion events directly from backend services, mobile apps (iOS / Android), mini-programs, CLI tools, or serverless functions without a browser:"
-                : "支持从后端服务、移动 App、微信小程序、命令行脚本或无前端浏览器环境中直接向 LiteStats 上报页面访问与业务事件："}
+                : "支持从后端服务、移动 App、微信小程序、命令行脚本或无前端浏览器环境中直接向 Plost 上报页面访问与业务事件："}
             </p>
             <div className="squircle api-endpoint-badge">
               <span className="squircle method-post">POST</span>
@@ -73,7 +73,7 @@ export function TrackingDocs({ domain }: { domain: string }) {
                     <td><code className="squircle">d</code> / <code className="squircle">domain</code></td>
                     <td>string</td>
                     <td><span className="squircle tag-required">{en ? "Required" : "必须"}</span></td>
-                    <td>{en ? "Target site domain registered in LiteStats (e.g. demo.local.test)" : "在 LiteStats 中添加的站点域名（如 demo.local.test）"}</td>
+                    <td>{en ? "Target site domain registered in Plost (e.g. demo.local.test)" : "在 Plost 中添加的站点域名（如 demo.local.test）"}</td>
                   </tr>
                   <tr>
                     <td><code className="squircle">n</code> / <code className="squircle">name</code></td>
@@ -166,12 +166,12 @@ export function TrackingDocs({ domain }: { domain: string }) {
             <p>
               {en
                 ? "Track custom actions from anywhere in your web app:"
-                : "在页面任意交互事件中调用 window.litestats.track()："}
+                : "在页面任意交互事件中调用 window.plost.track()："}
             </p>
             <TrackingSnippet
               code={`// 自定义事件上报
-if (window.litestats) {
-  window.litestats.track("Button Click");
+if (window.plost) {
+  window.plost.track("Button Click");
 }`}
               language="JavaScript"
             />

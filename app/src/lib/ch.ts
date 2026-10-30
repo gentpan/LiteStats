@@ -625,7 +625,7 @@ export async function flushEventQueue(): Promise<void> {
       values: batch,
     })
   } catch (err) {
-    console.error("[LiteStats] Failed to flush events to ClickHouse:", err)
+    console.error("[Plost] Failed to flush events to ClickHouse:", err)
     // Capacity is reserved until insertion succeeds, including at the exact limit.
     // Keep the original rows (timestamps/IDs) and retry them before newer arrivals.
     eventBuffer = [...batch, ...eventBuffer]
@@ -648,7 +648,7 @@ export async function drainEventQueue(): Promise<void> {
 
 export function queueEvent(ev: EventPayload): boolean {
   if (eventBuffer.length + inFlightCount >= MAX_QUEUE_SIZE) {
-    console.warn("[LiteStats] Event buffer full, rejecting event until capacity is available")
+    console.warn("[Plost] Event buffer full, rejecting event until capacity is available")
     return false
   }
   eventBuffer.push(toClickHouseRow(ev))

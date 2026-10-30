@@ -340,7 +340,7 @@ def stage_restore(config_path, source, key_path):
             if table["name"] + ".native.gz" not in manifest["files"] or table["name"] + ".schema" not in manifest["files"]:
                 raise OpsError("Incomplete ClickHouse backup")
         if not {"users", "sites"} <= set(manifest["postgres"]):
-            raise OpsError("Not a complete LiteStats PostgreSQL backup")
+            raise OpsError("Not a complete Plost PostgreSQL backup")
         stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S") + "_" + secrets.token_hex(3)
         target = "litestats_restore_" + stamp
         admin = config.get("PGADMIN_URL") or os.environ.get("PGADMIN_URL") or config["DATABASE_URL"]
@@ -531,7 +531,7 @@ def install_agent(directory):
     command=[sys.executable,directory/'ops_agent.py','--config',directory/'.env',
              '--socket',directory/'ops-run/ops.sock','--backups',directory/'backups',
              '--key-file',directory/'backup.key','--compose-file',directory/'compose.yml']
-    unit='[Unit]\nDescription=LiteStats private backup supervisor\nAfter=docker.service\nRequires=docker.service\n\n[Service]\nType=simple\nUMask=0077\nExecStart='+ ' '.join(arg(item) for item in command)+'\nRestart=on-failure\nRestartSec=3\nPrivateTmp=true\nNoNewPrivileges=true\n\n[Install]\nWantedBy=multi-user.target\n'
+    unit='[Unit]\nDescription=Plost private backup supervisor\nAfter=docker.service\nRequires=docker.service\n\n[Service]\nType=simple\nUMask=0077\nExecStart='+ ' '.join(arg(item) for item in command)+'\nRestart=on-failure\nRestartSec=3\nPrivateTmp=true\nNoNewPrivileges=true\n\n[Install]\nWantedBy=multi-user.target\n'
     private_write(Path('/etc/systemd/system')/name,unit)
     run(['systemctl','daemon-reload'])
     run(['systemctl','enable',name])
@@ -599,9 +599,9 @@ if __name__ == "__main__":
     try:
         main()
     except OpsError as error:
-        print("LiteStats: " + str(error), file=sys.stderr)
+        print("Plost: " + str(error), file=sys.stderr)
         sys.exit(1)
     except (OSError, ValueError, KeyError, subprocess.SubprocessError):
         # Keep even database/URL/parse error messages out of unattended logs.
-        print("LiteStats operation failed; current database files and recovery candidates have been retained.", file=sys.stderr)
+        print("Plost operation failed; current database files and recovery candidates have been retained.", file=sys.stderr)
         sys.exit(1)

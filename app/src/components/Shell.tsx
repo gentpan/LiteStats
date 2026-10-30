@@ -2,7 +2,7 @@ import { UIIcon } from "./UIIcon"
 import { UserAvatar } from "./UserAvatar"
 import { Link, useRouter, useRouterState, type AnyRouter } from "@tanstack/react-router"
 import { useEffect, useRef, useState, useSyncExternalStore } from "react"
-import { BrandMark, LogoMark } from "./BrandMark"
+import { BrandMark } from "./BrandMark"
 import { logoutFn, trafficPulseFn, updateProfileFn } from "~/lib/actions"
 import { numberShort } from "~/lib/format"
 import { useT } from "~/lib/i18n"
@@ -67,21 +67,17 @@ export function SiteFooter({ user, showBrand = true }: { user?: ShellUser; showB
     <footer className="site-footer">
       <div className="container-ls site-footer-inner">
         <p className="site-footer-meta">
-          <span>© {new Date().getFullYear()} LiteStats</span>
+          <span>© {new Date().getFullYear()} Plost</span>
           <span aria-hidden="true">·</span>
           <span>{t("footer.own")}</span>
         </p>
         <FooterPulse user={user} />
         <div className="site-footer-links">
-          <a href="https://github.com/gentpan/LiteStats" target="_blank" rel="noopener noreferrer" className="site-footer-github" aria-label="GitHub" title="GitHub">
+          <a href="https://github.com/gentpan/Plost" target="_blank" rel="noopener noreferrer" className="site-footer-github" aria-label="GitHub" title="GitHub">
             <UIIcon name="brand-github" />
           </a>
           {showBrand ? <Link to={user ? "/dashboard" : "/"} className="site-footer-brand">
-            <LogoMark />
-            <span className="logo-wordmark">
-              <span className="logo-wordmark-lite">Lite</span>
-              <span className="logo-wordmark-stats">Stats</span>
-            </span>
+            <BrandMark />
           </Link> : null}
         </div>
       </div>

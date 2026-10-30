@@ -81,7 +81,7 @@ export function BackupPanel({ initial }: { initial: Settings }) {
               </select>
             </Field>
             <Field label={t("存储桶（Bucket）")} hint={t("填写已创建的桶名称，不含路径。") }>
-              <input className="squircle input" required maxLength={63} value={form.bucket} placeholder="litestats-backups" autoCapitalize="none" spellCheck={false} onChange={e => set("bucket", e.target.value)}/>
+              <input className="squircle input" required maxLength={63} value={form.bucket} placeholder="plost-backups" autoCapitalize="none" spellCheck={false} onChange={e => set("bucket", e.target.value)}/>
             </Field>
             <Field wide label={t("服务地址（Endpoint）")} hint={form.provider === "r2" ? t("在 R2 存储桶概览中复制 S3 API 地址；不要填写公开访问域名。") : t("标准 Amazon S3 可留空；使用自定义地址时请填写完整的 HTTPS 地址。") }>
               <input className="squircle input" type="url" required={form.provider === "r2"} maxLength={2048} value={form.endpoint} placeholder={form.provider === "r2" ? "https://<ACCOUNT_ID>.r2.cloudflarestorage.com" : "https://s3.us-east-1.amazonaws.com"} autoCapitalize="none" spellCheck={false} onChange={e => set("endpoint", e.target.value)}/>
@@ -168,7 +168,7 @@ export function BackupPanel({ initial }: { initial: Settings }) {
         <ActionButton icon="search" loading={busy === "scan"} disabled={!!busy || dirty || !form.configured} onClick={() => perform("scan", async () => {
           const rows = await scanBackupFn({data: {}})
           setItems(rows); setScanned(true)
-          setMsg(rows.length ? t("找到 {0} 份备份", {0: rows.length}) : t("这个桶里还没有 LiteStats 备份"))
+          setMsg(rows.length ? t("找到 {0} 份备份", {0: rows.length}) : t("这个桶里还没有 Plost 备份"))
         })}>{t(busy === "scan" ? "扫描中" : "扫描备份")}</ActionButton>
       </div>
       {items.length ? <ul className="backup-result-list">
@@ -178,7 +178,7 @@ export function BackupPanel({ initial }: { initial: Settings }) {
             void perform(item.id, async () => {await restoreBackupFn({data: {id: item.id}}); setMsg(t("已恢复 {0}，请刷新页面", {0: item.id}))})
           }}>{t(busy === item.id ? "恢复中" : "恢复此备份")}</ActionButton>
         </li>)}
-      </ul> : <div className="backup-empty"><UIIcon name="cloud"/><p>{t(scanned ? "这个目录下还没有 LiteStats 备份" : "扫描后，这里会列出可恢复的备份。")}</p></div>}
+      </ul> : <div className="backup-empty"><UIIcon name="cloud"/><p>{t(scanned ? "这个目录下还没有 Plost 备份" : "扫描后，这里会列出可恢复的备份。")}</p></div>}
       <p className="backup-restore-note"><UIIcon name="warn"/>{t("恢复会覆盖当前数据库。请确认备份后再操作。")}</p>
     </Tile>
   </div>

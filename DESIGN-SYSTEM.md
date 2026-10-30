@@ -1,4 +1,4 @@
-# LiteStats 界面系统
+# Plost 界面系统
 
 适用于站点列表、访问统计、站点检查、活动日志、账号和系统设置。页面复用 Shell；普通、公开和分享看板复用 AnalyticsDashboard；错误页使用 PageState。
 

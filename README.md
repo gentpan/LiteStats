@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="./app/public/favicon.svg" width="96" height="96" alt="LiteStats Logo">
+  <img src="./app/public/favicon.svg" width="96" height="96" alt="Plost Logo">
 </p>
 
-<h1 align="center">LiteStats</h1>
+<h1 align="center">Plost</h1>
 
 <p align="center">
   <strong>简单、美观、可自托管的网站统计。</strong><br>
@@ -10,12 +10,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/gentpan/LiteStats/commits"><img src="https://img.shields.io/github/last-commit/gentpan/LiteStats?style=flat-square" alt="Last commit"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/gentpan/LiteStats?style=flat-square&color=4f46e5" alt="License"></a>
+  <a href="https://github.com/gentpan/Plost/commits"><img src="https://img.shields.io/github/last-commit/gentpan/Plost?style=flat-square" alt="Last commit"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/gentpan/Plost?style=flat-square&color=4f46e5" alt="License"></a>
   <a href="https://bun.sh/"><img src="https://img.shields.io/badge/Bun-1.4%2B-000000?logo=bun&logoColor=white&style=flat-square" alt="Bun 1.4+"></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-26-339933?logo=nodedotjs&logoColor=white&style=flat-square" alt="Node.js 26"></a>
   <a href="./deploy/README.md"><img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white&style=flat-square" alt="Docker Ready"></a>
 </p>
+
+官网：[plo.st](https://plo.st) · 托管版后台：[app.plost.io](https://app.plost.io) · 托管版埋点脚本与采集入口：`stats.plost.io`。
+
+本仓库为 Plost 单人自托管版。下文部署、埋点与 API 示例均面向你自己的实例；`stats.example.com` 应替换为该实例的实际域名。
 
 ## 功能
 
@@ -33,8 +37,8 @@
 需要 Docker、Docker Compose 和 Python 3：
 
 ```bash
-git clone https://github.com/gentpan/LiteStats.git
-cd LiteStats
+git clone https://github.com/gentpan/Plost.git
+cd Plost
 python3 deploy/litestats.py install --directory /opt/litestats-instance --port 3100
 ```
 
@@ -56,7 +60,7 @@ bun run dev
 
 ## 接入网站
 
-将以下代码放入网站的 `<head>`，替换统计服务地址和域名：
+将以下代码放入网站的 `<head>`，把 `stats.example.com` 替换为自己的统计服务地址，把 `example.com` 替换为被统计的网站域名：
 
 ```html
 <script defer data-domain="example.com" src="https://stats.example.com/script.js"></script>
@@ -65,16 +69,16 @@ bun run dev
 自定义事件：
 
 ```js
-window.litestats?.track("Signup", { plan: "pro" })
+window.plost?.track("Signup", { plan: "pro" })
 ```
 
 ## 统计 API
 
-创建站点分享凭证后，即可读取在线、今日和昨日统计：
+在自己的实例创建站点分享凭证后，即可读取在线、今日和昨日统计：
 
 ```bash
 curl --fail-with-body 'https://stats.example.com/api/v1/stats?period=summary' \
-  -H "Authorization: Bearer $LITESTATS_TOKEN"
+  -H "Authorization: Bearer $PLOST_TOKEN"
 ```
 
 实例内 `/docs/api` 提供完整文档，`/api/v1/openapi.json` 提供 OpenAPI 3.1 规范。
@@ -82,6 +86,14 @@ curl --fail-with-body 'https://stats.example.com/api/v1/stats?period=summary' \
 ## 技术栈
 
 TanStack Start · React 19 · TypeScript · Vite · Tailwind CSS · PostgreSQL · ClickHouse
+
+## 品牌与兼容
+
+Plost 原名 LiteStats，使用方圆 O 标识。对外名称、仓库链接与新事件入口使用 Plost；旧 `window.litestats.track()` 继续兼容。
+
+数据库、Cookie、访客 ID、加密与备份协议、服务名、部署脚本及运行配置保留已有内部标识，已有实例无需因改名重新初始化。自托管实例的埋点与采集地址按实际域名生成。
+
+更换实例域名时，需更新被统计网站的埋点地址与 Google OAuth 回调；旧域名注册的 Passkey 需在新域名重新注册，可先使用原密码登录。
 
 ## 文档与许可
 

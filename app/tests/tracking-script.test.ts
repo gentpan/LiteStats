@@ -37,6 +37,7 @@ function tracker(options: { attrs?: Record<string, string>, prerendering?: boole
     addEventListener: listen(windowEvents),
     setTimeout: (run: () => void, delay: number) => { timers.push({ run, delay }) },
     crypto: { randomUUID: () => "generated-visitor" },
+    plost: undefined as { track: (name: string, props?: Record<string, unknown>) => void } | undefined,
     litestats: undefined as { track: (name: string, props?: Record<string, unknown>) => void } | undefined,
   }
   const stored = new Map([["litestats:visitor-id", "visitor-fixture"]])
@@ -80,6 +81,17 @@ describe("browser tracker navigation and installation", () => {
     expect(app.requests[0]?.url).toBe("https://stats.example.com/api/event")
     expect(app.requests[0]?.init).toMatchObject({ method: "POST", keepalive: true, credentials: "omit", headers: { "Content-Type": "text/plain;charset=UTF-8" } })
     expect(app.requests[0]?.payload).toEqual({ n: "pageview", d: "shop.example.com", u: "https://shop.example.com/start", r: "https://www.google.com/search?q=shop", w: 320, v: "visitor-fixture", t: "Shop", l: "zh-CN", s: "320x800" })
+  })
+
+  test("Plost events and the legacy API share visitor identity without duplicate pageviews", () => {
+    const app = tracker()
+    expect(app.window.plost).toBe(app.window.litestats)
+    app.window.plost!.track("Signup", { plan: "pro" })
+    app.window.litestats!.track("Legacy signup")
+    expect(app.requests.map(request => request.payload.n)).toEqual(["pageview", "Signup", "Legacy signup"])
+    expect(app.requests.map(request => request.payload.v)).toEqual(["visitor-fixture", "visitor-fixture", "visitor-fixture"])
+    expect(app.requests[1]?.payload.p).toEqual({ plan: "pro" })
+    expect(app.stored.get("litestats:visitor-id")).toBe("visitor-fixture")
   })
 
   test("persistent visitor IDs survive navigation and blocked storage still collects", () => {

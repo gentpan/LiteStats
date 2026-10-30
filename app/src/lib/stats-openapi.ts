@@ -24,7 +24,7 @@ const errors = Object.fromEntries([
 export const statsOpenApi = {
   openapi:"3.1.0",
   info:{
-    title:"LiteStats Read API",version:"1.0.0",
+    title:"Plost Read API",version:"1.0.0",
     description:"Read-only site aggregates. Bearer credentials are existing site sharing slugs; deleting the share revokes API access. A sharing credential also permits reading its shared report. Never put it in public client code.",
   },
   servers:[{url:"/"}],

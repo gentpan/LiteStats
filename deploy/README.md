@@ -1,6 +1,8 @@
-# Production deployment
+# Plost self-hosted deployment
 
-The current production layout uses native systemd services and the existing FrankenPHP/Caddy proxy. Docker Compose remains an alternative below. Set your own analytics hostname; keep database services private and preserve existing applications and proxy sites.
+Plost supports managed Docker Compose installations and native systemd services behind an existing HTTPS proxy. The native layout below is a deployment reference. Set your own analytics hostname, such as `stats.example.com`; keep database services private and preserve existing applications and proxy sites.
+
+The official product site is [plo.st](https://plo.st), the hosted dashboard is [app.plost.io](https://app.plost.io), and hosted collection uses `stats.plost.io`. Self-hosted installations use their own domain. Existing `litestats` script, service, database and backup identifiers remain unchanged for compatibility.
 
 ## Backups in the dashboard
 

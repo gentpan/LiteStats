@@ -1,4 +1,4 @@
-# LiteStats 目录
+# Plost 目录
 
 仓库地图。用法和安装步骤看 [README](./README.md)。
 
