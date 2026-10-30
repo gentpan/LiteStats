@@ -1,0 +1,23 @@
+[Unit]
+Description=Plost personal website analytics
+After=network.target
+
+[Service]
+Type=simple
+User=plost
+Group=plost
+StateDirectory=plost
+StateDirectoryMode=0700
+ExecStart=/usr/local/bin/plost -listen 127.0.0.1:3101 -data /var/lib/plost -origin https://stats.example.com
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/plost
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target

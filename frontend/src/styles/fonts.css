@@ -1,0 +1,42 @@
+/* Space Mono: user-provided Latin WOFF2 files; see /fonts/OFL-SpaceMono.txt. */
+/* Company name: bundled Sora; see /fonts/Sora-LICENSE.txt. */
+@font-face {
+  font-family: "Sora";
+  src: url("/fonts/sora-regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+.company-name {
+  font-family: "Sora", sans-serif;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+@font-face {
+  font-family: "Space Mono";
+  src: url("/fonts/space-mono-latin-400-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Space Mono";
+  src: url("/fonts/space-mono-latin-700-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  --ui-font-mono: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "PingFang SC", "Microsoft YaHei", monospace;
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--ui-font-mono);
+}

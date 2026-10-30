@@ -1,0 +1,150 @@
+.site-footer {
+  margin-top: auto;
+  width: 100%;
+  background: #111113;
+  color: #a1a1aa;
+  border-top: 1px solid rgb(255 255 255 / 0.06);
+}
+
+.site-footer-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: "meta pulse links";
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  min-height: 3.15rem;
+  padding-block: 0.65rem;
+}
+
+.site-footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  flex: none;
+  font-size: 1rem;
+  line-height: 1;
+  color: #a1a1aa;
+  white-space: nowrap;
+}
+
+.site-footer-brand:hover { color: #fff; }
+.site-footer-brand .logo.plost-logo { --plost-tile-size: 40px; --plost-pill: transparent; --plost-brand: currentColor; }
+
+.site-footer-meta {
+  grid-area: meta;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  justify-self: start;
+  gap: 0.4rem;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.75rem;
+  color: #71717a;
+  text-align: left;
+}
+
+.footer-copyright {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-family: "Sora", sans-serif;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+}
+
+.site-footer .footer-copyright { color: #a1a1aa; }
+
+.site-footer-links {
+  grid-area: links;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  gap: 0;
+  min-width: 0;
+}
+
+.site-footer-github {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  color: #a1a1aa;
+  border-radius: 12px;
+}
+
+.site-footer-github-mark {
+  display: block;
+  width: calc(40px * 4 / 7);
+  height: calc(40px * 4 / 7);
+}
+
+.site-footer-github:hover {
+  color: #fff;
+}
+
+.site-footer-github:focus-visible {
+  outline: 2px solid #d4d4d8;
+  outline-offset: 4px;
+}
+
+.site-footer-pulse {
+  grid-area: pulse;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-width: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #d4d4d8;
+  white-space: nowrap;
+}
+
+.site-footer-pulse:hover {
+  color: #fff;
+}
+
+.site-footer-pulse-dot {
+  color: #52525b;
+}
+
+@media (max-width: 1023px) {
+  .site-footer-inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "meta links" "pulse pulse";
+    gap: 0.65rem 1rem;
+  }
+
+  .site-footer-pulse {
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 639px) {
+  .site-footer-meta {
+    gap: 0.15rem 0.4rem;
+  }
+
+  .site-footer-meta > span:last-child {
+    flex-basis: 100%;
+  }
+
+  .site-footer-meta > span[aria-hidden] {
+    display: none;
+  }
+
+}
+
+
+.activity-entry[href$="/health"],.activity-entry[href$="/keywords"]{display:none}
+
+/* Explicit current navigation change: API lives in the settings sidebar. */
+.site-header-nav a[href="/docs/api"],.site-header-menu-mobile a[href="/docs/api"] { display:none; }

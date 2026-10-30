@@ -1,0 +1,34 @@
+{
+  "name": "plost-go-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 3313",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "reference": "vite --config reference.config.ts",
+    "check:unused": "tsc --noEmit --noUnusedLocals --noUnusedParameters"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "1.170.35",
+    "d3": "7.9.0",
+    "mapbox-gl": "3.33.0",
+    "opencc-js": "1.4.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "topojson-client": "3.1.0",
+    "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@tanstack/router-plugin": "1.168.37",
+    "@types/d3": "7.4.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/topojson-client": "3.1.5",
+    "@vitejs/plugin-react": "6.1.1",
+    "tailwindcss": "4.3.3",
+    "typescript": "7.0.2",
+    "vite": "8.3.0"
+  }
+}

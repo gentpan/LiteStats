@@ -1,0 +1,44 @@
+/* Six read-only summaries retain the original geometry; only three are plotted. */
+.traffic-overview {
+  /* Fixed metric colors stay distinct under every account accent preference. */
+  --traffic-visitors: #6d5dfc;
+  --traffic-visits: #2563eb;
+  --traffic-pageviews: #15803d;
+}
+html[data-theme="dark"] .traffic-overview,
+.traffic-overview .traffic-tooltip { --traffic-visitors: #a78bfa; --traffic-visits: #60a5fa; --traffic-pageviews: #4ade80; }
+.traffic-overview .traffic-summary,
+.traffic-overview-skeleton .metric-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.traffic-overview .traffic-summary { margin: 0; }
+.traffic-overview .traffic-summary-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 90px;
+  padding: 14px 16px;
+  gap: 10px;
+  text-align: left;
+}
+.traffic-summary-label { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--color-gray-500); font-size: 12px; font-weight: 500; line-height: 18px; text-transform: uppercase; }
+.traffic-series-dot { display: inline-block; width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--traffic-visitors); }
+[data-metric="visits"] .traffic-series-dot { background: var(--traffic-visits); }
+[data-metric="pageviews"] .traffic-series-dot { background: var(--traffic-pageviews); }
+.traffic-summary-values { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; margin: 0; }
+.traffic-overview .traffic-summary-values .metric-value { margin: 0; color: var(--color-gray-900); }
+.traffic-summary-values .metric-change { display: inline-flex; align-items: baseline; color: var(--color-gray-500); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.traffic-overview .traffic-tooltip-date { font-size: 12px; line-height: 18px; }
+.traffic-overview .traffic-tooltip-metrics { display: grid; gap: 8px; margin: 0; }
+.traffic-overview .traffic-tooltip-metrics > div { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.traffic-overview .traffic-tooltip-metrics dt { display: flex; align-items: center; gap: 8px; }
+.traffic-overview .traffic-tooltip-metrics dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.traffic-series-path, .traffic-series-area { pointer-events: none; }
+@media (max-width: 1100px) {
+  .traffic-overview .traffic-summary,
+  .traffic-overview-skeleton .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 639px) {
+  .traffic-overview .traffic-summary-item { min-height: 86px; padding: 12px 8px; gap: 10px; }
+  .traffic-summary-label { gap: 6px; }
+  .traffic-summary-values { gap: 4px 6px; }
+  .traffic-summary-values .metric-change { font-size: 11px; }
+}

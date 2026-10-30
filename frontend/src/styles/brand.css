@@ -1,0 +1,147 @@
+/* Plost: a continuous ring-o becomes the o in the wordmark.
+   Approved independent S and T, 2026-10-31.
+   Geometry comes from tools/geometry.json. No second o is rendered. */
+.plost-logo {
+  --plost-brand: #5b2ae0;
+  --plost-brand-ink: #fff;
+  --plost-ink: #181818;
+  --plost-pill: transparent;
+  --plost-tile-size: 56px;
+  --plost-duration: 700ms;
+  --plost-ease: cubic-bezier(.32,.72,0,1);
+  --plost-mark-width: 57.1428571429%;
+  --plost-wordmark-width: 78%;
+  --plost-wordmark-height: 32.757356202040086%;
+  --plost-morph-scale: 0.31807437813675726;
+  --plost-morph-x: -0.018848121485966707;
+  --plost-morph-y: 0.0001997399768416952;
+  --plost-plate-opacity: 0;
+  --plost-plate-scale: .72;
+  --plost-plate-blur: 3px;
+  --plost-pill-opacity: 1;
+  --plost-symbol-scale: 1;
+  --plost-symbol-x: 0;
+  --plost-symbol-y: 0;
+  --plost-symbol-ink: var(--plost-brand);
+  --plost-letters-opacity: 0;
+  --plost-letters-scale: .98;
+  --plost-letters-blur: 2px;
+  position: relative;
+  display: inline-block;
+  width: var(--plost-tile-size);
+  height: var(--plost-tile-size);
+  vertical-align: middle;
+  text-decoration: none;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+}
+.plost-logo__badge {
+  position: relative;
+  display: block;
+  flex: none;
+  width: var(--plost-tile-size);
+  height: var(--plost-tile-size);
+  pointer-events: none;
+}
+.plost-logo__pill, .plost-logo__tile, .plost-logo__shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.plost-logo__pill {
+  border-radius: 9999px;
+  background: var(--plost-pill);
+  opacity: var(--plost-pill-opacity);
+  transition: opacity var(--plost-duration) var(--plost-ease);
+}
+.plost-logo__tile {
+  opacity: var(--plost-plate-opacity);
+  filter: blur(var(--plost-plate-blur));
+  transform: scale(var(--plost-plate-scale));
+  transition: opacity var(--plost-duration) var(--plost-ease), filter var(--plost-duration) var(--plost-ease), transform var(--plost-duration) var(--plost-ease);
+}
+.plost-logo__shape {
+  overflow: visible;
+  filter: drop-shadow(0 4px 4px color-mix(in srgb, var(--plost-brand) 15%, transparent)) drop-shadow(0 8px 8px color-mix(in srgb, var(--plost-brand) 15%, transparent));
+}
+.plost-logo__shape-bg { fill: var(--plost-brand); }
+.plost-logo__shape-hl { fill: none; stroke: #fff; stroke-opacity: .14; stroke-width: 1.4; }
+.plost-logo__mark, .plost-logo__wordmark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  overflow: visible;
+  fill: currentColor;
+  pointer-events: none;
+  transform-origin: center;
+}
+.plost-logo__mark {
+  width: var(--plost-mark-width);
+  height: var(--plost-mark-width);
+  color: var(--plost-symbol-ink);
+  transform: translate(-50%, -50%) translate(calc(var(--plost-tile-size) * var(--plost-symbol-x)), calc(var(--plost-tile-size) * var(--plost-symbol-y))) scale(var(--plost-symbol-scale));
+  transition: color var(--plost-duration) var(--plost-ease), transform var(--plost-duration) var(--plost-ease);
+}
+.plost-logo__wordmark {
+  width: var(--plost-wordmark-width);
+  height: var(--plost-wordmark-height);
+  color: var(--plost-brand-ink);
+  opacity: var(--plost-letters-opacity);
+  filter: blur(var(--plost-letters-blur));
+  transform: translate(-50%, -50%) scale(var(--plost-letters-scale));
+  transition: opacity var(--plost-duration) var(--plost-ease), filter var(--plost-duration) var(--plost-ease), transform var(--plost-duration) var(--plost-ease);
+}
+:is(.plost-logo:hover, .plost-logo:focus-visible, .plost-logo:focus-within, .plost-logo.is-expanded, a:focus-visible > .plost-logo) {
+  --plost-plate-opacity: 1;
+  --plost-plate-scale: 1;
+  --plost-plate-blur: 0px;
+  --plost-pill-opacity: 0;
+  --plost-symbol-scale: var(--plost-morph-scale);
+  --plost-symbol-x: var(--plost-morph-x);
+  --plost-symbol-y: var(--plost-morph-y);
+  --plost-symbol-ink: var(--plost-brand-ink);
+  --plost-letters-opacity: 1;
+  --plost-letters-scale: 1;
+  --plost-letters-blur: 0px;
+}
+.plost-logo:focus-visible {
+  outline: 2px solid var(--plost-brand);
+  outline-offset: 4px;
+  border-radius: 16px;
+}
+/* A separate static lockup remains available for print-style usage. */
+.plost-logo--lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  width: auto;
+  height: auto;
+  --plost-plate-opacity: 1;
+  --plost-plate-scale: 1;
+  --plost-plate-blur: 0px;
+  --plost-pill-opacity: 0;
+}
+.plost-logo__lockup-wordmark { display: block; height: calc(var(--plost-tile-size) * .46); width: auto; fill: var(--plost-ink); }
+.plost-logo--lockup .plost-logo__wordmark { display: none; }
+.plost-logo--lockup .plost-logo__mark { color: var(--plost-brand-ink); transform: translate(-50%, -50%); transition: none; }
+/* Touch users see the full name without depending on a hover gesture. */
+@media (hover: none) {
+  .plost-logo:not(.plost-logo--lockup) {
+    --plost-plate-opacity: 1;
+    --plost-plate-scale: 1;
+    --plost-plate-blur: 0px;
+    --plost-pill-opacity: 0;
+    --plost-symbol-scale: var(--plost-morph-scale);
+    --plost-symbol-x: var(--plost-morph-x);
+    --plost-symbol-y: var(--plost-morph-y);
+    --plost-symbol-ink: var(--plost-brand-ink);
+    --plost-letters-opacity: 1;
+    --plost-letters-scale: 1;
+    --plost-letters-blur: 0px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plost-logo *, .plost-logo *::before, .plost-logo *::after { animation: none !important; transition: none !important; }
+}

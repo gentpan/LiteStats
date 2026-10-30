@@ -1,0 +1,223 @@
+{
+  "repository": "https://github.com/glincker/thesvg",
+  "commit": "82f091cde35a754aa640a5df17069bea7e0d7884",
+  "downloaded": "2026-10-22",
+  "assets": [
+    {
+      "slug": "chrome",
+      "file": "chrome.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/chrome/default.svg",
+      "variant": "default",
+      "license": "MIT",
+      "brandUrl": "https://chrome.com/",
+      "guidelines": null
+    },
+    {
+      "slug": "chromium",
+      "file": "chromium.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/chromium/default.svg",
+      "variant": "default",
+      "license": "MIT",
+      "brandUrl": "https://www.chromium.org",
+      "guidelines": null
+    },
+    {
+      "slug": "firefox",
+      "file": "firefox.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/firefox/default.svg",
+      "variant": "default",
+      "license": "CC0-1.0",
+      "brandUrl": "https://www.mozilla.org/en-US/firefox/",
+      "guidelines": "https://mozilla.design/firefox/"
+    },
+    {
+      "slug": "safari",
+      "file": "safari.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/safari/default.svg",
+      "variant": "default",
+      "license": "CC0-1.0",
+      "brandUrl": "https://www.apple.com/safari",
+      "guidelines": null
+    },
+    {
+      "slug": "edge",
+      "file": "edge.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/edge/default.svg",
+      "variant": "default",
+      "license": "MIT",
+      "brandUrl": "https://www.microsoft.com/en-us/edge",
+      "guidelines": null
+    },
+    {
+      "slug": "opera",
+      "file": "opera.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/opera/default.svg",
+      "variant": "default",
+      "license": "CC0-1.0",
+      "brandUrl": "https://www.opera.com",
+      "guidelines": "https://brand.opera.com/"
+    },
+    {
+      "slug": "vivaldi",
+      "file": "vivaldi.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/vivaldi/default.svg",
+      "variant": "default",
+      "license": "CC-BY-4.0",
+      "brandUrl": "https://vivaldi.com",
+      "guidelines": "https://vivaldi.com/press"
+    },
+    {
+      "slug": "samsung-browser",
+      "file": "samsung-browser.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/samsung-browser/default.svg",
+      "variant": "default",
+      "license": "Trademark of Samsung Electronics. Used for identification under nominative fair use.",
+      "brandUrl": "https://browser.samsung.com",
+      "guidelines": null
+    },
+    {
+      "slug": "duckduckgo",
+      "file": "duckduckgo.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/duckduckgo/default.svg",
+      "variant": "default",
+      "license": "CC0-1.0",
+      "brandUrl": "https://duckduckgo.com/",
+      "guidelines": "https://duckduckgo.com/press#press-materials"
+    },
+    {
+      "slug": "curl",
+      "file": "curl.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/curl/default.svg",
+      "variant": "default",
+      "license": "CC0-1.0",
+      "brandUrl": "https://curl.haxx.se/logo/",
+      "guidelines": null
+    },
+    {
+      "slug": "brave-browser",
+      "file": "brave-browser.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/brave-browser/default.svg",
+      "variant": "default",
+      "license": "MIT",
+      "brandUrl": "https://brave.com/",
+      "guidelines": "https://brave.com/brave-branding-assets/"
+    },
+    {
+      "slug": "ecosia",
+      "file": "ecosia.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/ecosia/default.svg",
+      "variant": "default",
+      "license": "CC0-1.0",
+      "brandUrl": "https://www.ecosia.org/imprint",
+      "guidelines": "https://www.ecosia.org/imprint"
+    },
+    {
+      "slug": "windows",
+      "file": "windows.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/windows/default.svg",
+      "variant": "default",
+      "license": "MIT",
+      "brandUrl": "https://www.microsoft.com/windows",
+      "guidelines": null
+    },
+    {
+      "slug": "windows11",
+      "file": "windows11.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/windows11/default.svg",
+      "variant": "default",
+      "license": "MIT",
+      "brandUrl": "",
+      "guidelines": null
+    },
+    {
+      "slug": "android",
+      "file": "android.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/android/default.svg",
+      "variant": "default",
+      "license": "CC-BY-3.0",
+      "brandUrl": "https://www.android.com/",
+      "guidelines": "https://developer.android.com/distribute/marketing-tools/brand-guidelines#brand-android"
+    },
+    {
+      "slug": "linux",
+      "file": "linux.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/linux/default.svg",
+      "variant": "default",
+      "license": "CC0-1.0",
+      "brandUrl": "https://www.linux.org/",
+      "guidelines": null
+    },
+    {
+      "slug": "ubuntu",
+      "file": "ubuntu.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/ubuntu/default.svg",
+      "variant": "default",
+      "license": "CC0-1.0",
+      "brandUrl": "https://ubuntu.com/",
+      "guidelines": "https://design.ubuntu.com/brand"
+    },
+    {
+      "slug": "debian",
+      "file": "debian.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/debian/default.svg",
+      "variant": "default",
+      "license": "CC-BY-SA-3.0",
+      "brandUrl": "https://www.debian.org/logos",
+      "guidelines": "https://www.debian.org/logos/"
+    },
+    {
+      "slug": "arch-linux",
+      "file": "arch-linux.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/arch-linux/default.svg",
+      "variant": "default",
+      "license": "CC0-1.0",
+      "brandUrl": "https://www.archlinux.org/art",
+      "guidelines": "https://wiki.archlinux.org/index.php/DeveloperWiki:TrademarkPolicy#Logo_Usage_Guidelines"
+    },
+    {
+      "slug": "fedora",
+      "file": "fedora.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/fedora/default.svg",
+      "variant": "default",
+      "license": "Custom",
+      "brandUrl": "https://docs.fedoraproject.org/en-US/project/brand/",
+      "guidelines": "https://fedoraproject.org/wiki/Legal:Trademark_guidelines"
+    },
+    {
+      "slug": "freebsd",
+      "file": "freebsd.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/freebsd/default.svg",
+      "variant": "default",
+      "license": "CC0-1.0",
+      "brandUrl": "https://www.freebsdfoundation.org/about/project/",
+      "guidelines": null
+    },
+    {
+      "slug": "playstation",
+      "file": "playstation.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/playstation/default.svg",
+      "variant": "default",
+      "license": "CC0-1.0",
+      "brandUrl": "https://www.playstation.com/",
+      "guidelines": null
+    },
+    {
+      "slug": "kaios",
+      "file": "kaios.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/kaios/default.svg",
+      "variant": "default",
+      "license": "CC0-1.0",
+      "brandUrl": "https://www.kaiostech.com/company/press-room",
+      "guidelines": null
+    },
+    {
+      "slug": "internetexplorer",
+      "file": "internetexplorer.svg",
+      "source": "https://github.com/glincker/thesvg/blob/82f091cde35a754aa640a5df17069bea7e0d7884/public/icons/internetexplorer/default.svg",
+      "variant": "default",
+      "license": "brand-use",
+      "brandUrl": "https://support.microsoft.com/en-us/windows/internet-explorer-downloads-d49e1f0d-571c-9a7b-d97e-be248806ca17",
+      "guidelines": null
+    }
+  ]
+}

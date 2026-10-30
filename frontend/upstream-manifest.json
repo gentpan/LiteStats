@@ -1,0 +1,650 @@
+{
+  "source": "../self-hosted/app/src",
+  "footerSource": "../cloud/app/src/styles/app.css (footer section only)",
+  "date": "2026-10-31",
+  "files": [
+    {
+      "file": "assets/LICENSE-UNICODE.txt",
+      "originalSHA256": "65eb33419e22a297550a811b5b535f5e532f9a7e0114b516c0ea18afd53c3804",
+      "sha256": "65eb33419e22a297550a811b5b535f5e532f9a7e0114b516c0ea18afd53c3804",
+      "identical": true
+    },
+    {
+      "file": "assets/brand.json",
+      "originalSHA256": "cb960fd928ae142191f476f416a86bb5a3fb2bf5190e0ba18c1032b690510e13",
+      "sha256": "839fdf89012957cf1444048268a06780465ae051284cdce60ff7a5b7bdb95cd5",
+      "identical": false
+    },
+    {
+      "file": "assets/city-names-SOURCE.md",
+      "originalSHA256": "68b6f05b3d69a7a671e2c97a81188df76ccb3264111455fb61263b502f8674c5",
+      "sha256": "68b6f05b3d69a7a671e2c97a81188df76ccb3264111455fb61263b502f8674c5",
+      "identical": true
+    },
+    {
+      "file": "assets/city-names.json",
+      "originalSHA256": "0db9176795c20d55384ba3f3bec66049476f8a639c07cca120b6fa978cb15208",
+      "sha256": "0db9176795c20d55384ba3f3bec66049476f8a639c07cca120b6fa978cb15208",
+      "identical": true
+    },
+    {
+      "file": "assets/subdivisions-SOURCE.md",
+      "originalSHA256": "266a833aa31ce8cf2d49ef93b797083a8955bd167a5857218cb6341363e06d78",
+      "sha256": "266a833aa31ce8cf2d49ef93b797083a8955bd167a5857218cb6341363e06d78",
+      "identical": true
+    },
+    {
+      "file": "assets/subdivisions.json",
+      "originalSHA256": "a038e9dec5b01ca37fbe802d40be8aa13b37859a237f9294e8a031ba76b9281c",
+      "sha256": "a038e9dec5b01ca37fbe802d40be8aa13b37859a237f9294e8a031ba76b9281c",
+      "identical": true
+    },
+    {
+      "file": "assets/world-50m.bin",
+      "originalSHA256": "fdefaac3ea26cf46982805e9207e97bb0f1d90c48e58bc2ea6050d5aaa9d6559",
+      "sha256": "fdefaac3ea26cf46982805e9207e97bb0f1d90c48e58bc2ea6050d5aaa9d6559",
+      "identical": true
+    },
+    {
+      "file": "components/AccentPicker.tsx",
+      "originalSHA256": "1a8cf49dea97bedd1eae24d5da2f9dc9582828cd16bb2b3a27986103e559ebfd",
+      "sha256": "1a8cf49dea97bedd1eae24d5da2f9dc9582828cd16bb2b3a27986103e559ebfd",
+      "identical": true
+    },
+    {
+      "file": "components/AccountPreferences.tsx",
+      "originalSHA256": "8bb5dfa2dae9186c7e0512eb4977a41b2ff3c91e79bd620d32239b91f53580ab",
+      "sha256": "8bb5dfa2dae9186c7e0512eb4977a41b2ff3c91e79bd620d32239b91f53580ab",
+      "identical": true
+    },
+    {
+      "file": "components/AccountSecurity.tsx",
+      "originalSHA256": "462b42cbc5c69c2ad9166341f3965bdae5e68ea59f944f961a33a1c9da3ad638",
+      "sha256": "dfa41b4e0de91cff9a577f2739853dc790242c1597e79a8a4210651f9c7a2334",
+      "identical": false
+    },
+    {
+      "file": "components/ActionButton.tsx",
+      "originalSHA256": "bfa2a5791ac889a22bf95d448ac07b39d010fe8a15e938b2e5e0a01fd2b55ba2",
+      "sha256": "bfa2a5791ac889a22bf95d448ac07b39d010fe8a15e938b2e5e0a01fd2b55ba2",
+      "identical": true
+    },
+    {
+      "file": "components/ActivityLog.tsx",
+      "originalSHA256": "bf1cfdc06d650a639836d6cd8f3d335c648bdf18f145531e90d3f46ee4974cf3",
+      "sha256": "bf1cfdc06d650a639836d6cd8f3d335c648bdf18f145531e90d3f46ee4974cf3",
+      "identical": true
+    },
+    {
+      "file": "components/AnalyticsDashboard.tsx",
+      "originalSHA256": "7abdca19ba3d9e85490dfe291b47a55e8b6ff62631fc7eae3c1e9a0edfc69a32",
+      "sha256": "26ed71fb5e5290bcb97b603a2a2414c9248517c4f26daeb8de43c10bcf8f8593",
+      "identical": false
+    },
+    {
+      "file": "components/BackupPanel.tsx",
+      "originalSHA256": "07cc3042f1f6bd12a4455e9c6b6bb995d7727a943e245ef791efe5eab30397b7",
+      "sha256": "a5c22a8829625068d0e96c882402a643ea294fa070735d110ba909638817489c",
+      "identical": false
+    },
+    {
+      "file": "components/BrandMark.tsx",
+      "originalSHA256": "0562b2357758488d71b336279afadb0add2e4386e03d8c8e08bfc3aacc78af52",
+      "sha256": "e207cff42397c7423e1e347b2db924b22158b2d532f63462d6f711d2db644235",
+      "identical": false
+    },
+    {
+      "file": "components/CompanyName.tsx",
+      "originalSHA256": "357adbeb2160caee8941934f0151a13ef0c050cefd1c4cc0680b27305af11aae",
+      "sha256": "b6835805bf057b1e52cc574f7417269db611c71688b225f2982ba17706ef6d43",
+      "identical": false
+    },
+    {
+      "file": "components/DashTopBar.tsx",
+      "originalSHA256": "27ce546e581aa031e1bee67fcdf9a5f75b3ea65eeded76ba7f1f13024e93a099",
+      "sha256": "e7406821041075eecc0332f891356f51e8634c7f43d9b474e8dac6bff19af5a2",
+      "identical": false
+    },
+    {
+      "file": "components/DashboardSkeleton.tsx",
+      "originalSHA256": "158ebd9f4144742e7493eafd753d42651236a4a300e7b6eea67d63534b729b03",
+      "sha256": "ad72342f25ce94e67b2cfa08ed8fd4a639d8d63b6c9343eb0d81ffce6b41d074",
+      "identical": false
+    },
+    {
+      "file": "components/DotsLoader.tsx",
+      "originalSHA256": "45ab781d851952b803329d935b1cef8b857f73809df92636ad98b3e738ced529",
+      "sha256": "45ab781d851952b803329d935b1cef8b857f73809df92636ad98b3e738ced529",
+      "identical": true
+    },
+    {
+      "file": "components/HelpHint.tsx",
+      "originalSHA256": "1d8734d4d8a2e7223668d12a6c17183520bbd8ad00549f932348b6be7ba000a5",
+      "sha256": "1d8734d4d8a2e7223668d12a6c17183520bbd8ad00549f932348b6be7ba000a5",
+      "identical": true
+    },
+    {
+      "file": "components/ImageWithFallback.tsx",
+      "originalSHA256": "96c6ad60a2248db3cde8c1ee583fad16306c90aa8dff0e4c26f8ac886ee37549",
+      "sha256": "96c6ad60a2248db3cde8c1ee583fad16306c90aa8dff0e4c26f8ac886ee37549",
+      "identical": true
+    },
+    {
+      "file": "components/MapStylePicker.tsx",
+      "originalSHA256": "147c0763bf00175e037fa05e7dd0027fbcea40367cb0e6aba1959c90200429f9",
+      "sha256": "147c0763bf00175e037fa05e7dd0027fbcea40367cb0e6aba1959c90200429f9",
+      "identical": true
+    },
+    {
+      "file": "components/MapboxSettingsPanel.tsx",
+      "originalSHA256": "b0d184e6a9f9cb4a057c5614747d0dcab1f3ee45fd7ebb05332b7bb11cfa9fd0",
+      "sha256": "b0d184e6a9f9cb4a057c5614747d0dcab1f3ee45fd7ebb05332b7bb11cfa9fd0",
+      "identical": true
+    },
+    {
+      "file": "components/MapboxVisitorMap.tsx",
+      "originalSHA256": "8f7bc568b118750124dd0581b4a586c04ce0a543999499a8d60698daa0c00282",
+      "sha256": "8f7bc568b118750124dd0581b4a586c04ce0a543999499a8d60698daa0c00282",
+      "identical": true
+    },
+    {
+      "file": "components/PageReport.tsx",
+      "originalSHA256": "e7bda03354aa8ce486bf436f5812463399cf8c6de9097d5df0ddc66626dd825c",
+      "sha256": "e7bda03354aa8ce486bf436f5812463399cf8c6de9097d5df0ddc66626dd825c",
+      "identical": true
+    },
+    {
+      "file": "components/PageState.tsx",
+      "originalSHA256": "276b6bd55c235f8c81bf2887f4e6a8b4326f4ff16020a2e318c5d889dba7ac8b",
+      "sha256": "276b6bd55c235f8c81bf2887f4e6a8b4326f4ff16020a2e318c5d889dba7ac8b",
+      "identical": true
+    },
+    {
+      "file": "components/RecentVisitors.tsx",
+      "originalSHA256": "5b00f3b0b46b1c190fcedf88e3684b26775cbb5e65d9ffebe2e14ca6c60c8816",
+      "sha256": "5b00f3b0b46b1c190fcedf88e3684b26775cbb5e65d9ffebe2e14ca6c60c8816",
+      "identical": true
+    },
+    {
+      "file": "components/ReportFilter.tsx",
+      "originalSHA256": "1f168c6cda68d8a17327598cd66e1c2c7d520813636665832de58b9b080b8c91",
+      "sha256": "1f168c6cda68d8a17327598cd66e1c2c7d520813636665832de58b9b080b8c91",
+      "identical": true
+    },
+    {
+      "file": "components/ReportValue.tsx",
+      "originalSHA256": "42b2a49e51dbde3268b52815c59d637f642e2777139aa49c454a21a63cd88641",
+      "sha256": "42b2a49e51dbde3268b52815c59d637f642e2777139aa49c454a21a63cd88641",
+      "identical": true
+    },
+    {
+      "file": "components/RouteErrorPage.tsx",
+      "originalSHA256": "75ebe43acc46b35075974d0056167dfbde8aac7741d475bd5e9b93175e853b3d",
+      "sha256": "75ebe43acc46b35075974d0056167dfbde8aac7741d475bd5e9b93175e853b3d",
+      "identical": true
+    },
+    {
+      "file": "components/SettingsChrome.tsx",
+      "originalSHA256": "4bf5f2eefbd3ffc19e8644237ddde1c4fe9113b7a71e9f8a34028134e52ee5d7",
+      "sha256": "4bf5f2eefbd3ffc19e8644237ddde1c4fe9113b7a71e9f8a34028134e52ee5d7",
+      "identical": true
+    },
+    {
+      "file": "components/SettingsForm.tsx",
+      "originalSHA256": "a60e53de3f827fa17388b2abdce05ed2e7684b5fccb80794414e33f7ae7cd0ff",
+      "sha256": "a60e53de3f827fa17388b2abdce05ed2e7684b5fccb80794414e33f7ae7cd0ff",
+      "identical": true
+    },
+    {
+      "file": "components/SettingsLayout.tsx",
+      "originalSHA256": "df1b5e3ac8ea07ef6a60443ab7d5354b0b274fd5f105d870d8bad38e1e8b958f",
+      "sha256": "df1b5e3ac8ea07ef6a60443ab7d5354b0b274fd5f105d870d8bad38e1e8b958f",
+      "identical": true
+    },
+    {
+      "file": "components/Shell.tsx",
+      "originalSHA256": "229e9580fcf4346ea40ce98844745cc6f6899f21306d0327c606793f6f870266",
+      "sha256": "b5bf55e5338ce292053e29ed31c01fe80605755f5446bf3bbcb386b80ba79f9e",
+      "identical": false
+    },
+    {
+      "file": "components/SiteFavicon.tsx",
+      "originalSHA256": "3e0915eaa4e7da7129eed3613e8a820e2d0ea241d3c6bc381fe88107a1ddca21",
+      "sha256": "3e0915eaa4e7da7129eed3613e8a820e2d0ea241d3c6bc381fe88107a1ddca21",
+      "identical": true
+    },
+    {
+      "file": "components/SiteSwitcher.tsx",
+      "originalSHA256": "d0f64dc29789c4049fd7103837601f16cb939b9519bf094e53a0fe4c6cd1ff08",
+      "sha256": "d0f64dc29789c4049fd7103837601f16cb939b9519bf094e53a0fe4c6cd1ff08",
+      "identical": true
+    },
+    {
+      "file": "components/Surface.tsx",
+      "originalSHA256": "9c1d9fa15775ed0ef6951245c7e738d66df04e673063bb9c27618c3608f3cb5e",
+      "sha256": "9c1d9fa15775ed0ef6951245c7e738d66df04e673063bb9c27618c3608f3cb5e",
+      "identical": true
+    },
+    {
+      "file": "components/TrackingDocs.tsx",
+      "originalSHA256": "efdbfac54fc24e8fa5a0d529e90e528166fedf65a2ec2a9ddbb66641240d491b",
+      "sha256": "17683582878ed0c27a4ad795062ec0cbafe10a433762e1427d74dafbaee7bb91",
+      "identical": false
+    },
+    {
+      "file": "components/TrackingSnippet.tsx",
+      "originalSHA256": "f09dea13348b011ff55bbc8bd42a501685905a9d299f0e942a66fd497dc697d0",
+      "sha256": "f09dea13348b011ff55bbc8bd42a501685905a9d299f0e942a66fd497dc697d0",
+      "identical": true
+    },
+    {
+      "file": "components/TrafficHeatmap.tsx",
+      "originalSHA256": "4f45e9e981139cc0675d83b87451b39bcacbbec09b04f803ee1b0345af91b501",
+      "sha256": "4f45e9e981139cc0675d83b87451b39bcacbbec09b04f803ee1b0345af91b501",
+      "identical": true
+    },
+    {
+      "file": "components/TrendChart.tsx",
+      "originalSHA256": "9a28d9c5e584672f275a5e208e1bb16e8ead15c556788ffb8306925f8479cbd0",
+      "sha256": "79fefc71ab3d8d3164cc5881062a7ac7bb930c6464cf0d14a50d88a691d4dc4f",
+      "identical": false
+    },
+    {
+      "file": "components/UIIcon.tsx",
+      "originalSHA256": "1ab43988ffd25f682c32cc1f7f00ee4a7f6fa0bca576d740e0655279138260c4",
+      "sha256": "1ab43988ffd25f682c32cc1f7f00ee4a7f6fa0bca576d740e0655279138260c4",
+      "identical": true
+    },
+    {
+      "file": "components/UserAvatar.tsx",
+      "originalSHA256": "8d7a60781309b0c4822d9ceec2485258ad52edc44d24d1e84a09de8ea5552abd",
+      "sha256": "8d7a60781309b0c4822d9ceec2485258ad52edc44d24d1e84a09de8ea5552abd",
+      "identical": true
+    },
+    {
+      "file": "components/VisitorGraph.tsx",
+      "originalSHA256": "b69847db0a0c6150b822c7475daa3b6f98183d140c71fd4aa4b8e3ec56e5a03e",
+      "sha256": "2c966ace48b7240f74d5326550432f178327b3cbf6607a40aed3e649142bdef9",
+      "identical": false
+    },
+    {
+      "file": "components/WorldMap.tsx",
+      "originalSHA256": "bb65fb02623c8555b33d2334ddd86b428198844bd6e8d3d7278d6be2a463eec7",
+      "sha256": "bb65fb02623c8555b33d2334ddd86b428198844bd6e8d3d7278d6be2a463eec7",
+      "identical": true
+    },
+    {
+      "file": "components/icons.tsx",
+      "originalSHA256": "7607c4556a9552ceaccf23f1b6e0b619bf7badf6e3f508311a52ba8921d0d4d3",
+      "sha256": "7607c4556a9552ceaccf23f1b6e0b619bf7badf6e3f508311a52ba8921d0d4d3",
+      "identical": true
+    },
+    {
+      "file": "components/ui.tsx",
+      "originalSHA256": "b2dcf6ae0c320d82c99822104dec2a08153f7820eb1eef2502122abb5655beb8",
+      "sha256": "b2dcf6ae0c320d82c99822104dec2a08153f7820eb1eef2502122abb5655beb8",
+      "identical": true
+    },
+    {
+      "file": "lib/accent-preference.ts",
+      "originalSHA256": "2adb47e4e7be58cd7eed54d58d1937f69241fead6d5971d223862bafedb7101e",
+      "sha256": "d271d7ec9a23ad9cb0f377755747fdf500482a824ddc0a1f7ffedbca92f3a899",
+      "identical": false
+    },
+    {
+      "file": "lib/actions.ts",
+      "originalSHA256": "21510c58b61c05dcdc33366b7552d65e61a6e17b6b48f420c39a779f692174a7",
+      "sha256": "0cc2f633d8d6bf575cc4053b253918afd60b80f0e783f7f7557ab3f0da1f3b03",
+      "identical": false
+    },
+    {
+      "file": "lib/auth-actions.ts",
+      "originalSHA256": "ae467c9864797334f56f8bc2f3c8e41e66a8cbe99f669eddeb362203148e78b2",
+      "sha256": "71445295851f943368358941d3c65e401110f5a382698867019fa3a599096aa1",
+      "identical": false
+    },
+    {
+      "file": "lib/ch.ts",
+      "originalSHA256": "a1d926a6cbfee7eaaa06407240bf27e7c116d51adf1e3170f5307791c857db3e",
+      "sha256": "1446b11d59818e1c3ef1aa22e26a565c4f328ed775b2a1b1c3f3e31ed7c6744c",
+      "identical": false
+    },
+    {
+      "file": "lib/countries.ts",
+      "originalSHA256": "63b07c4a197fd27a69eb297279a09a8c38658cbf812c0a735b755d70ab4b19e1",
+      "sha256": "63b07c4a197fd27a69eb297279a09a8c38658cbf812c0a735b755d70ab4b19e1",
+      "identical": true
+    },
+    {
+      "file": "lib/countries_meta.json",
+      "originalSHA256": "996bd298dc40b8f7e165adcc4535a4ef1a1235f81ac2217a812d4eda207e6630",
+      "sha256": "996bd298dc40b8f7e165adcc4535a4ef1a1235f81ac2217a812d4eda207e6630",
+      "identical": true
+    },
+    {
+      "file": "lib/date-time.ts",
+      "originalSHA256": "a6d891caba3ad90d7123910da5552ce98d3256ac4a4168746dba1692cdd9607b",
+      "sha256": "a6d891caba3ad90d7123910da5552ce98d3256ac4a4168746dba1692cdd9607b",
+      "identical": true
+    },
+    {
+      "file": "lib/export.ts",
+      "originalSHA256": "7d824792fde8a83b4743ee47ec2f8bb663218141913393cc27ec0dbcf18e54bd",
+      "sha256": "e91f8644f061697d4d134369aab67c3d2bdd29acbc80fd23bbc56c09d2b433cd",
+      "identical": false
+    },
+    {
+      "file": "lib/format.ts",
+      "originalSHA256": "ffbfa71f5d6e3a80c51e8e07c2523c0b4a7a5cafa8442f8f07e88ac64f5f7109",
+      "sha256": "ffbfa71f5d6e3a80c51e8e07c2523c0b4a7a5cafa8442f8f07e88ac64f5f7109",
+      "identical": true
+    },
+    {
+      "file": "lib/geography.ts",
+      "originalSHA256": "02fc09858ce77a7ecd7f090b61eafa2d062d9853f630f45873ec3caa707e1a27",
+      "sha256": "02fc09858ce77a7ecd7f090b61eafa2d062d9853f630f45873ec3caa707e1a27",
+      "identical": true
+    },
+    {
+      "file": "lib/i18n.tsx",
+      "originalSHA256": "ae7cef96750558486611e8c672a6ee8efee6fc0e1c38ed6988962155a7024c1d",
+      "sha256": "ae7cef96750558486611e8c672a6ee8efee6fc0e1c38ed6988962155a7024c1d",
+      "identical": true
+    },
+    {
+      "file": "lib/languages.ts",
+      "originalSHA256": "0076a33877560ca2042567bfae3973c3c876c9cff5c73cc0de7af58fa55b0c06",
+      "sha256": "0076a33877560ca2042567bfae3973c3c876c9cff5c73cc0de7af58fa55b0c06",
+      "identical": true
+    },
+    {
+      "file": "lib/map-preferences.tsx",
+      "originalSHA256": "df3e85ac08d423cb77926b26c260cd66a49fc3108ba2dd9e2ffe1c5741a6d659",
+      "sha256": "df3e85ac08d423cb77926b26c260cd66a49fc3108ba2dd9e2ffe1c5741a6d659",
+      "identical": true
+    },
+    {
+      "file": "lib/mapbox-actions.ts",
+      "originalSHA256": "192580194899c79c9d8e1f164f918ba6e553e254bae2057b40ce512c3e3d152a",
+      "sha256": "0f71762e8baaedf3557473e3163c69f9e93c201d60f794e432088d1372190f03",
+      "identical": false
+    },
+    {
+      "file": "lib/mapbox-data.ts",
+      "originalSHA256": "6fb4b1c377a6b9904254b27941640180ffe2f0efbe2f4766abc469cababb6765",
+      "sha256": "6fb4b1c377a6b9904254b27941640180ffe2f0efbe2f4766abc469cababb6765",
+      "identical": true
+    },
+    {
+      "file": "lib/mapbox-style-lifecycle.ts",
+      "originalSHA256": "24b192080a40db433ad19181c4c124314eb8fc1a68bf6f1e4a87b8a1cecb6ed3",
+      "sha256": "24b192080a40db433ad19181c4c124314eb8fc1a68bf6f1e4a87b8a1cecb6ed3",
+      "identical": true
+    },
+    {
+      "file": "lib/mapbox-styles.ts",
+      "originalSHA256": "cc5e7e3222911d10d0853ebc8925f88ff7e1da6208024346866e7883f96a8803",
+      "sha256": "cc5e7e3222911d10d0853ebc8925f88ff7e1da6208024346866e7883f96a8803",
+      "identical": true
+    },
+    {
+      "file": "lib/range.ts",
+      "originalSHA256": "52aa58e932ff6c147095e8ff9b8750e0de5879e5dd2b09fdfe7c03d543042f11",
+      "sha256": "52aa58e932ff6c147095e8ff9b8750e0de5879e5dd2b09fdfe7c03d543042f11",
+      "identical": true
+    },
+    {
+      "file": "lib/report-values.ts",
+      "originalSHA256": "d5f8957b31e2e7c3a3627309276ac036b6bd7dcb3d8ecbe9b309d72691035d8a",
+      "sha256": "d5f8957b31e2e7c3a3627309276ac036b6bd7dcb3d8ecbe9b309d72691035d8a",
+      "identical": true
+    },
+    {
+      "file": "lib/router-refresh.ts",
+      "originalSHA256": "144955f5496a8e55db920efe4e3dd4339eb9fad512239d7e3f50e9cbfeee739f",
+      "sha256": "144955f5496a8e55db920efe4e3dd4339eb9fad512239d7e3f50e9cbfeee739f",
+      "identical": true
+    },
+    {
+      "file": "lib/settled.ts",
+      "originalSHA256": "b6405a49b60c6cf5d6059d2ce6a6c7a7c333e5c6c9dd6ccd2db86e4350e7a805",
+      "sha256": "b6405a49b60c6cf5d6059d2ce6a6c7a7c333e5c6c9dd6ccd2db86e4350e7a805",
+      "identical": true
+    },
+    {
+      "file": "lib/site-layout-preference.ts",
+      "originalSHA256": "43e3196d37978281fcf4213263408af67da41736e28f860f16d695cabdc65224",
+      "sha256": "43e3196d37978281fcf4213263408af67da41736e28f860f16d695cabdc65224",
+      "identical": true
+    },
+    {
+      "file": "lib/source-icons.ts",
+      "originalSHA256": "9ead9cc287b4b0b9c716c60b67aad7a6083b74e506baa706985ca5df3bc92379",
+      "sha256": "9ead9cc287b4b0b9c716c60b67aad7a6083b74e506baa706985ca5df3bc92379",
+      "identical": true
+    },
+    {
+      "file": "lib/theme-appearance.ts",
+      "originalSHA256": "136c4367bfe8b8e848228aca9d10a7d8efb09e932174b5c27b8799409623db1c",
+      "sha256": "136c4367bfe8b8e848228aca9d10a7d8efb09e932174b5c27b8799409623db1c",
+      "identical": true
+    },
+    {
+      "file": "lib/theme-update.ts",
+      "originalSHA256": "96bd5b92437b7fb94ffb2db0739e63735e0c00d4b7f290bd3da9f771a174556e",
+      "sha256": "96bd5b92437b7fb94ffb2db0739e63735e0c00d4b7f290bd3da9f771a174556e",
+      "identical": true
+    },
+    {
+      "file": "lib/timezones.ts",
+      "originalSHA256": "1ff9baee5da4d74ff836a958b837f5ee1b0cc533d1b8d66ef2952616f03ea208",
+      "sha256": "1ff9baee5da4d74ff836a958b837f5ee1b0cc533d1b8d66ef2952616f03ea208",
+      "identical": true
+    },
+    {
+      "file": "lib/ui-en.json",
+      "originalSHA256": "f05edb8794f3735eeae7d4a54a57667a53c13fb4f862ad0bafcc52dab92cfb08",
+      "sha256": "f05edb8794f3735eeae7d4a54a57667a53c13fb4f862ad0bafcc52dab92cfb08",
+      "identical": true
+    },
+    {
+      "file": "lib/visitor-mode-preference.ts",
+      "originalSHA256": "9d0f597028eba31d68ce20236fd7f340ce0026ce665044c129422301d7513535",
+      "sha256": "9d0f597028eba31d68ce20236fd7f340ce0026ce665044c129422301d7513535",
+      "identical": true
+    },
+    {
+      "file": "lib/world-countries.ts",
+      "originalSHA256": "20413eb5718c226ab2e4eee8f592ae16eff93240b14566dfd1c57b185109287e",
+      "sha256": "20413eb5718c226ab2e4eee8f592ae16eff93240b14566dfd1c57b185109287e",
+      "identical": true
+    },
+    {
+      "file": "lib/world-map-format.ts",
+      "originalSHA256": "9ad0bce62958348fe680486fc4776d326d12d18560c840d122393a8d353955e5",
+      "sha256": "9ad0bce62958348fe680486fc4776d326d12d18560c840d122393a8d353955e5",
+      "identical": true
+    },
+    {
+      "file": "router.tsx",
+      "originalSHA256": "019f1c533194e8af373768571daedfdc1a3044a4cd2387aa70d29665f6f1f70d",
+      "sha256": "eda662e4c2f61294d9bfa76f4eeb0afdc79f1acabf428d4ef8248bfdb339384d",
+      "identical": false
+    },
+    {
+      "file": "routes/__root.tsx",
+      "originalSHA256": "270b2b09c16d1bca7c0feed5fc6ad1a9cee4c16035a272cda869c8d2f2b1342d",
+      "sha256": "8cdc69094a5e53632cec0d143b6a3db4ad548a026407172a1babfd0fba941622",
+      "identical": false
+    },
+    {
+      "file": "routes/account.tsx",
+      "originalSHA256": "8e7740f31d1f6b4f312e790e13975ffe72c509eb61b983e2f4fe17021f0e933b",
+      "sha256": "845848c51ffedeafb2ee074992e42f4e8b3147c790f30ff9ab52f4d9a9afa6e3",
+      "identical": false
+    },
+    {
+      "file": "routes/backup.tsx",
+      "originalSHA256": "ca09381fb896dad76ff46e418715c8a0a37d238dcd7753c9ade985bc699adc9a",
+      "sha256": "2ffe16ebd96c72f6fae31878e2828d4da055cdfb503a3d9b6d42fd064e4ea277",
+      "identical": false
+    },
+    {
+      "file": "routes/dashboard.tsx",
+      "originalSHA256": "7c8e340334b55c3e5eddad2a0793cfb4afde6e1c835387eeed4305b583292c32",
+      "sha256": "2de8a06e444fbe1bcffe5428f2e9742b0ebe4ef2a2680f089b69790120e923b5",
+      "identical": false
+    },
+    {
+      "file": "routes/docs/api.tsx",
+      "originalSHA256": "3987b7597a3e1a03bcf4159669db0fcc10b5a8ce69e4c7e0c078a0cd790389f1",
+      "sha256": "e335c176473d63aeea57f67e89052daa2b0129c48c820e41eb25d62d2e73f836",
+      "identical": false
+    },
+    {
+      "file": "routes/index.tsx",
+      "originalSHA256": "ee032696cda36739c3c9a129e84cbdd750cc0e2d576823d6aeda48bfb030e911",
+      "sha256": "f2835bd3bacfa40d4463c48fcf1925fd607b35b243b7d3d0078a55dc924824c0",
+      "identical": false
+    },
+    {
+      "file": "routes/login.tsx",
+      "originalSHA256": "87456e0d28f04dd82d4c57b3f2654eced71652b58598a203a5b60ad2759727ea",
+      "sha256": "7e8a4a0c6271a6ed077212d5d39dfa692ec2acbb4284079ceae035e7a9039c23",
+      "identical": false
+    },
+    {
+      "file": "routes/setup.tsx",
+      "originalSHA256": "dd098bb70bef31fecf1659bc4a7273ce11c184a4084a7b8a832a57e35acd56e2",
+      "sha256": "4deab25688f574931e053319f7f6d0e09f3c1fd01aeca33d226c983a2653522c",
+      "identical": false
+    },
+    {
+      "file": "routes/share/$slug.tsx",
+      "originalSHA256": "a96896992d2b939b94a65967482981e973e747c3df8b418a67da9c90ddde51bc",
+      "sha256": "a96896992d2b939b94a65967482981e973e747c3df8b418a67da9c90ddde51bc",
+      "identical": true
+    },
+    {
+      "file": "routes/sites/$domain.activity.tsx",
+      "originalSHA256": "07d7803252f8212f2eb33d9bb1c10394c9151ca151cce46995c3786fd96fa5c6",
+      "sha256": "07d7803252f8212f2eb33d9bb1c10394c9151ca151cce46995c3786fd96fa5c6",
+      "identical": true
+    },
+    {
+      "file": "routes/sites/$domain.index.tsx",
+      "originalSHA256": "6c9ddc5d51a32be354a569202e3c93a6abc6cc0fdc111b92f3d0f98140c90a1d",
+      "sha256": "6c9ddc5d51a32be354a569202e3c93a6abc6cc0fdc111b92f3d0f98140c90a1d",
+      "identical": true
+    },
+    {
+      "file": "routes/sites/$domain.settings.tsx",
+      "originalSHA256": "cf0b0253a0fdf6a4f8e0674dd41cd29ce010971de8e28de3b03f5283cd135a67",
+      "sha256": "86302d80776fce663ce6cbe2bcdc2ca7e2185f1b11ce55f34810e83c11886f8a",
+      "identical": false
+    },
+    {
+      "file": "routes/sites/$domain.tsx",
+      "originalSHA256": "963f3e9d68a6a468e336dfcc14a2dadf8f510049ce66ed9e6a4467074cd5c72d",
+      "sha256": "963f3e9d68a6a468e336dfcc14a2dadf8f510049ce66ed9e6a4467074cd5c72d",
+      "identical": true
+    },
+    {
+      "file": "routes/sites/new.tsx",
+      "originalSHA256": "346e04f93cd31dedc8388ff78df40d6818a3398f11ed20b841f789c18362d101",
+      "sha256": "44f6daaa77acd32363f191f3d9ae4dcdfb49a507ddb86126a23f209ecedc8ee7",
+      "identical": false
+    },
+    {
+      "file": "styles/accent-colors.css",
+      "originalSHA256": "b527f0f1426fd2162f19a210a22c034775b83b21e028e413568f3d3d2ac20cb4",
+      "sha256": "b527f0f1426fd2162f19a210a22c034775b83b21e028e413568f3d3d2ac20cb4",
+      "identical": true
+    },
+    {
+      "file": "styles/api-docs.css",
+      "originalSHA256": "7e7708988f1f1258c198968183a74e600e63215ab7fbfd1d826fd1f0ca7791c9",
+      "sha256": "c60e93e8841464be8607bc4c36ada0531beb8c6fc176a00a623111703f444102",
+      "identical": false
+    },
+    {
+      "file": "styles/app.css",
+      "originalSHA256": "daad603ea4cebeb8272e75c84f6be0512594183698633a42a77e74ae11efaba5",
+      "sha256": "fa616ab50dd163537c5e5e1fdc02e9849cbfecb97c8462a17d0880aec28adf2b",
+      "identical": false
+    },
+    {
+      "file": "styles/backup-settings.css",
+      "originalSHA256": "1f02be210d1e1c05b94401ece1e2c5c9a95dc2c32549effbd7b032a7728f51d9",
+      "sha256": "1f02be210d1e1c05b94401ece1e2c5c9a95dc2c32549effbd7b032a7728f51d9",
+      "identical": true
+    },
+    {
+      "file": "styles/brand.css",
+      "originalSHA256": "16225778cf27013828e8db5225ed5ddce1415907e2e80a6bfaae0b1a579d20e1",
+      "sha256": "94b70b4f634358f66589fe2a5a94a8710c6dda541569c4373d67aa50146dfdb9",
+      "identical": false
+    },
+    {
+      "file": "styles/fonts.css",
+      "originalSHA256": "7b151c9646ac929dbddc847b809e3ccc84e6e46af430a10a6477821f0407bbcd",
+      "sha256": "7b151c9646ac929dbddc847b809e3ccc84e6e46af430a10a6477821f0407bbcd",
+      "identical": true
+    },
+    {
+      "file": "styles/keywords.css",
+      "originalSHA256": "4bbe1e7dda614b4b0927b2d4fd0adf4215ac3e0cc21c621441c52b52a4407115",
+      "sha256": "4bbe1e7dda614b4b0927b2d4fd0adf4215ac3e0cc21c621441c52b52a4407115",
+      "identical": true
+    },
+    {
+      "file": "styles/management.css",
+      "originalSHA256": "4ed4b97ff3abb4b1cba4a5bf10157f740ade1da6ab898ad41060475f5336cc80",
+      "sha256": "4ed4b97ff3abb4b1cba4a5bf10157f740ade1da6ab898ad41060475f5336cc80",
+      "identical": true
+    },
+    {
+      "file": "styles/radius-system.css",
+      "originalSHA256": "b78b19a2e311c670de2161f2aff73bd2d4b991adb6020c17958b960ee0e5fd5a",
+      "sha256": "b78b19a2e311c670de2161f2aff73bd2d4b991adb6020c17958b960ee0e5fd5a",
+      "identical": true
+    },
+    {
+      "file": "styles/search-integrations.css",
+      "originalSHA256": "7b2f4cf5fac3e9342ad3ef6e33899d7097f485429d1911de19dc894e3397c203",
+      "sha256": "7b2f4cf5fac3e9342ad3ef6e33899d7097f485429d1911de19dc894e3397c203",
+      "identical": true
+    },
+    {
+      "file": "styles/site-health.css",
+      "originalSHA256": "ebd5993a7e3f0a2f7255f1f5ea93a711a2baf47e40b74e25491b7dcb03687c1b",
+      "sha256": "ebd5993a7e3f0a2f7255f1f5ea93a711a2baf47e40b74e25491b7dcb03687c1b",
+      "identical": true
+    },
+    {
+      "file": "styles/skeleton.css",
+      "originalSHA256": "eff03d690b582ac1d0df9aa7a70b2a15eb03686287e159e969becaa8758435ed",
+      "sha256": "eff03d690b582ac1d0df9aa7a70b2a15eb03686287e159e969becaa8758435ed",
+      "identical": true
+    }
+  ],
+  "derivedFiles": [
+    {
+      "file": "components/ApiDocs.tsx",
+      "source": "routes/docs/api.tsx",
+      "scope": "Original document layout; placed in settings, text matches supported Go endpoints."
+    }
+  ],
+  "notes": [
+    "Display components and assets retain original styling.",
+    "REST adapters replace server functions; no original server/database implementation is bundled.",
+    "Business templates and health/search integrations remain removed.",
+    "Footer uses the later compact, neutral gray design.",
+    "API documentation moved from the header into the account settings sidebar.",
+    "reference/ is a development-only read-only original component comparison harness.",
+    "Six summaries remain read-only. Visitors, visits and pageviews use soft solid lines with separate transparent gradient areas.",
+    "Pinned tooltips have an explicit Close button; plot clicks pin or close, and only the tooltip date button zooms.",
+    "Document titles follow the route and locale, including Sites | Plost and Settings | Plost."
+  ],
+  "brandUpdate": "2026-10-31: approved independent S/T brand and plost-dev organization links; visual assets only."
+}

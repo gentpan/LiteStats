@@ -1,13 +1,5 @@
+# Replace stats.example.com with your instance domain.
 stats.example.com {
-    # The packed atlas uses application/octet-stream, outside the default matcher.
-    @worldMap path /assets/world-50m-*.bin
-    encode @worldMap {
-        zstd
-        gzip 6
-        match {
-            header Content-Type application/octet-stream*
-        }
-    }
     encode zstd gzip
-    reverse_proxy 127.0.0.1:3100
+    reverse_proxy 127.0.0.1:3101
 }

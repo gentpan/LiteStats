@@ -1,0 +1,290 @@
+import { UIIcon } from "@original/components/UIIcon"
+import { HelpHint } from "@original/components/HelpHint"
+import { useEffect, useState } from "react"
+import { Surface } from "@original/components/Surface"
+import { DotsLoader } from "@original/components/DotsLoader"
+import { TrafficHeatmap } from "@original/components/TrafficHeatmap"
+import { DashTopBar } from "@original/components/DashTopBar"
+import { RecentVisitors } from "@original/components/RecentVisitors"
+import { VisitorGraph } from "@original/components/VisitorGraph"
+import { MapCard } from "@original/components/WorldMap"
+import { List, ReportCard } from "@original/components/ui"
+import { PageReport } from "@original/components/PageReport"
+const TemplateReport = (_props:unknown) => null
+const KeywordReport = (_props:unknown) => null
+const keywordView = (..._args:unknown[]) => null
+import { useT } from "~/lib/i18n"
+import { countryName } from "~/lib/countries"
+import { languageName } from "~/lib/languages"
+import { isDirectSource } from "~/lib/source-icons"
+import { RowIcon } from "@original/components/icons"
+import { reportValueLabel } from "~/lib/report-values"
+import type { dashboardFn } from "~/lib/actions"
+import type { MetricKey } from "~/lib/ch"
+const downloadDashboardZip = (_data:unknown) => {}
+import { isoDate, parseDashSearch, parseDate, type DashSearch } from "~/lib/range"
+import { readVisitorMode, saveVisitorMode, type VisitorMode } from "~/lib/visitor-mode-preference"
+const normalizeSiteTemplate = (_value:unknown) => "blog"
+const SITE_TEMPLATES = {blog:{sourceTab:"source",pageTab:"pages"}}
+
+type DashboardData = Omit<Awaited<ReturnType<typeof dashboardFn>>, "access">
+
+/** Shared report display; route loaders retain their own authorization and data access. */
+export function AnalyticsDashboard({data, domain, search, onSearch, readonly = true, canManage = false, loading = false}: {
+  data: DashboardData
+  domain: string
+  search: DashSearch
+  onSearch: (search: DashSearch) => void
+  readonly?: boolean
+  canManage?: boolean
+  /** The shown data belongs to the previous request; keep it visible until the new one arrives. */
+  loading?: boolean
+}) {
+  const { t, locale } = useT()
+  const template = normalizeSiteTemplate(data.site.report_template)
+  const profile = SITE_TEMPLATES[template]
+  const [metric, setMetric] = useState<MetricKey>("visitors")
+  const [visitorMode, setVisitorMode] = useState<VisitorMode>("persistent")
+  useEffect(() => { setVisitorMode(readVisitorMode(window.localStorage)) }, [])
+  function chooseVisitorMode(next: VisitorMode) {
+    setVisitorMode(next)
+    saveVisitorMode(next, window.localStorage)
+  }
+  const [visitorsOpen, setVisitorsOpen] = useState(false)
+  const [sourceTab, setSourceTab] = useState<string>(profile.sourceTab)
+  const [pageTab, setPageTab] = useState<string>(profile.pageTab)
+  const [pageMode, setPageMode] = useState("path")
+  const [eventMode, setEventMode] = useState("count")
+  const [locationTab, setLocationTab] = useState("countries")
+  const [deviceTab, setDeviceTab] = useState("browser")
+  useEffect(() => {
+    const next = SITE_TEMPLATES[template]
+    setSourceTab(next.sourceTab)
+    setPageTab(next.pageTab)
+    setPageMode("path")
+    setEventMode("count")
+  }, [template, data.site.id])
+  const chips = [
+    search.source && { key: "source" as const, label: t("来源 {0}", {0: isDirectSource(search.source) ? t("直接访问") : search.source}) },
+    search.page && { key: "page" as const, label: t("页面 {0}", {0: search.page}) },
+    search.country && { key: "country" as const, label: t("地区 {0}", {0: countryName(search.country, locale)}) },
+    search.browser && { key: "browser" as const, label: t("浏览器 {0}", {0: reportValueLabel("browser", search.browser, locale)}) },
+    search.os && { key: "os" as const, label: t("系统 {0}", {0: reportValueLabel("os", search.os, locale)}) },
+    search.device && { key: "device" as const, label: t("设备 {0}", {0: search.device}) },
+  ].filter(Boolean) as Array<{ key: "source" | "page" | "country" | "browser" | "os" | "device", label: string }>
+
+  function go(next: Partial<DashSearch>) {
+    onSearch(parseDashSearch({ ...search, ...next }))
+  }
+
+  const countries = data.countries.map((r) => ({ ...r, label: countryName(r.name, locale) }))
+  const keywords = keywordView(data.searchTerms, sourceTab)
+  const deviceReportTitle = deviceTab === "os" ? t("操作系统") : deviceTab === "device" ? t("设备") : deviceTab === "language" ? t("语言") : deviceTab === "screen" ? t("屏幕") : t("浏览器")
+
+  return (
+    <div className="analytics-dashboard mb-16 grid min-w-0 grid-cols-1 md:grid-cols-2" aria-busy={loading || undefined} data-loading={loading || undefined} data-site-template={template}>
+      {loading ? <DotsLoader className="dots-loader-floating" label={t("加载中…")} /> : null}
+      <DashTopBar
+        domain={domain}
+        filters={chips.length ? <div className="dash-active-filters" role="group" aria-label={t("筛选")}>
+          {chips.map((c) => (
+            <button key={c.key} type="button" title={c.label} className="squircle active-filter-chip flex min-h-8 items-center gap-1.5 rounded-md px-2.5 py-1 text-sm" onClick={() => go({ [c.key]: "" })}>
+              {c.key !== "page" ? <span className="report-value-icon"><RowIcon kind={c.key} name={String(search[c.key] || "")}/></span> : null}
+              <span className="filter-chip-label">{c.label}</span>
+              <UIIcon name="close" className="ml-1.5 size-3"/>
+            </button>
+          ))}
+          <button type="button" className="squircle control-compact text-sm text-gray-500 hover:text-gray-900" onClick={() => go({ source: "", page: "", country: "", browser: "", os: "", device: "" })}>{t("清除筛选")}</button>
+        </div> : null}
+        filterOptions={{page:data.pages,source:data.sources.map(row=>({...row,label:isDirectSource(row.name) ? t("直接访问") : row.name})),country:data.countries.map(row=>({...row,label:countryName(row.name,locale)})),device:data.devices,browser:data.browsers,os:data.os}}
+        search={search}
+        visitorMode={visitorMode}
+        onVisitorMode={chooseVisitorMode}
+        health={data.health}
+        onPeriod={go}
+        readonly={readonly}
+        canManage={canManage}
+        onExport={() => downloadDashboardZip({
+          domain,
+          template,
+          templateEvents: data.templateEvents,
+          from: search.from,
+          to: search.to,
+          seriesBy: data.seriesBy,
+          series: data.series,
+          sources: data.sources,
+          pages: data.pages,
+          entryPages: data.entryPages,
+          exitPages: data.exitPages,
+          browsers: data.browsers,
+          os: data.os,
+          devices: data.devices,
+          countries: data.countries,
+          regions: data.regions,
+          cities: data.cities,
+          channels: data.channels,
+          aiSources: data.aiSources,
+          notFoundPages: data.notFoundPages,
+          eventSummary: data.eventSummary,
+          utm: data.utm,
+          utmMediums: data.utmMediums,
+          campaigns: data.campaigns,
+          overview: data.overview,
+        })}
+      />
+
+      <VisitorGraph
+        overview={data.overview}
+        compare={data.compare}
+        series={data.series}
+        seriesBy={data.seriesBy}
+        metric={metric}
+        visitorMode={visitorMode}
+        onMetric={setMetric}
+        interval={search.interval}
+        realtime={search.period === "realtime"}
+        onZoom={(date) => {
+          const day = date.slice(0, 10)
+          if (search.interval === "month") {
+            const start = parseDate(day)
+            const from = isoDate(new Date(start.getFullYear(), start.getMonth(), 1))
+            const to = isoDate(new Date(start.getFullYear(), start.getMonth() + 1, 0))
+            go({ period: "custom", from, to })
+            return
+          }
+          go({ period: "custom", from: day, to: day })
+        }}
+      />
+
+      <TemplateReport template={template} rows={data.templateEvents} domain={domain} canManage={canManage && !readonly} />
+
+      <MapCard
+        mapboxToken={data.mapboxToken}
+        rows={countries}
+        live={data.liveGeo || []}
+        liveCount={data.overview.live}
+        onViewVisitors={readonly ? undefined : () => setVisitorsOpen(true)}
+        onCountryClick={(code) => {
+          setLocationTab("regions")
+          go({ country: code })
+        }}
+      />
+      {visitorsOpen && !readonly ? <RecentVisitors domain={domain} onClose={() => setVisitorsOpen(false)} /> : null}
+
+      <ReportCard className="location-report col-span-full"
+        tabs={[{ id: "countries", label: "国家/地区" }, { id: "regions", label: "地区" }, { id: "cities", label: "城市" }]}
+        active={locationTab}
+        onChange={setLocationTab}
+        details={{
+          title: locationTab === "regions" ? t("地区") : locationTab === "cities" ? t("城市") : t("国家/地区"),
+          kind: locationTab === "regions" ? "region" : locationTab === "cities" ? "city" : "country",
+          rows: locationRows(data, locationTab, countries),
+          onPick: locationTab === "regions" || locationTab === "cities" ? undefined : (name) => go({ country: name }),
+        }}
+      >
+        <List compact
+          plain
+          kind={locationTab === "regions" ? "region" : locationTab === "cities" ? "city" : "country"}
+          rows={locationRows(data, locationTab, countries)}
+          onPick={locationTab === "regions" || locationTab === "cities" ? undefined : (name) => go({ country: name })}
+        />
+      </ReportCard>
+
+      <ReportCard className="source-report"
+        tabs={[
+          { id: "channel", label: "渠道" },
+          { id: "source", label: "来源" },
+          { id: "ai", label: "AI" },
+          {
+            id: "campaigns",
+            label: "活动",
+            dropdown: [
+              { id: "utm_medium", label: "UTM 媒介" },
+              { id: "utm_source", label: "UTM 来源" },
+              { id: "utm_campaign", label: "UTM 活动" },
+            ],
+          },
+        ]}
+        active={sourceTab}
+        onChange={setSourceTab}
+        extra={keywords ? <HelpHint>{t(keywords.description)}</HelpHint> : sourceTab === "ai" ? <HelpHint>{t("来自 AI 产品的可识别引荐访问；未传递来源的访问无法识别。")}</HelpHint> : undefined}
+        details={{
+          title: sourceTab === "ai" ? t("AI 来源") : sourceTab === "channel" ? t("渠道") : sourceTab === "utm_medium" ? t("UTM 媒介") : sourceTab === "utm_source" ? t("UTM 来源") : sourceTab === "utm_campaign" ? t("UTM 活动") : sourceTab === "google_kw" ? t("Google 搜索词") : sourceTab === "bing_kw" ? t("Bing 搜索词") : sourceTab === "organic_kw" ? t("引荐搜索词") : t("来源"),
+          kind: sourceTab === "ai" ? "ai" : sourceTab === "source" ? "source" : sourceTab === "channel" ? "channel" : sourceTab.endsWith("_kw") ? "keyword" : "campaign",
+          rows: sourceRows(data, sourceTab),
+          columns: keywords?.columns,
+          showPercent: sourceTab === "ai" ? false : undefined,
+          emptyMessage: sourceTab === "ai" ? "此时段没有可识别的 AI 来源访问" : undefined,
+          onPick: sourceTab === "source" ? (name) => go({ source: name }) : undefined,
+        }}
+      >
+        {keywords ? <KeywordReport view={keywords} domain={domain} canManage={canManage} onPeriod={() => go({period: "28d"})} /> : (
+          <List
+            plain
+            kind={sourceTab === "ai" ? "ai" : sourceTab === "source" ? "source" : sourceTab === "channel" ? "channel" : sourceTab.endsWith("_kw") ? "keyword" : "campaign"}
+            rows={sourceRows(data, sourceTab)}
+            showPercent={sourceTab === "ai" ? false : undefined}
+            emptyMessage={sourceTab === "ai" ? "此时段没有可识别的 AI 来源访问" : undefined}
+            onPick={sourceTab === "source" ? (name) => go({ source: name }) : undefined}
+          />
+        )}
+      </ReportCard>
+
+      <PageReport data={data} domain={domain} active={pageTab} onChange={setPageTab}
+        mode={pageMode} onMode={setPageMode} eventMode={eventMode} onEventMode={setEventMode} onPick={name => go({page: name})}/>
+
+      <Surface className="analytics-panel traffic-report traffic-paired-report"><TrafficHeatmap cells={data.heatmap || []} /></Surface>
+
+      <ReportCard className="device-report traffic-paired-report"
+        tabs={[{ id: "browser", label: "浏览器" }, { id: "os", label: "操作系统" }, { id: "device", label: "设备" }, { id: "language", label: "语言" }, { id: "screen", label: "屏幕" }]}
+        active={deviceTab}
+        onChange={setDeviceTab}
+        details={{
+          title: deviceReportTitle,
+          kind: deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : deviceTab === "language" ? "language" : deviceTab === "screen" ? "screen" : "browser",
+          rows: deviceRows(data, deviceTab, locale),
+          onPick: deviceTab === "language" || deviceTab === "screen" ? undefined : (name) => go({ [deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : "browser"]: name }),
+        }}
+      >
+        <div key={deviceTab} className="device-report-scroll" role="region" aria-label={deviceReportTitle} tabIndex={0}>
+          <List
+            plain
+            maxItems={0}
+            kind={deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : deviceTab === "language" ? "language" : deviceTab === "screen" ? "screen" : "browser"}
+            rows={deviceRows(data, deviceTab, locale)}
+            onPick={deviceTab === "language" || deviceTab === "screen" ? undefined : (name) => go({ [deviceTab === "os" ? "os" : deviceTab === "device" ? "device" : "browser"]: name })}
+          />
+        </div>
+      </ReportCard>
+
+    </div>
+  )
+}
+
+type Dash = DashboardData
+
+function sourceRows(data: Dash, tab: string) {
+  if (tab === "channel") return data.channels
+  if (tab === "ai") return data.aiSources || []
+  if (tab === "utm_medium") return data.utmMediums
+  if (tab === "utm_source") return data.utm
+  if (tab === "utm_campaign") return data.campaigns
+  if (tab === "google_kw") return data.searchTerms?.google.rows || []
+  if (tab === "bing_kw") return data.searchTerms?.bing.rows || []
+  if (tab === "organic_kw") return data.searchTerms?.organic || data.keywords || []
+  return data.sources
+}
+
+function locationRows(data: Dash, tab: string, countries: Array<{ name: string, value: number, label: string }>) {
+  if (tab === "regions") return data.regions
+  if (tab === "cities") return data.cities
+  return countries
+}
+
+function deviceRows(data: Dash, tab: string, locale: string) {
+  if (tab === "os") return data.os
+  if (tab === "device") return data.devices
+  if (tab === "language") return (data.languages || []).map((r) => ({ ...r, label: languageName(r.name, locale) }))
+  if (tab === "screen") return data.screens || []
+  return data.browsers
+}
