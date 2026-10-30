@@ -1,28 +1,49 @@
-# Plost self-hosted deployment
+# 部署 Plost
 
-Plost supports managed Docker Compose installations and native systemd services behind an existing HTTPS proxy. The native layout below is a deployment reference. Set your own analytics hostname, such as `stats.example.com`; keep database services private and preserve existing applications and proxy sites.
+推荐使用安装器管理 Docker Compose 实例。应用、PostgreSQL 和 ClickHouse 由安装器统一构建和启动，数据库不向公网开放。
 
-The official product site is [plo.st](https://plo.st), the hosted dashboard is [app.plost.io](https://app.plost.io), and hosted collection uses `stats.plost.io`. Self-hosted installations use their own domain. Existing `litestats` script, service, database and backup identifiers remain unchanged for compatibility.
+## Docker Compose 安装
 
-## Backups in the dashboard
-
-Open **Settings → System settings → Backup**. The **Full backup and recovery** panel creates/downloads encrypted instance backups, downloads the recovery key after password confirmation, uploads/verifies backups, and starts staged recovery after password and `RESTORE` confirmation. Recovery automatically saves current data first and retains old databases. See [OPERATIONS.md](OPERATIONS.md#administrator-dashboard) for the workflow and supervisor requirements.
-
-## Managed installation and unified recovery
-
-Use the [installation and recovery guide](OPERATIONS.md) for the managed Docker Compose installer, encrypted PostgreSQL + ClickHouse + runtime backup packages, verification, staged recovery and native-systemd commands.
+需要 Linux、systemd、root 权限、Git、Docker Engine、Docker Compose v2、Python 3.9+ 和 OpenSSL。
 
 ```sh
+git clone https://github.com/gentpan/Plost.git
+cd Plost
 python3 deploy/plost.py install --directory /opt/plost-instance --port 3100
 ```
 
-For an existing instance, keep its original directory and port when upgrading.
+应用监听 `127.0.0.1:3100`。将自己的统计域名通过 HTTPS 反向代理指向该地址，然后访问实例，创建管理员账号。初始化完成后关闭公开注册。
 
-The existing native deployment below remains supported. It is not converted to Docker during application upgrades. The unified backup script can run directly on that host with its existing private environment file and service.
+升级时在更新后的源码目录中运行同一安装命令，使用原实例目录和端口。备份、校验与恢复步骤见 [OPERATIONS.md](./OPERATIONS.md)。
 
-## Build
+根目录的 `docker-compose.yml` 供本地开发使用；生产安装使用 `deploy/` 中的配置。
 
-From `app/`, run:
+## HTTPS 反向代理
+
+以 Caddy 为例，将域名替换为自己的实例域名：
+
+```caddyfile
+stats.example.com {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:3100
+}
+```
+
+[完整 Caddy 示例](./Caddyfile) 还包含地图资源的压缩配置。使用已有代理时只添加本实例的站点配置，验证后重新加载代理。
+
+## 后台备份与恢复
+
+进入「设置 → 系统设置 → 备份」，可以创建和下载完整加密备份、下载恢复密钥、上传备份、校验和恢复。
+
+恢复前会自动保存当前实例，恢复后保留旧数据库。请将恢复密钥与备份分别保管，并在服务器之外保存副本。详见[后台操作流程](./OPERATIONS.md#administrator-dashboard)。
+
+## 原生部署参考
+
+也可以自行维护 Node.js、PostgreSQL、ClickHouse 和 systemd 服务。以下路径和服务名均为可自定义的示例；已有实例继续使用实际配置。
+
+### 构建应用
+
+构建和测试需要 Bun 1.4+、Node.js 和 OpenSSL。在 `app/` 中执行：
 
 ```sh
 bun install --frozen-lockfile
@@ -32,66 +53,43 @@ bun run check:unused
 bun run build
 ```
 
-Publish the complete `.output/` directory contents. Its `start.mjs` loads the reflect metadata polyfill before the production server; use this entrypoint rather than `server/index.mjs` directly. Bun is needed for building; the release runs with Node.js 22 or newer. The native deployment currently uses Node.js 26.
+将 `.output/` 的完整内容发布到一个新的版本目录。发布目录应包含 `start.mjs`、`reflect.cjs`、`server/` 和 `public/`。运行时使用 Node.js 22+，入口为 `node start.mjs`；不要直接启动 `server/index.mjs`。
 
-## Native services and configuration
+### 运行配置
 
-| Component | Layout |
+| 项目 | 示例 |
 | --- | --- |
-| Application | `litestats.service`; `/opt/litestats/current` points to `releases/<release-id>` |
-| Application configuration | Private `/etc/litestats/app.env`, loaded with systemd `EnvironmentFile` |
-| Application listener | `HOST=127.0.0.1`, `PORT=13100`; port 3100 belongs to another application |
-| PostgreSQL | Existing native PostgreSQL, with a separate `litestats` database and role |
-| ClickHouse | `litestats-clickhouse.service`; private listeners `127.0.0.1:8123` and `127.0.0.1:9000` |
-| ClickHouse configuration | Private `/etc/litestats/clickhouse.xml`; separate private data and log directories |
-| HTTPS proxy | Existing FrankenPHP/Caddy service; a separate virtual host under `/etc/frankenphp/sites/*.caddy` |
+| 应用服务 | `plost.service` |
+| 当前版本 | `/opt/plost/current` 指向 `releases/<release-id>` |
+| 运行配置 | `/etc/plost/app.env`，由 systemd 的 `EnvironmentFile` 加载 |
+| 应用监听 | `HOST=127.0.0.1`、`PORT=3100` |
+| 数据库 | 独立的 PostgreSQL 数据库与角色，以及私有 ClickHouse 服务 |
+| HTTPS | 反向代理到应用监听地址 |
 
-Run the application as its dedicated unprivileged service account. Set `NODE_ENV=production`, `SEED_DEMO=false`, independent database credentials, and a random `SESSION_KEY` of at least 32 characters. Keep the environment file owner-only (`0600`) and never replace it with the development template during an upgrade. The production app does not create a demo account. A new empty instance opens `/setup` to create its only administrator, whose authority is persisted without an email allowlist. Once initialized, setup and public registration are closed. Existing verified administrators listed in `ADMIN_EMAILS` remain supported for compatibility.
+以专用非特权账号运行应用。设置 `NODE_ENV=production`、`SEED_DEMO=false`、独立数据库凭据，以及至少 32 字符的随机 `SESSION_KEY`。运行配置文件权限应为 `0600`；升级时保留已有配置和密钥。
 
-ClickHouse uses the verified 26.8 LTS static package at `/opt/litestats-clickhouse/clickhouse-common-static-26.8.34.13/usr/bin/clickhouse`. Its configuration uses UTC, a 1 GB server memory cap, a 1.4 GB systemd memory limit, and two independently generated password hashes. Keep both HTTP and native ports on loopback; do not copy passwords or hashes into this repository. Preserve its configuration, data, and log ownership when upgrading the binary.
+PostgreSQL 和 ClickHouse 应只对应用及运维环境开放。根据实际负载设置 ClickHouse 内存、文件句柄和数据目录权限。
 
-Add only the analytics virtual host to the existing FrankenPHP configuration and proxy to `127.0.0.1:13100`. Validate the existing main configuration with the installed FrankenPHP binary before reloading its existing service. Preserve unrelated virtual hosts, certificates, and listeners; installing a second proxy on ports 80/443 is unnecessary.
+网页中的完整备份与恢复需要独立运维进程。原生部署的权限与运维要求见 [OPERATIONS.md](./OPERATIONS.md#native-systemd-deployment)。
 
-### Release and rollback
+### 更新与回退
 
-Before upgrading, back up both databases and the private runtime configuration. Copy the new `.output/` contents into a new `/opt/litestats/releases/<release-id>/` directory, with permissions allowing the service account to read the complete release. Check that `start.mjs`, `reflect.cjs`, `server/`, and `public/` are present. Do not overwrite the directory currently in use.
+更新前备份两个数据库和运行配置，将新构建发布到独立版本目录，再切换 `current` 链接并重启应用。不要覆盖正在运行的版本目录。
 
-After setting `release_id` to the prepared directory name, switch the symlink atomically and restart only the application:
+保留前一版本和链接目标，便于切回。代码回退不会撤销数据库结构变化；涉及数据库版本或结构变更时，先验证兼容性和恢复方案。
 
-```sh
-ln -s "releases/$release_id" /opt/litestats/current.next
-mv -Tf /opt/litestats/current.next /opt/litestats/current
-systemctl restart litestats.service
-```
-
-Keep the previous release and record the previous symlink target. To roll back, repeat the same symlink switch with that release ID and restart the app. Application rollback does not undo database schema changes; assess compatibility before restoring a database. Retain the original Umami installation and its backups until migration validation and the agreed retention period are complete. The three migrated sites already use the new tracker; future releases do not require replacing their tags again.
-
-### Status and health checks
+### 验证部署
 
 ```sh
-systemctl is-active litestats.service litestats-clickhouse.service
-systemctl status litestats.service litestats-clickhouse.service --no-pager
-curl --max-time 10 -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:13100/
-curl --max-time 10 -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:13100/login
-curl --max-time 10 -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8123/ping
+systemctl is-active plost.service
+curl --fail --max-time 10 http://127.0.0.1:3100/api/health
+curl --fail --max-time 10 http://127.0.0.1:8123/ping
 ```
 
-An empty instance returns `307` from the root to `/setup`. After initialization, the root returns `307` to `/login` or `/dashboard`, depending on the session; `/login` and ClickHouse `/ping` should return `200`. Also check the public HTTPS URL. Successful HTTP responses establish reachability, not event persistence: verify a controlled page visit in the dashboard when validating collection. Inspect service logs locally as needed, and redact credentials or tokens before sharing them.
+按实际服务名和端口调整命令，并检查实例的 HTTPS 地址。最后在一个已接入的网站产生受控访问，确认后台出现新事件。
 
-### Backups and credentials
+## 地区识别
 
-A recoverable native backup must include a PostgreSQL `pg_dump`, ClickHouse schema and event data, and the private runtime configuration, especially `SESSION_KEY`. This key signs sessions and encrypts integration credentials. Include the ClickHouse configuration and retain the corresponding release ID. Protect local backup files and offline copies with owner-only permissions (`0600`) and keep a protected copy away from the server.
+`GEOIP_PROVIDER=off` 为默认设置。需要外部地区识别时，可设置 `GEOIP_PROVIDER=cnip`；应用会向 api.cnip.io 发送访客公网 IP 进行查询，原始 IP 不写入统计事件。请根据自己的隐私要求选择是否启用。
 
-Read database credentials from protected runtime files. For PostgreSQL command-line tools, use an owner-only password file with `PGPASSFILE`; never put passwords or session keys in command arguments, shell history, documentation, or pasted logs. Do not print environment files or secrets while checking a backup. Verify restore procedures against isolated databases before replacing production data. No automated off-server backup schedule is implied by this deployment.
-
-### Geographic data
-
-Historical imported geography remains available. `GEOIP_PROVIDER=cnip` opts into server-side lookup of public client IPs at api.cnip.io for domestic and international visits. Production enables this option; templates default to disabled. Lookups have bounded timeouts, concurrency and in-memory caching; raw IPs are not stored with events. Only trusted proxy headers are accepted. No MaxMind database is installed.
-
-Chinese reports display region and city labels in Simplified Chinese. The server resolves city names/GeoNames IDs using the bundled public GeoNames translation dictionary, scoped to country and subdivision. Unresolvable or ambiguous cities show “暂无中文名称”; original keys remain searchable and filterable. Historical events and newly collected events share this display path, without rewriting event data, identities or counts. See `app/src/assets/city-names-SOURCE.md` for attribution and reproduction.
-
-## Docker Compose installation
-
-The managed installer builds `deploy/Dockerfile`, copies the runtime Compose/operations files into the private instance directory, generates credentials only for new instances, and waits for health. PostgreSQL and ClickHouse keep persistent named volumes without host-published ports. See [OPERATIONS.md](OPERATIONS.md) for install, upgrade, backup, verify and recovery commands.
-
-The root `docker-compose.yml` remains for local development only. It is not the managed production installer. Never run it against production volume directories.
+地区和城市名称使用随应用分发的翻译数据，来源与生成方式见[城市数据说明](../app/src/assets/city-names-SOURCE.md)。

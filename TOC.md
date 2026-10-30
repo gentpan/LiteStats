@@ -7,6 +7,11 @@
 | 文件 | 内容 |
 |------|------|
 | [README.md](./README.md) | 介绍、快速开始、访问统计与追踪脚本 |
+| [部署说明](./deploy/README.md) | 安装环境、服务配置与运行检查 |
+| [备份与恢复](./deploy/OPERATIONS.md) | 升级、完整备份与恢复操作 |
+| [Umami 迁移](./deploy/UMAMI-MIGRATION.md) | 数据转换、校验与导入 |
+| [开发与测试](./LOCAL-TEST.md) | 本地检查命令与隔离测试要求 |
+| [设计规范](./DESIGN-SYSTEM.md) | 界面组件、样式与交互约定 |
 | [LICENSE](./LICENSE) | MIT |
 | [.env.example](./.env.example) | 环境变量模板 |
 | [docker-compose.yml](./docker-compose.yml) | 本地 PostgreSQL + ClickHouse |
@@ -66,7 +71,7 @@ app/
 
 ## 数据
 
-- **PostgreSQL**：用户、权限归属、站点、分享、设置与独立站点检查记录；历史团队、目标、漏斗及退役配置表保留
+- **PostgreSQL**：账号、权限、站点、分享、设置和网站检查记录
 - **ClickHouse `events_v2`**：pageview 与自定义事件
 
-访客采集不种 Cookie。访客 ID 由服务端根据请求特征哈希，不存原始 IP；管理后台登录使用会话 Cookie。
+统计采集不使用 Cookie，原始 IP 不写入统计库；管理后台登录使用会话 Cookie。

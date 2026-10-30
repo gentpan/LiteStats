@@ -1,6 +1,6 @@
 # Mapbox style previews
 
-These 3 images (Standard, Streets, Dark) are actual Mapbox GL JS 3.33.0 screenshots captured in local Chrome on 2026-10-22, then converted to WebP (quality 90) without cropping, recoloring, compositing, or changing map content. They contain no visitor data. Mapbox logos and the renderer's complete attribution remain visible. Unused previews were removed when the selectable catalog was reduced to these three styles.
+These 3 images (Standard, Streets, Dark) are actual Mapbox GL JS 3.33.0 screenshots captured in local Chrome on 2026-10-22, then converted to WebP (quality 90) without cropping, recoloring, compositing, or changing map content. They contain no visitor data. Mapbox logos and the renderer's complete attribution remain visible.
 
 - Source: the corresponding `mapbox://styles/mapbox/{styleId}` from the fixed application catalog.
 - Viewport: 720 × 440 pixels.

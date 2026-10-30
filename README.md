@@ -87,7 +87,7 @@ curl --fail-with-body 'https://stats.example.com/api/v1/stats?period=summary' \
 
 ## 本地开发
 
-需要 Bun 1.4+ 和 Docker Compose。在仓库根目录执行：
+需要 Bun 1.4+、Node.js、OpenSSL 和 Docker Compose。在仓库根目录执行：
 
 ```bash
 cp .env.example app/.env
@@ -115,7 +115,16 @@ bun run build
 
 ## 技术栈
 
-TanStack Start · React · TypeScript · Vite · Tailwind CSS · PostgreSQL · ClickHouse
+[![TanStack Start](https://img.shields.io/badge/TanStack_Start-FF4154?style=flat-square)](https://tanstack.com/start)
+[![React](https://img.shields.io/badge/React-149ECA?style=flat-square&logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![ClickHouse](https://img.shields.io/badge/ClickHouse-FFCC01?style=flat-square&logo=clickhouse&logoColor=black)](https://clickhouse.com/)
+[![Bun](https://img.shields.io/badge/Bun-14151A?style=flat-square&logo=bun&logoColor=white)](https://bun.sh/)
+[![Node.js](https://img.shields.io/badge/Node.js-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
 
 ## 许可
 
